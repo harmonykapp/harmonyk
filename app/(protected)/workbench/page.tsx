@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+ 
+
+import { useCallback, useEffect, useState, useTransition } from "react";
+
 import { getGoogleAccessToken } from "@/lib/google-token";
 import { analyzeRowAction } from "./actions";
 
@@ -8,192 +11,313 @@ type Row = {
   id: string;
   title: string;
   source: "Drive" | "Gmail";
-  kind: string;
+  kind?: string;
   owner?: string;
-  modified?: string; // ISO date
-  url?: string;      // preview link
-  preview?: string;  // (optional) short text we pass to AI if available
+  modified?: string;
+  preview?: string;
 };
+
+type Analysis =
+  | {
+      ok: true;
+      triage?: {
+        priority?: "low" | "medium" | "high";
+        label?: string;
+        suggestedAction?: string;
+      };
+      analysis?: {
+        summary?: string;
+        entities?: string[];
+        dates?: string[];
+      };
+      raw?: unknown;
+    }
+  | { ok: false; reason?: string; raw?: unknown };
 
 export default function WorkbenchPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"All"|"Drive"|"Gmail">("All");
-
-  const [openId, setOpenId] = useState<string|null>(null);
-  const [aiState, setAiState] = useState<any|null>(null);
+  const [sel, setSel] = useState<Row | null>(null);
+  const [result, setResult] = useState<Analysis | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const visible = useMemo(
-    () => rows.filter(r => filter === "All" ? true : r.source === filter),
-    [rows, filter]
-  );
+  /**
+   * Load a small unified inbox (Week-1: mocked + token check).
+   * In Week-2 we’ll fetch real provider data server-side.
+   */
+  const load = useCallback(async () => {
+    setLoading(true);
 
-  async function fetchDriveRecents(accessToken: string): Promise<Row[]> {
-    const params = new URLSearchParams({
-      pageSize: "25",
-      orderBy: "modifiedTime desc",
-      fields: "files(id,name,mimeType,owners,modifiedTime)"
-    });
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-    if (!res.ok) throw new Error(`Drive error ${res.status}`);
-    const data = await res.json();
-    return (data.files ?? []).map((f:any) => ({
-      id: `drive:${f.id}`,
-      title: f.name,
-      source: "Drive",
-      kind: f.mimeType,
-      owner: f.owners?.[0]?.displayName || f.owners?.[0]?.emailAddress,
-      modified: f.modifiedTime,
-      url: `https://drive.google.com/file/d/${f.id}/view`
-    }));
-  }
-
-  async function fetchGmailMetadata(accessToken: string): Promise<Row[]> {
-    const list = await fetch(
-      "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25",
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    if (!list.ok) throw new Error(`Gmail list error ${list.status}`);
-    const { messages = [] } = await list.json();
-
-    const detailPromises = (messages as any[]).slice(0, 25).map(async m => {
-      const d = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      if (!d.ok) return null;
-      const msg = await d.json();
-      const headers: Record<string,string> = {};
-      for (const h of msg.payload?.headers || []) headers[h.name] = h.value;
-      const subject = headers["Subject"] || "(no subject)";
-      const from = headers["From"];
-      const date = headers["Date"];
-      return {
-        id: `gmail:${msg.id}`,
-        title: subject,
-        source: "Gmail" as const,
-        kind: "email",
-        owner: from,
-        modified: date ? new Date(date).toISOString() : undefined,
-        url: `https://mail.google.com/mail/u/0/#all/${msg.id}`,
-        preview: subject // minimal text for AI
-      } as Row;
-    });
-
-    const details = await Promise.all(detailPromises);
-    return details.filter(Boolean) as Row[];
-  }
-
-  async function load() {
-    setLoading(true); setError(null);
+    // Check whether Google OAuth is connected (for visual signal only)
+    let driveConnected = false;
     try {
-      const token = await getGoogleAccessToken();
-      if (!token) throw new Error("No Google access token. Use Integrations → Connect first.");
-      const [drive, gmail] = await Promise.allSettled([
-        fetchDriveRecents(token),
-        fetchGmailMetadata(token)
-      ]);
-      const rows: Row[] = []
-        .concat(drive.status === "fulfilled" ? drive.value : [])
-        .concat(gmail.status === "fulfilled" ? gmail.value : []);
-      setRows(rows);
-    } catch (e:any) {
-      setError(e.message || String(e));
-    } finally {
-      setLoading(false);
+      const token = await getGoogleAccessToken("drive");
+      driveConnected = Boolean(token?.access_token);
+    } catch {
+      driveConnected = false;
     }
-  }
 
-  useEffect(() => { load(); }, []);
+    // Seed a tiny sample table (stable demo for Week-1)
+    const now = new Date();
+    const fmt = (d: Date) =>
+      new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(d);
 
-  function onAnalyze(row: Row) {
-    setOpenId(row.id);
-    setAiState(null);
+    const sample: Row[] = [
+      {
+        id: crypto.randomUUID(),
+        title: "NDA — ACME & Monolyth",
+        source: "Drive",
+        kind: "application/pdf",
+        owner: driveConnected ? "you@demo" : "—",
+        modified: fmt(now),
+        preview:
+          "Mutual NDA between parties outlining confidentiality and use of information…",
+      },
+      {
+        id: crypto.randomUUID(),
+        title: "Signed Proposal — Q4",
+        source: "Gmail",
+        kind: "message/rfc822",
+        owner: "inbox",
+        modified: fmt(new Date(now.getTime() - 3600_000)),
+        preview:
+          "Subject: Re: Proposal — Looks good, proceed to signature this week…",
+      },
+      {
+        id: crypto.randomUUID(),
+        title: "MSA — VendorX (draft v3)",
+        source: "Drive",
+        kind: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        owner: driveConnected ? "you@demo" : "—",
+        modified: fmt(new Date(now.getTime() - 86400_000)),
+        preview:
+          "Master Services Agreement draft covering scope, IP, payment terms…",
+      },
+    ];
+
+    setRows(sample);
+    setLoading(false);
+  }, []);
+
+  // Schedule the first load via setTimeout to avoid "set-state in effect" warning.
+  useEffect(() => {
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (!cancelled) void load();
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [load]);
+
+  function onAnalyze(r: Row) {
+    setSel(r);
+    setResult(null);
     startTransition(async () => {
       const res = await analyzeRowAction({
-        title: row.title,
-        source: row.source,
-        kind: row.kind,
-        owner: row.owner,
-        modified: row.modified,
-        preview: row.preview
+        title: r.title,
+        source: r.source,
+        kind: r.kind,
+        owner: r.owner,
+        modified: r.modified,
+        preview: r.preview,
       });
-      setAiState(res);
+      setResult(res as Analysis);
     });
   }
 
   return (
-    <div style={{fontFamily:"system-ui, sans-serif"}}>
-      <h1>Workbench</h1>
-      <div style={{display:"flex", gap:8, marginBottom:12}}>
-        <select value={filter} onChange={e=>setFilter(e.target.value as any)}>
-          <option>All</option><option>Drive</option><option>Gmail</option>
-        </select>
-        <button onClick={load} disabled={loading}>{loading ? "Loading…" : "Refresh"}</button>
-        {error && <span style={{color:"#B00020"}}>{error}</span>}
-      </div>
-
-      <div style={{display:"grid", gridTemplateColumns:"2fr 100px 1fr 1.2fr 120px 320px", gap:8, fontSize:14, fontWeight:600, padding:"6px 0", borderBottom:"1px solid #eee"}}>
-        <div>Title</div><div>Source</div><div>Kind</div><div>Owner</div><div>Modified</div><div>Actions</div>
-      </div>
-
-      {visible.map(row => (
-        <div key={row.id} style={{display:"grid", gridTemplateColumns:"2fr 100px 1fr 1.2fr 120px 320px", gap:8, padding:"8px 0", borderBottom:"1px solid #f3f3f3"}}>
-          <div style={{overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}} title={row.title}>{row.title}</div>
-          <div>{row.source}</div>
-          <div>{row.kind}</div>
-          <div style={{overflow:"hidden", textOverflow:"ellipsis"}} title={row.owner}>{row.owner}</div>
-          <div>{row.modified ? new Date(row.modified).toLocaleString() : ""}</div>
-          <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
-            {row.url && <a href={row.url} target="_blank" rel="noreferrer">Preview</a>}
-            <button onClick={()=>onAnalyze(row)} disabled={isPending}>Analyze</button>
-            <button disabled>Save</button>
-            <button disabled>Share</button>
-            <button disabled>Send for Signature</button>
-          </div>
+    <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+      <header
+        style={{ display: "flex", alignItems: "center", marginBottom: 16 }}
+      >
+        <h1 style={{ fontSize: "1.5rem", fontWeight: 600 }}>Workbench</h1>
+        <div style={{ marginLeft: "auto", opacity: 0.7 }}>
+          {loading ? "Loading…" : `${rows.length} items`}
         </div>
-      ))}
+      </header>
 
-      {!loading && visible.length === 0 && !error && (
-        <div style={{padding:"12px 0", opacity:.7}}>No items found. Try Refresh or Connect integrations.</div>
-      )}
+      {/* Table */}
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead style={{ background: "#f9f9f9" }}>
+          <tr>
+            <th style={{ textAlign: "left", padding: 8 }}>Title</th>
+            <th style={{ textAlign: "left", padding: 8 }}>Source</th>
+            <th style={{ textAlign: "left", padding: 8 }}>Kind</th>
+            <th style={{ textAlign: "left", padding: 8 }}>Owner</th>
+            <th style={{ textAlign: "left", padding: 8 }}>Modified</th>
+            <th style={{ textAlign: "left", padding: 8 }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={6} style={{ padding: 12, color: "#777" }}>
+                No items yet
+              </td>
+            </tr>
+          ) : (
+            rows.map((r) => (
+              <tr key={r.id} style={{ borderTop: "1px solid #eee" }}>
+                <td style={{ padding: 8 }}>
+                  <div style={{ fontWeight: 600 }}>{r.title}</div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      opacity: 0.75,
+                      maxWidth: 560,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                    title={r.preview}
+                  >
+                    {r.preview ?? "—"}
+                  </div>
+                </td>
+                <td style={{ padding: 8 }}>{r.source}</td>
+                <td style={{ padding: 8 }}>{r.kind ?? "—"}</td>
+                <td style={{ padding: 8 }}>{r.owner ?? "—"}</td>
+                <td style={{ padding: 8 }}>{r.modified ?? "—"}</td>
+                <td style={{ padding: 8 }}>
+                  <button
+                    onClick={() => onAnalyze(r)}
+                    disabled={isPending}
+                    style={{
+                      border: "1px solid #ccc",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {isPending && sel?.id === r.id ? "Analyzing…" : "Analyze"}
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
 
-      {/* Analyze Drawer (very simple) */}
-      {openId && (
-        <div style={{
-          position:"fixed", right:0, top:0, bottom:0, width:420, background:"#fff",
-          borderLeft:"1px solid #eee", boxShadow:"-8px 0 16px rgba(0,0,0,.06)", padding:16, overflowY:"auto"
-        }}>
-          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}}>
-            <h3 style={{margin:0}}>Analyze</h3>
-            <button onClick={()=>setOpenId(null)}>Close</button>
+      {/* Analyze drawer (Week-1 simple card) */}
+      {sel && (
+        <section
+          style={{
+            marginTop: 20,
+            padding: 16,
+            border: "1px solid #e5e5e5",
+            borderRadius: 12,
+            background: "#fafafa",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 600, margin: 0 }}>
+              Analyze
+            </h2>
+            <div style={{ opacity: 0.7, fontSize: 12 }}>
+              {sel.source} • {sel.kind || "—"}
+            </div>
+            <div style={{ marginLeft: "auto" }}>
+              <button
+                onClick={() => {
+                  setSel(null);
+                  setResult(null);
+                }}
+                style={{
+                  border: "1px solid #ccc",
+                  borderRadius: 8,
+                  padding: "6px 10px",
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
           </div>
-          {!aiState && <div>Analyzing…</div>}
-          {aiState?.error && <div style={{color:"#B00020"}}>{aiState.error}</div>}
-          {aiState?.triage && (
-            <div style={{marginBottom:16}}>
-              <h4 style={{margin:"8px 0"}}>Triage</h4>
-              <div>Priority: <b>{aiState.triage.priority}</b></div>
-              <div>Labels: {(aiState.triage.labels||[]).join(", ")}</div>
-              <div>Next: {aiState.triage.suggested_next_action}</div>
+
+          {!result && (
+            <div style={{ marginTop: 12, opacity: 0.7 }}>
+              {isPending ? "Running AI…" : "Waiting for result…"}
             </div>
           )}
-          {aiState?.analysis && (
-            <div>
-              <h4 style={{margin:"8px 0"}}>Summary</h4>
-              <p>{aiState.analysis.summary}</p>
-              <h4 style={{margin:"8px 0"}}>Entities</h4>
-              <ul>{(aiState.analysis.entities||[]).map((e:string,i:number)=><li key={i}>{e}</li>)}</ul>
-              <h4 style={{margin:"8px 0"}}>Dates</h4>
-              <ul>{(aiState.analysis.dates||[]).map((d:string,i:number)=><li key={i}>{d}</li>)}</ul>
+
+          {result && result.ok === false && (
+            <div style={{ marginTop: 12, color: "#B00020" }}>
+              AI error: {result.reason ?? "unknown"}
             </div>
           )}
-        </div>
+
+          {result && result.ok && (
+            <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+              <div>
+                <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>
+                  Priority / Label / Suggested action
+                </div>
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <Badge>{result.triage?.priority ?? "—"}</Badge>
+                  <Badge>{result.triage?.label ?? "—"}</Badge>
+                  <Badge>{result.triage?.suggestedAction ?? "—"}</Badge>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>
+                  Summary
+                </div>
+                <div>{result.analysis?.summary ?? "—"}</div>
+              </div>
+
+              <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>
+                    Entities
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {(result.analysis?.entities ?? []).map((e, i) => (
+                      <li key={i}>{e}</li>
+                    ))}
+                    {(result.analysis?.entities?.length ?? 0) === 0 && (
+                      <li>—</li>
+                    )}
+                  </ul>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>
+                    Dates
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {(result.analysis?.dates ?? []).map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                    {(result.analysis?.dates?.length ?? 0) === 0 && <li>—</li>}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
       )}
     </div>
+  );
+}
+
+function Badge({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        border: "1px solid #ddd",
+        borderRadius: 999,
+        padding: "2px 10px",
+        fontSize: 12,
+        background: "#fff",
+      }}
+    >
+      {children}
+    </span>
   );
 }

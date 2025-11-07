@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
@@ -301,7 +302,8 @@ export default function BuilderPage() {
                 style={textareaStyle}
               />
               <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
-                Tip: If this is filled, the generator ignores the structured fields and uses your prompt verbatim.
+                Tip: If this is filled, the generator ignores the structured fields and uses your
+                prompt verbatim.
               </div>
             </div>
           )}

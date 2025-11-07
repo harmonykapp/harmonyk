@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import { initPosthog } from "@/lib/posthog-client";
 
 export default function Analytics() {
-  useEffect(() => { initPosthog(); }, []);
+  useEffect(() => {
+    initPosthog();
+  }, []);
   return null;
 }

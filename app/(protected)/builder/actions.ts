@@ -10,7 +10,7 @@ import { createClient } from "@supabase/supabase-js";
 type CreateArgs = { templateId: string; prompt: string; userId: string };
 
 export async function createDocFromTemplate({ templateId, prompt, userId }: CreateArgs) {
-  const tmpl = TEMPLATES.find(t => t.id === templateId);
+  const tmpl = TEMPLATES.find((t) => t.id === templateId);
   if (!tmpl) return { error: "Unknown template" };
 
   // 1) Generate body (AI if key present, else static)
@@ -20,17 +20,18 @@ export async function createDocFromTemplate({ templateId, prompt, userId }: Crea
     const r = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.2,
-      messages: [{
-        role: "user",
-        content:
-`Draft a concise, business-ready ${tmpl.name}.
+      messages: [
+        {
+          role: "user",
+          content: `Draft a concise, business-ready ${tmpl.name}.
 Guidance:
 - Use neutral labels ("Party A", "Party B") unless roles are provided.
 - Include headings and numbered clauses where appropriate.
 - Insert placeholders like [ADDRESS], [AMOUNT], [DATE] when info is missing.
 Context/requirements:
-${prompt}`
-      }]
+${prompt}`,
+        },
+      ],
     });
     body = r.choices[0]?.message?.content || body;
   }
@@ -47,7 +48,7 @@ ${prompt}`
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
-  const title = `${tmpl.name} — ${new Date().toISOString().slice(0,10)}`;
+  const title = `${tmpl.name} — ${new Date().toISOString().slice(0, 10)}`;
 
   const { data: doc, error: e1 } = await supa
     .from("documents")

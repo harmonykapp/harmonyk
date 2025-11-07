@@ -75,7 +75,11 @@ REQUIREMENTS:
   // Clean common wrappers (just in case)
   text = text.trim();
   if (text.startsWith("```")) {
-    text = text.replace(/^```json/i, "").replace(/^```/, "").replace(/```$/, "").trim();
+    text = text
+      .replace(/^```json/i, "")
+      .replace(/^```/, "")
+      .replace(/```$/, "")
+      .trim();
   }
 
   try {
@@ -83,9 +87,8 @@ REQUIREMENTS:
     // Minimal shape check
     if (!parsed.triage || !parsed.analysis) throw new Error("missing keys");
     return { error: null, triage: parsed.triage, analysis: parsed.analysis };
-  } catch (e) {
-    // Log for debugging during dev; safe to keep
-    console.warn("AI non-JSON or bad shape:", text);
-    return { error: "AI returned non-JSON", triage: null, analysis: null, raw: text };
-  }
+  } catch {
+  // Week-1: swallow error; caller shows a friendly message
+  return { ok: false as const, reason: "ai_error" };
+}
 }

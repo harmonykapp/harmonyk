@@ -17,7 +17,10 @@ export default function SignaturesPage() {
   useEffect(() => {
     (async () => {
       const { data } = await sb.auth.getUser();
-      if (!data?.user) { setLoading(false); return; }
+      if (!data?.user) {
+        setLoading(false);
+        return;
+      }
       setUserId(data.user.id);
 
       const { data: d } = await sb
@@ -32,8 +35,14 @@ export default function SignaturesPage() {
 
   async function onSend() {
     setResult(null);
-    if (!userId) { alert("Please sign in again."); return; }
-    if (!docId || !email) { alert("Pick a document and enter an email"); return; }
+    if (!userId) {
+      alert("Please sign in again.");
+      return;
+    }
+    if (!docId || !email) {
+      alert("Pick a document and enter an email");
+      return;
+    }
 
     const { error } = await sb.from("events").insert({
       doc_id: docId,
@@ -59,8 +68,10 @@ export default function SignaturesPage() {
               onChange={(e) => setDocId(e.target.value)}
             >
               <option value="">Select a document…</option>
-              {docs.map(d => (
-                <option key={d.id} value={d.id}>{d.title}</option>
+              {docs.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.title}
+                </option>
               ))}
             </select>
           </label>

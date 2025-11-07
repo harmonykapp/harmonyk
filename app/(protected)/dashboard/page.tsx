@@ -1,1 +1,3 @@
-export default function Page(){ return <div>Empty state</div>; }
+export default function Page() {
+  return <div>Empty state</div>;
+}

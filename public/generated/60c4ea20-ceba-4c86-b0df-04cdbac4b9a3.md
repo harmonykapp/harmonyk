@@ -4,11 +4,11 @@ This Mutual Non-Disclosure Agreement ("Agreement") is entered into as of [DATE] 
 
 **Party A**  
 [NAME]  
-[ADDRESS]  
+[ADDRESS]
 
 **Party B**  
 [NAME]  
-[ADDRESS]  
+[ADDRESS]
 
 **Collectively referred to as "the Parties."**
 
@@ -22,27 +22,30 @@ For purposes of this Agreement, "Confidential Information" shall include all inf
 
 ## 3. Obligations of the Parties
 
-3.1 Each Party agrees to:  
-- a) Keep the Confidential Information of the other Party confidential and not disclose it to any third parties without prior written consent.  
-- b) Use the Confidential Information solely for the purpose of evaluating or pursuing a business relationship between the Parties.  
+3.1 Each Party agrees to:
 
-3.2 Each Party shall take reasonable measures to protect the confidentiality of the Confidential Information, which shall be no less than the measures it uses to protect its own confidential information.
+- a) Keep the Confidential Information of the other Party confidential and not disclose it to any third parties without prior written consent.
+- b) Use the Confidential Information solely for the purpose of evaluating or pursuing a business relationship between the Parties.
+
+  3.2 Each Party shall take reasonable measures to protect the confidentiality of the Confidential Information, which shall be no less than the measures it uses to protect its own confidential information.
 
 ## 4. Exclusions from Confidential Information
 
-Confidential Information does not include information that:  
-- a) Is or becomes publicly known through no breach of this Agreement by the receiving Party.  
-- b) Is received from a third party without breach of any obligation of confidentiality.  
-- c) Is independently developed by the receiving Party without use of or reference to the disclosing Party's Confidential Information.  
+Confidential Information does not include information that:
+
+- a) Is or becomes publicly known through no breach of this Agreement by the receiving Party.
+- b) Is received from a third party without breach of any obligation of confidentiality.
+- c) Is independently developed by the receiving Party without use of or reference to the disclosing Party's Confidential Information.
 - d) Is required to be disclosed by law or regulation, provided that the receiving Party gives the disclosing Party prompt notice of such requirement.
 
 ## 5. Service Scope
 
-5.1 The scope of services and discussions covered under this Agreement includes, but is not limited to:  
-- a) [Specify services or discussions in scope]  
-- b) [Specify services or discussions out of scope]  
+5.1 The scope of services and discussions covered under this Agreement includes, but is not limited to:
 
-5.2 Any changes to the scope of services must be agreed upon in writing by both Parties.
+- a) [Specify services or discussions in scope]
+- b) [Specify services or discussions out of scope]
+
+  5.2 Any changes to the scope of services must be agreed upon in writing by both Parties.
 
 ## 6. Term
 
@@ -71,13 +74,13 @@ This Agreement may only be amended or modified by a written agreement signed by 
 IN WITNESS WHEREOF, the Parties hereto have executed this Mutual Non-Disclosure Agreement as of the date first above written.
 
 **Party A**  
-Signature: ___________________________  
+Signature: ****\*\*\*\*****\_\_\_****\*\*\*\*****  
 Name: [NAME]  
 Title: [TITLE]  
-Date: [DATE]  
+Date: [DATE]
 
 **Party B**  
-Signature: ___________________________  
+Signature: ****\*\*\*\*****\_\_\_****\*\*\*\*****  
 Name: [NAME]  
 Title: [TITLE]  
-Date: [DATE]  
+Date: [DATE]

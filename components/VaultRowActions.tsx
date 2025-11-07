@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useTransition } from "react";
@@ -11,7 +12,10 @@ type Props = {
 export default function VaultRowActions({ docId, url, userId }: Props) {
   const [pending, start] = useTransition();
 
-  async function log(event_type: "view"|"download"|"share_created", extra?: Record<string, any>) {
+  async function log(
+    event_type: "view" | "download" | "share_created",
+    extra?: Record<string, any>
+  ) {
     await fetch("/api/events/log", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -60,10 +64,16 @@ export default function VaultRowActions({ docId, url, userId }: Props) {
   }
 
   return (
-    <div style={{display:"flex", gap:8}}>
-      <button onClick={onView} disabled={!url || pending}>View</button>
-      <button onClick={onDownload} disabled={!url || pending}>Download</button>
-      <button onClick={onShare} disabled={pending}>Create link</button>
+    <div style={{ display: "flex", gap: 8 }}>
+      <button onClick={onView} disabled={!url || pending}>
+        View
+      </button>
+      <button onClick={onDownload} disabled={!url || pending}>
+        Download
+      </button>
+      <button onClick={onShare} disabled={pending}>
+        Create link
+      </button>
     </div>
   );
 }

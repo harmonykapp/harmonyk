@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -9,7 +10,7 @@ async function sha256Hex(text: string) {
   const enc = new TextEncoder().encode(text);
   const digest = await crypto.subtle.digest("SHA-256", enc);
   const bytes = Array.from(new Uint8Array(digest));
-  return bytes.map(b => b.toString(16).padStart(2, "0")).join("");
+  return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 type Doc = {
@@ -58,7 +59,9 @@ export default function VaultPage() {
       setUserId(data.user.id);
       setUserReady(true);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [sb]);
 
   // 2) Load docs + latest versions for this user
@@ -97,7 +100,7 @@ export default function VaultPage() {
         return;
       }
 
-      const ids = docs.map(d => d.id);
+      const ids = docs.map((d) => d.id);
       const { data: versions, error: vErr } = await sb
         .from("versions")
         .select("doc_id, number, content_url")
@@ -108,17 +111,24 @@ export default function VaultPage() {
 
       if (vErr) {
         setErr(vErr.message);
-        setRows((docs as Doc[]).map(d => ({
-          id: d.id, title: d.title, status: d.status, created_at: d.created_at
-        })));
+        setRows(
+          (docs as Doc[]).map((d) => ({
+            id: d.id,
+            title: d.title,
+            status: d.status,
+            created_at: d.created_at,
+          }))
+        );
         setLoading(false);
         return;
       }
 
       const latest = new Map<string, Version>();
-      (versions || []).forEach(v => { if (!latest.has(v.doc_id)) latest.set(v.doc_id, v as Version); });
+      (versions || []).forEach((v) => {
+        if (!latest.has(v.doc_id)) latest.set(v.doc_id, v as Version);
+      });
 
-      const merged: Row[] = (docs as Doc[]).map(d => ({
+      const merged: Row[] = (docs as Doc[]).map((d) => ({
         id: d.id,
         title: d.title,
         status: d.status,
@@ -129,14 +139,23 @@ export default function VaultPage() {
       setRows(merged);
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [sb, userId, userReady]);
 
   // events
-  async function logEvent(docId: string, type: "view"|"download"|"share_created", meta: Record<string, any> = {}) {
+  async function logEvent(
+    docId: string,
+    type: "view" | "download" | "share_created",
+    meta: Record<string, any> = {}
+  ) {
     if (!userId) return;
     const { error } = await sb.from("events").insert({
-      doc_id: docId, event_type: type, actor: userId, meta_json: meta
+      doc_id: docId,
+      event_type: type,
+      actor: userId,
+      meta_json: meta,
     });
     if (error) console.warn("Failed to log event:", error.message);
   }
@@ -156,7 +175,10 @@ export default function VaultPage() {
   async function onView(r: Row) {
     if (!r.version?.content_url) return;
     const uid = await ensureUserId();
-    if (!uid) { alert("Please sign in again."); return; }
+    if (!uid) {
+      alert("Please sign in again.");
+      return;
+    }
     await logEvent(r.id, "view", { from: "vault" });
     window.open(r.version.content_url, "_blank", "noopener,noreferrer");
   }
@@ -164,7 +186,10 @@ export default function VaultPage() {
   async function onDownload(r: Row) {
     if (!r.version?.content_url) return;
     const uid = await ensureUserId();
-    if (!uid) { alert("Please sign in again."); return; }
+    if (!uid) {
+      alert("Please sign in again.");
+      return;
+    }
     await logEvent(r.id, "download", { from: "vault" });
     const a = document.createElement("a");
     a.href = r.version.content_url;
@@ -176,7 +201,10 @@ export default function VaultPage() {
 
   async function onCreateLink(r: Row) {
     const uid = await ensureUserId();
-    if (!uid) { alert("Please sign in again."); return; }
+    if (!uid) {
+      alert("Please sign in again.");
+      return;
+    }
     const { data, error } = await sb
       .from("shares")
       .insert({ doc_id: r.id, created_by: uid, access: "public" })
@@ -193,7 +221,10 @@ export default function VaultPage() {
 
   async function onCreatePasscodeLink(r: Row) {
     const uid = await ensureUserId();
-    if (!uid) { alert("Please sign in again."); return; }
+    if (!uid) {
+      alert("Please sign in again.");
+      return;
+    }
     const pass = prompt("Set a passcode for this link:");
     if (!pass) return;
     const hash = await sha256Hex(pass);
@@ -230,8 +261,13 @@ export default function VaultPage() {
       {!loading && !err && rows && rows.length === 0 && (
         <div className="rounded-xl border p-8 text-center text-gray-600">
           <div className="text-lg font-medium mb-2">Your Vault is empty</div>
-          <div className="mb-4">Create your first document in the Builder, then it will appear here.</div>
-          <Link href="/(protected)/builder" className="inline-block px-4 py-2 rounded-xl border hover:bg-gray-50">
+          <div className="mb-4">
+            Create your first document in the Builder, then it will appear here.
+          </div>
+          <Link
+            href="/(protected)/builder"
+            className="inline-block px-4 py-2 rounded-xl border hover:bg-gray-50"
+          >
             Go to Builder
           </Link>
         </div>
@@ -257,14 +293,34 @@ export default function VaultPage() {
                   <td className="px-4 py-3">{r.version ? `v${r.version.number}` : "—"}</td>
                   <td className="px-4 py-3">{new Date(r.created_at).toLocaleString()}</td>
                   <td className="px-4 py-3 space-x-2">
-                    <button className="px-3 py-1 rounded-lg border hover:bg-gray-50 disabled:opacity-40"
-                            onClick={() => onView(r)} disabled={actionsDisabled || !r.version?.content_url}>View</button>
-                    <button className="px-3 py-1 rounded-lg border hover:bg-gray-50 disabled:opacity-40"
-                            onClick={() => onDownload(r)} disabled={actionsDisabled || !r.version?.content_url}>Download</button>
-                    <button className="px-3 py-1 rounded-lg border hover:bg-gray-50"
-                            onClick={() => onCreateLink(r)} disabled={actionsDisabled}>Create link</button>
-                    <button className="px-3 py-1 rounded-lg border hover:bg-gray-50"
-                            onClick={() => onCreatePasscodeLink(r)} disabled={actionsDisabled}>Create passcode link</button>
+                    <button
+                      className="px-3 py-1 rounded-lg border hover:bg-gray-50 disabled:opacity-40"
+                      onClick={() => onView(r)}
+                      disabled={actionsDisabled || !r.version?.content_url}
+                    >
+                      View
+                    </button>
+                    <button
+                      className="px-3 py-1 rounded-lg border hover:bg-gray-50 disabled:opacity-40"
+                      onClick={() => onDownload(r)}
+                      disabled={actionsDisabled || !r.version?.content_url}
+                    >
+                      Download
+                    </button>
+                    <button
+                      className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+                      onClick={() => onCreateLink(r)}
+                      disabled={actionsDisabled}
+                    >
+                      Create link
+                    </button>
+                    <button
+                      className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+                      onClick={() => onCreatePasscodeLink(r)}
+                      disabled={actionsDisabled}
+                    >
+                      Create passcode link
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -272,7 +328,8 @@ export default function VaultPage() {
           </table>
           {actionsDisabled && (
             <div className="p-3 text-xs text-gray-500">
-              Note: actions are disabled until your sign-in is detected. If this persists, open <code>/signin</code>, sign in, then refresh this page.
+              Note: actions are disabled until your sign-in is detected. If this persists, open{" "}
+              <code>/signin</code>, sign in, then refresh this page.
             </div>
           )}
         </div>

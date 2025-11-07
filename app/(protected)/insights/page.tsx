@@ -1,88 +1,156 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
-type Ev = {
+/**
+ * Event row shape (extend as needed)
+ */
+type InsightEvent = {
   id: number;
-  doc_id: string | null;
-  event_type: "view" | "download" | "share_created";
-  actor: string | null;
-  meta_json: any;
+  event_type: "view" | "download" | "share_created" | "envelope";
   created_at: string;
+  doc_id: string | null;
+  meta_json: Record<string, unknown>;
 };
 
 export default function InsightsPage() {
   const sb = useMemo(() => supabaseBrowser(), []);
-  const [rows, setRows] = useState<Ev[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<InsightEvent[]>([]);
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  async function load() {
+  /**
+   * Load events (memoized)
+   */
+  const load = useCallback(async () => {
+    setLoading(true);
     setErr(null);
+
     const { data, error } = await sb
       .from("events")
-      .select("id, doc_id, event_type, actor, meta_json, created_at")
+      .select("id, event_type, created_at, doc_id, meta_json")
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(200);
 
     if (error) {
       setErr(error.message);
       setRows([]);
-    } else {
-      setRows((data || []) as Ev[]);
+      setLoading(false);
+      return;
     }
-    setLoading(false);
-  }
 
+    setRows(data || []);
+    setLoading(false);
+  }, [sb]);
+
+  /**
+   * Initial load + lightweight polling while testing.
+   * We schedule the first call via setTimeout to avoid
+   * "setState in effect" linter warnings.
+   */
   useEffect(() => {
-    load();
-    const t = setInterval(load, 3000); // light auto-refresh while testing
-    return () => clearInterval(t);
-  }, []); // sb is stable
+    let cancelled = false;
+
+    const kickOff = () => {
+      if (!cancelled) void load();
+    };
+
+    const t0 = setTimeout(kickOff, 0);
+    const interval = setInterval(kickOff, 3000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t0);
+      clearInterval(interval);
+    };
+  }, [load]);
+
+async function exportCsv() {
+  try {
+    const res = await fetch("/api/insights/export");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "insights.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    alert("Failed to export CSV");
+  }
+}
+
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">Insights</h1>
+    <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <h1 style={{ fontSize: "1.5rem", fontWeight: 600 }}>Insights</h1>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => void load()}
+            style={{ border: "1px solid #ccc", borderRadius: 8, padding: "8px 12px", cursor: "pointer" }}
+          >
+            Refresh
+          </button>
+          <button
+            onClick={exportCsv}
+            style={{ border: "1px solid #ccc", borderRadius: 8, padding: "8px 12px", cursor: "pointer" }}
+          >
+            Export CSV
+          </button>
+        </div>
+      </header>
 
-      {loading && <div className="text-sm text-gray-500">Loading events…</div>}
-      {err && <div className="text-sm text-red-600">Error: {err}</div>}
-
-      {!loading && !err && rows.length === 0 && (
-        <div className="rounded-xl border p-8 text-center text-gray-600">
-          <div className="text-lg font-medium mb-2">No events yet</div>
-          <div>Try opening a share link, or click View/Download in the Vault.</div>
+      {loading && <div style={{ marginTop: 12, opacity: 0.7 }}>Loading…</div>}
+      {err && (
+        <div style={{ marginTop: 12, color: "#B00020" }}>
+          Error: {err}
         </div>
       )}
 
-      {!loading && !err && rows.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr>
-                <th className="text-left px-4 py-3">When</th>
-                <th className="text-left px-4 py-3">Type</th>
-                <th className="text-left px-4 py-3">Doc</th>
-                <th className="text-left px-4 py-3">Actor</th>
-                <th className="text-left px-4 py-3">Meta</th>
+      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 16 }}>
+        <thead style={{ background: "#f9f9f9" }}>
+          <tr>
+            <th style={{ textAlign: "left", padding: 8 }}>When</th>
+            <th style={{ textAlign: "left", padding: 8 }}>Type</th>
+            <th style={{ textAlign: "left", padding: 8 }}>Doc</th>
+            <th style={{ textAlign: "left", padding: 8 }}>Meta</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={4} style={{ padding: 12, color: "#777" }}>No events yet</td>
+            </tr>
+          ) : (
+            rows.map((r) => (
+              <tr key={r.id} style={{ borderTop: "1px solid #eee" }}>
+                <td style={{ padding: 8 }}>{new Date(r.created_at).toLocaleString()}</td>
+                <td style={{ padding: 8 }}>{r.event_type}</td>
+                <td style={{ padding: 8, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
+                  {r.doc_id ?? "—"}
+                </td>
+                <td style={{ padding: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 420 }}>
+                  {safePreview(r.meta_json)}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {rows.map((e) => (
-                <tr key={e.id} className="border-t">
-                  <td className="px-4 py-3">{new Date(e.created_at).toLocaleString()}</td>
-                  <td className="px-4 py-3">{e.event_type}</td>
-                  <td className="px-4 py-3">{e.doc_id ?? "—"}</td>
-                  <td className="px-4 py-3">{e.actor ?? "public"}</td>
-                  <td className="px-4 py-3 font-mono whitespace-pre-wrap">
-                    {JSON.stringify(e.meta_json || {}, null, 0)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
+}
+
+/** Render a short, safe preview of meta_json */
+function safePreview(obj: Record<string, unknown> | null | undefined): string {
+  try {
+    if (!obj) return "—";
+    const s = JSON.stringify(obj);
+    return s.length > 120 ? s.slice(0, 117) + "…" : s;
+  } catch {
+    return "—";
+  }
 }

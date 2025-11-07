@@ -16,9 +16,9 @@ export async function GET() {
   if (error) return new NextResponse("Error: " + error.message, { status: 500 });
 
   const rows = data || [];
-  const header = ["id","created_at","event_type","doc_id","actor","meta_json"].join(",");
+  const header = ["id", "created_at", "event_type", "doc_id", "actor", "meta_json"].join(",");
   const body = rows
-    .map(r => {
+    .map((r) => {
       const meta = JSON.stringify(r.meta_json || {});
       const safeMeta = `"${meta.replace(/"/g, '""')}"`;
       return [r.id, r.created_at, r.event_type, r.doc_id ?? "", r.actor ?? "", safeMeta].join(",");
@@ -31,7 +31,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="insights.csv"`
-    }
+      "Content-Disposition": `attachment; filename="insights.csv"`,
+    },
   });
 }

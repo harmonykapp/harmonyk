@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
 type CalendarEvent = {
@@ -20,7 +20,19 @@ export default function CalendarPage() {
   const [end, setEnd] = useState("");
   const [loc, setLoc] = useState("");
 
-  // Load user + events
+  const load = useCallback(
+    async (userId: string) => {
+      const { data, error } = await sb
+        .from("calendar_events")
+        .select("id,title,starts_at,ends_at,location")
+        .eq("user_id", userId)
+        .order("starts_at", { ascending: true });
+      if (error) console.error(error);
+      setEvents(data || []);
+    },
+    [sb]
+  );
+
   useEffect(() => {
     (async () => {
       const { data } = await sb.auth.getUser();
@@ -28,24 +40,13 @@ export default function CalendarPage() {
       setUid(data.user.id);
       await load(data.user.id);
     })();
-  }, [sb]);
-
-  async function load(userId: string) {
-    const { data, error } = await sb
-      .from("calendar_events")
-      .select("id,title,starts_at,ends_at,location")
-      .eq("user_id", userId)
-      .order("starts_at", { ascending: true });
-    if (error) console.error(error);
-    setEvents(data || []);
-  }
+  }, [sb, load]);
 
   async function addEvent() {
     if (!uid || !title || !start) {
       alert("Please enter at least a title and start time");
       return;
     }
-
     const { error } = await sb.from("calendar_events").insert({
       user_id: uid,
       title,
@@ -53,12 +54,10 @@ export default function CalendarPage() {
       ends_at: end ? new Date(end).toISOString() : null,
       location: loc || null,
     });
-
     if (error) {
       alert("Failed to add event: " + error.message);
       return;
     }
-
     setTitle("");
     setStart("");
     setEnd("");
@@ -72,7 +71,6 @@ export default function CalendarPage() {
         Calendar
       </h1>
 
-      {/* Form */}
       <div style={{ marginBottom: 24 }}>
         <input
           placeholder="Event title..."
@@ -132,7 +130,6 @@ export default function CalendarPage() {
         </button>
       </div>
 
-      {/* Table */}
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead style={{ background: "#f9f9f9" }}>
           <tr>
