@@ -1,11 +1,16 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Monolyth (Week-1 local MVP)
 
-## Getting Started
+- Next.js 16 (App Router, Turbopack)
+- Supabase (Auth + DB)
+- OpenAI (AI triage)
+- Documenso stub (Signatures CSV export)
+- PostHog (client init; no-op if no key)
 
-First, run the development server:
-
+## Quick Start
 ```bash
+npm i
 npm run dev
+# http://localhost:3000
 # or
 yarn dev
 # or

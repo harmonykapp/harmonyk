@@ -1,22 +1,52 @@
 // lib/posthog-client.ts
 import posthog from "posthog-js";
 
+let inited = false;
+
+/**
+ * Initialize PostHog on the client only.
+ * - No-op if key missing
+ * - No-op on server
+ * - No-op if already initialized
+ */
 export function initPosthog() {
-  // Only run in the browser
+  if (typeof window === "undefined") return; // server render
+  if (inited) return;
+
+  // Only use NEXT_PUBLIC_ vars on the client
+  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  const host =
+    process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com";
+
+  if (!key) return; // safe no-op if not configured
+
+  posthog.init(key, {
+    api_host: host,
+    persistence: "localStorage",
+    // optional tweaks:
+    // capture_pageview: true,
+    // capture_pageleave: true,
+    // autocapture: true,
+  });
+
+  inited = true;
+}
+
+/** Convenience wrappers (safe no-ops on server) */
+export function phCapture(
+  event: string,
+  properties?: Record<string, unknown>
+) {
   if (typeof window === "undefined") return;
+  posthog.capture(event, properties);
+}
 
-  // Accept either NEXT_PUBLIC_POSTHOG_KEY or POSTHOG_KEY
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY || process.env.POSTHOG_KEY;
+export function phIdentify(distinctId: string, props?: Record<string, unknown>) {
+  if (typeof window === "undefined") return;
+  posthog.identify(distinctId, props);
+}
 
-  // If no key is set, do nothing (safe no-op)
-  if (!key) return;
-
-  // Initialize once
-  // @ts-expect-error — posthog doesn't type __loaded
-  if (!posthog.__loaded) {
-    posthog.init(key, {
-      api_host: "https://app.posthog.com",
-      persistence: "localStorage",
-    });
-  }
+export function phReset() {
+  if (typeof window === "undefined") return;
+  posthog.reset();
 }

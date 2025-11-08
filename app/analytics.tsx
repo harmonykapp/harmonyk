@@ -1,10 +1,12 @@
 "use client";
+
 import { useEffect } from "react";
 import { initPosthog } from "@/lib/posthog-client";
 
-export default function Analytics() {
+export default function AnalyticsInit() {
   useEffect(() => {
-    initPosthog();
+    initPosthog(); // safe no-op if no NEXT_PUBLIC_POSTHOG_KEY
   }, []);
-  return null;
+
+  return null; // nothing to render
 }
