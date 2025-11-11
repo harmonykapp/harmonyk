@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import TemplatePicker from "./TemplatePicker";
+import { useState } from "react";
 import BuilderForm from "./BuilderForm";
 import LivePreview from "./LivePreview";
+import TemplatePicker from "./TemplatePicker";
 
 type FormValues = {
   partyA_name: string
@@ -49,7 +49,7 @@ export default function BuilderClient() {
 
         {/* RIGHT: Live Markdown Preview */}
         <section className="col-span-12 lg:col-span-5">
-          <LivePreview markdown={docMarkdown} onPreviewEvent={() => {}} />
+          <LivePreview markdown={docMarkdown} onPreviewEventAction={() => { }} />
         </section>
       </div>
     </div>

@@ -1,41 +1,36 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
-type Options = { shareId: string; thresholds?: number[] };
+type Options = {
+  onTop?: () => void;
+  onBottom?: () => void;
+  onScroll?: (y: number) => void;
+  offset?: number; // px tolerance from top/bottom
+};
 
-async function postEvent(type: string, shareId: string, meta?: Record<string, any>) {
-  try {
-    await fetch("/api/events/log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, shareId, meta }),
-      keepalive: true,
-    });
-  } catch {}
-}
-
-export function useScrollEvents({ shareId, thresholds = [33, 66, 95] }: Options) {
-  const sent = useRef<Record<number, boolean>>({});
+/**
+ * Simple scroll observer for share pages.
+ * Fires onTop/onBottom with a small offset tolerance and always calls onScroll with scrollY.
+ */
+export default function useScrollEvents(opts: Options = {}) {
+  const { onTop, onBottom, onScroll, offset = 0 } = opts;
 
   useEffect(() => {
-    postEvent("share_open", shareId, { ts: Date.now() }).catch(() => {});
-
-    function onScroll() {
+    function handler() {
+      const y = window.scrollY || 0;
       const doc = document.documentElement;
-      const total = doc.scrollHeight - doc.clientHeight;
-      if (total <= 0) return;
-      const pct = Math.min(100, Math.round((doc.scrollTop / total) * 100));
-      for (const t of thresholds) {
-        if (!sent.current[t] && pct >= t) {
-          sent.current[t] = true;
-          postEvent("scroll", shareId, { pct: t }).catch(() => {});
-        }
-      }
+      const max = Math.max(0, doc.scrollHeight - window.innerHeight);
+
+      if (onScroll) onScroll(y);
+      if (onTop && y <= offset) onTop();
+      if (onBottom && y >= Math.max(0, max - offset)) onBottom();
     }
 
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [shareId, thresholds]);
+    window.addEventListener("scroll", handler, { passive: true });
+    // fire once on mount
+    handler();
+
+    return () => window.removeEventListener("scroll", handler);
+  }, [onTop, onBottom, onScroll, offset]);
 }

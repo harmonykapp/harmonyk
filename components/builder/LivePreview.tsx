@@ -1,17 +1,27 @@
 "use client";
-import { useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
-export default function LivePreview({
-  markdown, onPreviewEvent,
-}: { markdown: string; onPreviewEvent?: (meta?: any) => void }) {
-  // ... your existing LivePreview code ...
+import { useEffect } from "react";
+
+type Props = {
+  markdown: string;
+  onPreviewEventAction?: (evt: { type: "open" | "scroll"; pct?: number }) => void;
+};
+
+export default function LivePreview({ markdown, onPreviewEventAction }: Props) {
+  useEffect(() => {
+    onPreviewEventAction?.({ type: "open" });
+    const onScroll = () => {
+      const el = document.scrollingElement || document.documentElement;
+      const pct = el ? Math.round((el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100) : 0;
+      onPreviewEventAction?.({ type: "scroll", pct });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [onPreviewEventAction]);
+
   return (
-    <div className="prose max-w-none border rounded p-3 bg-white">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-        {markdown || "_Select a template and start filling the form to see the live preview._"}
-      </ReactMarkdown>
+    <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 16, background: "#fff" }}>
+      <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{markdown || "—"}</pre>
     </div>
   );
 }

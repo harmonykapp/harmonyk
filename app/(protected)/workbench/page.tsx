@@ -1,9 +1,7 @@
 "use client";
 
-import DriveRecent from "@/components/workbench/DriveRecent"; // ← NEW
+import DriveRecent from "@/components/workbench/DriveRecent";
 import { useCallback, useEffect, useState, useTransition } from "react";
-
-import { getGoogleAccessToken } from "@/lib/google-token";
 import { analyzeRowAction } from "./actions";
 
 type Row = {
@@ -33,6 +31,22 @@ type Analysis =
   }
   | { ok: false; reason?: string; raw?: unknown };
 
+// Safe UUID helper
+function uuid() {
+  return globalThis.crypto?.randomUUID?.()
+    ?? Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+}
+
+function normalizeToAnalysis(raw: unknown): Analysis {
+  if (raw && typeof raw === "object") {
+    const r = raw as any;
+    if ("ok" in r) return r as Analysis;
+    if (r.error) return { ok: false, reason: String(r.error), raw };
+    return { ok: true, triage: r.triage, analysis: r.analysis, raw };
+  }
+  return { ok: false, reason: "Invalid AI result", raw };
+}
+
 export default function WorkbenchPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,57 +54,48 @@ export default function WorkbenchPage() {
   const [result, setResult] = useState<Analysis | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Load a small unified inbox (mock, Week-1/2 demo)
   const load = useCallback(async () => {
     setLoading(true);
-
-    // Visual signal only
     let driveConnected = false;
     try {
-      const token = await getGoogleAccessToken("drive");
-      driveConnected = Boolean(token?.access_token);
+      const s = await fetch("/api/integrations/status", { cache: "no-store" }).then((r) => r.json());
+      driveConnected = (s?.googleDrive ?? "unknown") === "connected";
     } catch {
       driveConnected = false;
     }
 
     const now = new Date();
     const fmt = (d: Date) =>
-      new Intl.DateTimeFormat(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(d);
+      new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(d);
 
     const sample: Row[] = [
       {
-        id: crypto.randomUUID(),
+        id: uuid(),
         title: "NDA — ACME & Monolyth",
         source: "Drive",
         kind: "application/pdf",
         owner: driveConnected ? "you@demo" : "—",
         modified: fmt(now),
-        preview:
-          "Mutual NDA between parties outlining confidentiality and use of information…",
+        preview: "Mutual NDA between parties outlining confidentiality and use of information…"
       },
       {
-        id: crypto.randomUUID(),
+        id: uuid(),
         title: "Signed Proposal — Q4",
         source: "Gmail",
         kind: "message/rfc822",
         owner: "inbox",
         modified: fmt(new Date(now.getTime() - 3600_000)),
-        preview:
-          "Subject: Re: Proposal — Looks good, proceed to signature this week…",
+        preview: "Subject: Re: Proposal — Looks good, proceed to signature this week…"
       },
       {
-        id: crypto.randomUUID(),
+        id: uuid(),
         title: "MSA — VendorX (draft v3)",
         source: "Drive",
         kind: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         owner: driveConnected ? "you@demo" : "—",
         modified: fmt(new Date(now.getTime() - 86400_000)),
-        preview:
-          "Master Services Agreement draft covering scope, IP, payment terms…",
-      },
+        preview: "Master Services Agreement draft covering scope, IP, payment terms…"
+      }
     ];
 
     setRows(sample);
@@ -112,15 +117,15 @@ export default function WorkbenchPage() {
     setSel(r);
     setResult(null);
     startTransition(async () => {
-      const res = await analyzeRowAction({
+      const raw = await analyzeRowAction({
         title: r.title,
         source: r.source,
         kind: r.kind,
         owner: r.owner,
         modified: r.modified,
-        preview: r.preview,
+        preview: r.preview
       });
-      setResult(res as Analysis);
+      setResult(normalizeToAnalysis(raw));
     });
   }
 
@@ -133,7 +138,7 @@ export default function WorkbenchPage() {
         </div>
       </header>
 
-      {/* Drive — Recent (RO) panel */}
+      {/* Drive - Recent (RO) panel */}
       <section style={{ marginBottom: 20 }}>
         <DriveRecent />
       </section>
@@ -169,7 +174,7 @@ export default function WorkbenchPage() {
                       maxWidth: 560,
                       whiteSpace: "nowrap",
                       overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      textOverflow: "ellipsis"
                     }}
                     title={r.preview}
                   >
@@ -188,7 +193,7 @@ export default function WorkbenchPage() {
                       border: "1px solid #ccc",
                       borderRadius: 8,
                       padding: "6px 12px",
-                      cursor: "pointer",
+                      cursor: "pointer"
                     }}
                   >
                     {isPending && sel?.id === r.id ? "Analyzing…" : "Analyze"}
@@ -208,7 +213,7 @@ export default function WorkbenchPage() {
             padding: 16,
             border: "1px solid #e5e5e5",
             borderRadius: 12,
-            background: "#fafafa",
+            background: "#fafafa"
           }}
         >
           <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
@@ -226,7 +231,7 @@ export default function WorkbenchPage() {
                   border: "1px solid #ccc",
                   borderRadius: 8,
                   padding: "6px 10px",
-                  cursor: "pointer",
+                  cursor: "pointer"
                 }}
               >
                 Close
@@ -301,7 +306,7 @@ function Badge({ children }: { children: React.ReactNode }) {
         borderRadius: 999,
         padding: "2px 10px",
         fontSize: 12,
-        background: "#fff",
+        background: "#fff"
       }}
     >
       {children}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useScrollEvents } from "@/components/share/useScrollEvents";
+import useScrollEvents from "@/components/share/useScrollEvents";
+
 
 type Props =
   | { shareId: string; title: string; html: string; markdown?: never }

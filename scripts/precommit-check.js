@@ -2,6 +2,8 @@
  * scripts/precommit-check.js
  * Cross-platform pre-commit checker for forbidden terms in STAGED diff.
  */
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 
 const { execSync } = require("node:child_process");
 
