@@ -41,8 +41,8 @@ export default function BuilderClient() {
         <section className="col-span-12 lg:col-span-4">
           <BuilderForm
             values={formValues}
-            onChange={setFormValues}
-            onGenerate={(md: string) => setDocMarkdown(md)}
+            onChangeAction={setFormValues}
+            onGenerateAction={(md: string) => setDocMarkdown(md)}
             template={template}
           />
         </section>
