@@ -1,0 +1,9 @@
+# Monolyth repo rules
+- Do not create duplicate routes.
+- API routes live under app/api/**.
+- Public viewer is app/share/[id] (singular).
+- Shares API is app/api/shares/* (plural).
+- Events API is app/api/events/* (singular).
+- DB columns: versions.doc_id; events.event_type (NOT NULL).
+- Next.js 16: await params (params is a Promise).
+- Prefer full-file replacements; keep styling minimal and consistent.
