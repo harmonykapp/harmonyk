@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+} from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
 /**
@@ -12,6 +18,20 @@ type InsightEvent = {
   created_at: string;
   doc_id: string | null;
   meta_json: Record<string, unknown>;
+};
+
+const buttonStyle: CSSProperties = {
+  border: "1px solid #ccc",
+  borderRadius: 8,
+  padding: "8px 12px",
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "0.9rem",
+  fontWeight: 500,
+  background: "#fff",
+  color: "#111",
 };
 
 export default function InsightsPage() {
@@ -66,40 +86,27 @@ export default function InsightsPage() {
     };
   }, [load]);
 
-async function exportCsv() {
-  try {
-    const res = await fetch("/api/insights/export");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "insights.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch {
-    alert("Failed to export CSV");
-  }
-}
-
-
   return (
     <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <header
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+      >
         <h1 style={{ fontSize: "1.5rem", fontWeight: 600 }}>Insights</h1>
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={() => void load()}
-            style={{ border: "1px solid #ccc", borderRadius: 8, padding: "8px 12px", cursor: "pointer" }}
+            style={buttonStyle}
+            type="button"
           >
             Refresh
           </button>
-          <button
-            onClick={exportCsv}
-            style={{ border: "1px solid #ccc", borderRadius: 8, padding: "8px 12px", cursor: "pointer" }}
+          <a
+            href="/api/dev/insights/export"
+            style={buttonStyle}
+            download
           >
-            Export CSV
-          </button>
+            Download CSV
+          </a>
         </div>
       </header>
 
@@ -122,17 +129,32 @@ async function exportCsv() {
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={4} style={{ padding: 12, color: "#777" }}>No events yet</td>
+              <td colSpan={4} style={{ padding: 12, color: "#777" }}>
+                No events yet
+              </td>
             </tr>
           ) : (
             rows.map((r) => (
               <tr key={r.id} style={{ borderTop: "1px solid #eee" }}>
                 <td style={{ padding: 8 }}>{new Date(r.created_at).toLocaleString()}</td>
                 <td style={{ padding: 8 }}>{r.event_type}</td>
-                <td style={{ padding: 8, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
+                <td
+                  style={{
+                    padding: 8,
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                  }}
+                >
                   {r.doc_id ?? "—"}
                 </td>
-                <td style={{ padding: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 420 }}>
+                <td
+                  style={{
+                    padding: 8,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    maxWidth: 420,
+                  }}
+                >
                   {safePreview(r.meta_json)}
                 </td>
               </tr>

@@ -1,0 +1,14 @@
+# Monolyth — Cursor Rules (public-safe)
+
+- Stack: Next.js 16 (App Router), TypeScript, React 19, ESLint 9, Prettier 3.
+- Do not add dependencies or change eslint/prettier config without explicit instruction.
+- Lint scope is limited to: app, components, lib, data.
+- Types: avoid `any`. Shared types live in lib/types.ts.
+- Pages are server-first; use "use client" only when necessary.
+- Share page renders HTML with MD fallback; keep current structure.
+- All changes must pass:
+  - npm run build
+  - npm run lint
+- Commit style: feat(scope): ..., fix(scope): ..., chore(...): ...
+- Respect /docs/ACCEPTANCE_CHECKLIST.md for “done”.
+

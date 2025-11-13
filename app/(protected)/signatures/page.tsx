@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { phCapture } from "@/lib/posthog-client";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import Link from "next/link";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { sendDocumensoEnvelope } from "./actions";
 
 type Doc = { id: string; title: string; created_at: string };
+type SendSuccess = { envelopeId: string; shareUrl: string };
 
 export default function SignaturesPage() {
   const sb = useMemo(() => supabaseBrowser(), []);
@@ -12,7 +16,9 @@ export default function SignaturesPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [docId, setDocId] = useState<string>("");
   const [email, setEmail] = useState<string>("");
-  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<SendSuccess | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     (async () => {
@@ -23,36 +29,42 @@ export default function SignaturesPage() {
       }
       setUserId(data.user.id);
 
-      const { data: d } = await sb
+      const { data: documents } = await sb
         .from("documents")
         .select("id, title, created_at")
         .eq("owner_id", data.user.id)
         .order("created_at", { ascending: false });
-      setDocs((d || []) as Doc[]);
+      setDocs((documents || []) as Doc[]);
       setLoading(false);
     })();
   }, [sb]);
 
-  async function onSend() {
-    setResult(null);
+  const onSend = () => {
+    setError(null);
+    setSuccess(null);
+
     if (!userId) {
-      alert("Please sign in again.");
+      setError("Please sign in again.");
       return;
     }
+
     if (!docId || !email) {
-      alert("Pick a document and enter an email");
+      setError("Select a document and enter a signer email.");
       return;
     }
 
-    const { error } = await sb.from("events").insert({
-      doc_id: docId,
-      event_type: "share_created",
-      actor: userId,
-      meta_json: { envelope: true, provider: "documenso", to: email },
-    });
+    // Bridge client → server action so the UI stays responsive.
+    startTransition(async () => {
+      const result = await sendDocumensoEnvelope({ docId, email, userId });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
 
-    setResult(error ? "Failed: " + error.message : "Envelope created (stub). Check Insights.");
-  }
+      setSuccess({ envelopeId: result.envelopeId, shareUrl: result.shareUrl });
+      phCapture("sign_send", { docId, provider: "documenso" });
+    });
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -65,12 +77,13 @@ export default function SignaturesPage() {
             <select
               className="w-full border rounded-lg px-3 py-2"
               value={docId}
-              onChange={(e) => setDocId(e.target.value)}
+              onChange={(event) => setDocId(event.target.value)}
+              disabled={isPending}
             >
               <option value="">Select a document…</option>
-              {docs.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.title}
+              {docs.map((document) => (
+                <option key={document.id} value={document.id}>
+                  {document.title}
                 </option>
               ))}
             </select>
@@ -83,18 +96,32 @@ export default function SignaturesPage() {
               className="w-full border rounded-lg px-3 py-2"
               placeholder="person@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={isPending}
             />
           </label>
 
-          <button className="px-4 py-2 rounded-xl border hover:bg-gray-50" onClick={onSend}>
-            Send for signature (stub)
+          <button
+            className="px-4 py-2 rounded-xl border hover:bg-gray-50 disabled:opacity-60"
+            onClick={onSend}
+            disabled={isPending}
+          >
+            {isPending ? "Sending…" : "Send for signature"}
           </button>
 
-          {result && <div className="text-sm text-gray-700">{result}</div>}
+          {error ? <div className="text-sm text-red-600">{error}</div> : null}
+
+          {success ? (
+            <div className="space-y-2 rounded-lg border px-3 py-2 text-sm">
+              <div>Envelope {success.envelopeId} created.</div>
+              <Link href={success.shareUrl} className="text-blue-600 underline" target="_blank" rel="noreferrer">
+                Open signer link
+              </Link>
+            </div>
+          ) : null}
 
           <div className="text-xs text-gray-500">
-            Week-1 stub only. Week-2: real Documenso envelopes + webhooks.
+            Documenso envelopes send immediately; status updates land in Insights.
           </div>
         </div>
       )}

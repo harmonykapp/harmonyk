@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 type Props = {
@@ -9,7 +10,12 @@ type Props = {
   userId?: string; // optional (if you want to pass the authed user id)
 };
 
+type SignStartResponse = {
+  url: string;
+};
+
 export default function VaultRowActions({ docId, url, userId }: Props) {
+  const router = useRouter();
   const [pending, start] = useTransition();
 
   async function log(
@@ -63,6 +69,29 @@ export default function VaultRowActions({ docId, url, userId }: Props) {
     });
   }
 
+  function onSign() {
+    start(async () => {
+      const res = await fetch("/api/dev/sign/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ docId }),
+      });
+
+      if (!res.ok) {
+        alert(`Failed to launch signing flow (HTTP ${res.status})`);
+        return;
+      }
+
+      const data = (await res.json()) as Partial<SignStartResponse>;
+      if (!data?.url) {
+        alert("Signing flow unavailable (missing redirect url)");
+        return;
+      }
+
+      router.push(data.url);
+    });
+  }
+
   return (
     <div style={{ display: "flex", gap: 8 }}>
       <button onClick={onView} disabled={!url || pending}>
@@ -73,6 +102,9 @@ export default function VaultRowActions({ docId, url, userId }: Props) {
       </button>
       <button onClick={onShare} disabled={pending}>
         Create link
+      </button>
+      <button onClick={onSign} disabled={pending}>
+        Sign
       </button>
     </div>
   );

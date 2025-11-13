@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "clean": "rimraf .next && rimraf build",
     "start": "next start",
+    "preview": "next start -p 3000",
     "lint": "eslint \"app/**/*.{ts,tsx}\" \"components/**/*.{ts,tsx}\" \"lib/**/*.{ts,tsx}\" \"data/**/*.{ts,tsx}\" --max-warnings=0",
     "lint:fix": "eslint \"app/**/*.{ts,tsx}\" \"components/**/*.{ts,tsx}\" \"lib/**/*.{ts,tsx}\" \"data/**/*.{ts,tsx}\" --fix",
     "format": "prettier --write .",
@@ -36,6 +38,7 @@
     "eslint-plugin-react": "^7.37.5",
     "husky": "^9.1.7",
     "prettier": "^3.6.2",
+    "rimraf": "^5.0.10",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.46.4"
   }

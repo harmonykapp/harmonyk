@@ -1,47 +1,86 @@
 // app/share/[id]/page.tsx
-import ShareClient from "./ShareClient";
 
-export const dynamic = "force-dynamic"; // always fetch fresh
+type ShareData =
+  | { title: string; html: string; markdown?: never }
+  | { title: string; html?: never; markdown: string };
 
-type Params = Promise<{ id: string }>;
+async function fetchShare(id: string): Promise<ShareData | null> {
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() && process.env.NEXT_PUBLIC_APP_URL !== ""
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : "http://localhost:3000";
+  const url = new URL("/api/dev/shares/render", base);
+  url.searchParams.set("id", id);
 
-async function fetchShare(shareId: string): Promise<{ title: string; html?: string; markdown?: string }> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const url = `${base}/api/shares/render`;
+  const res = await fetch(url.toString(), { method: "GET", cache: "no-store" });
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ shareId }),
-    cache: "no-store",
-  });
+  if (res.status === 404 || res.status === 405) {
+    return null;
+  }
 
   if (!res.ok) {
     throw new Error(`Render failed (${res.status})`);
   }
 
-  const data = await res.json().catch(() => ({} as any));
-
-  const title = data?.title ?? "Shared Document";
-  const html = typeof data?.html === "string" ? data.html : undefined;
-  const markdown = typeof data?.markdown === "string" ? data.markdown : undefined;
-
-  if (!html && !markdown) {
-    throw new Error("No content returned from /api/shares/render");
-  }
-
-  return { title, html, markdown };
+  return (await res.json()) as ShareData;
 }
 
-export default async function Page({ params }: { params: Params }) {
-  // ⬇️ Next.js 16: params is a Promise; unwrap it
-  const { id: shareId } = await params;
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  // Next 16: unwrap the promises
+  const p = await params;
+  const sp = await searchParams;
 
-  const { title, html, markdown } = await fetchShare(shareId);
+  const id =
+    p?.id ??
+    (typeof sp?.id === "string" ? sp.id : Array.isArray(sp?.id) ? sp.id[0] : undefined);
 
-  // Pass either html OR markdown to the client component
-  if (html) {
-    return <ShareClient shareId={shareId} title={title} html={html} />;
+  if (!id) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-semibold">Invalid share link</h1>
+        <p className="mt-2 text-sm text-neutral-500">Missing share id.</p>
+      </div>
+    );
   }
-  return <ShareClient shareId={shareId} title={title} markdown={markdown!} />;
+
+  const data = await fetchShare(id);
+
+  if (!data) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-semibold">Preview unavailable</h1>
+        <p className="mt-2 text-sm text-neutral-500">
+          This preview endpoint is dev-only. Generate a share from Builder first.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen w-full">
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <h1 className="mb-4 text-2xl font-semibold">{data.title}</h1>
+
+        {"html" in data && typeof data.html === "string" ? (
+          // eslint-disable-next-line react/no-danger
+          <article
+            className="prose prose-neutral dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: data.html }}
+          />
+        ) : null}
+
+        {"markdown" in data && typeof data.markdown === "string" ? (
+          <article className="prose prose-neutral dark:prose-invert max-w-none">
+            <pre className="whitespace-pre-wrap break-words">{data.markdown}</pre>
+          </article>
+        ) : null}
+      </div>
+    </div>
+  );
 }

@@ -1,24 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(_req: NextRequest) {
-    const hasToken =
-        !!process.env.GOOGLE_DRIVE_ACCESS_TOKEN ||
-        !!process.env.GOOGLE_DRIVE_REFRESH_TOKEN ||
-        !!process.env.GOOGLE_CREDENTIALS_JSON;
-
-    if (!hasToken) {
-        return NextResponse.json({
-            files: [],
-            hint: "No Drive token. Connect in /integrations to enable Recent (RO).",
-        });
-    }
-
-    // TODO: replace with real Google Drive files.list
-    return NextResponse.json({
-        files: [
-            { id: "mock-1", name: "Proposal_v3.docx", modifiedTime: "2025-11-10T12:41:00Z" },
-            { id: "mock-2", name: "Invoice_2025-11.pdf", modifiedTime: "2025-11-09T09:12:00Z" },
-        ],
-    });
+export async function GET() {
+    // Stubbed “recent drive files” so Workbench looks alive.
+    const recent = [
+        { id: "a1", name: "NDA (Mutual).docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", updated: "2025-11-05T12:20:00Z" },
+        { id: "b2", name: "Founders Agreement.docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", updated: "2025-11-05T10:03:00Z" },
+        { id: "c3", name: "Pitch Deck v3.pptx", mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation", updated: "2025-11-02T08:44:00Z" },
+    ];
+    return NextResponse.json({ items: recent });
 }
 

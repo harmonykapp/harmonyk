@@ -1,0 +1,12 @@
+# Monolyth — Cursor Rules (Internal)
+
+- Treat `docs/NORTH_STAR.md` as the SSOT. Obey GA scope & non-goals.
+- Do not introduce pricing or any blockchain/Web3/tokenomics.
+- Before changing code, propose a short plan with impacted files.
+- Keep diffs minimal and type-safe. Prefer Server Actions where possible.
+- After each change I (human) will run: `npm run lint` and `npm run build`.
+- If mock data is needed, put tiny fixtures in `/data`.
+- Never commit secrets. Client code must not reference server keys.
+---
+alwaysApply: true
+---

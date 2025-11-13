@@ -9,8 +9,7 @@ type Props =
 export default function ShareClient(props: Props) {
   const { shareId, title } = props;
 
-  // Use the string form to dodge any stale Options types
-  useScrollEvents(shareId);
+  useScrollEvents({ shareId });
 
   return (
     <div className="min-h-screen w-full">

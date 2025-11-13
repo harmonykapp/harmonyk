@@ -1,24 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { TEMPLATES } from "@/data/templates";
+import { NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
-  const { q, docType, jurisdiction, limit = 20 } = await req.json().catch(() => ({}))
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const q = (searchParams.get("q") || "").toLowerCase();
+  const country = searchParams.get("country") || "USA";
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY! // service role: server-only route
-  )
+  const out = TEMPLATES.filter((t: any) => {
+    const inCountry = (t.country || t.region || "USA") === country;
+    if (!q) return inCountry;
+    const hay =
+      `${t.name ?? t.title ?? ""} ${(t.tags ?? []).join(" ")} ${(t.keywords ?? []).join(" ")}`.toLowerCase();
+    return inCountry && hay.includes(q);
+  }).map((t: any) => ({
+    id: String(t.id ?? t.slug ?? t.name ?? Math.random().toString(36).slice(2)),
+    name: String(t.name ?? t.title ?? "Untitled"),
+    tags: (t.tags ?? t.keywords ?? []).map(String),
+    country: t.country ?? t.region ?? "USA",
+  }));
 
-  let query = supabase.from('templates').select('*').limit(limit)
-
-  if (docType) query = query.eq('doc_type', docType)
-  if (jurisdiction) query = query.eq('jurisdiction', jurisdiction)
-  if (q && q.trim()) {
-    // cheap multi-field search
-    query = query.or(`title.ilike.%${q}%,tags.cs.{${q}},body_md.ilike.%${q}%`)
-  }
-
-  const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ results: data ?? [] })
+  return NextResponse.json({ items: out });
 }

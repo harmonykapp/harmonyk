@@ -39,3 +39,16 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Dev Tips
+
+- `npm run dev` – local development server (default on port 3000).
+- `npm run build` – production build.
+- `npm run preview` – run the built app locally via `next start -p 3000`.
+- `npm run clean` – remove `.next` and `build` artifacts.
+- Dev-only API routes live under `/api/dev/...` (e.g. share renders, sign stub, insights export).
+- Day 7 smoke path (should stay green):
+  - Builder → Generate preview.
+  - Vault → Sign (stub flow).
+  - Insights → Download CSV.
+  - Share → Open public link.
