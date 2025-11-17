@@ -6,9 +6,13 @@
 - Documenso stub (Signatures CSV export)
 - PostHog (client init; no-op if no key)
 
+> Current milestone: **Week 3 functional draft** — run through `docs/SMOKE_WEEK3.md`
+> whenever validating a branch before merge.
+
 ## Quick Start
 ```bash
 npm i
+cp env.example .env.local   # edit with your Supabase / API keys
 npm run dev
 # http://localhost:3000
 # or
@@ -20,6 +24,12 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### Environment variables
+1. Copy `env.example` to `.env.local`.
+2. If you are using the Supabase CLI, run `supabase start` and keep the default URL/keys from the example file.
+3. If you are pointing at a hosted Supabase project, replace the URL/anon/service keys with the values from your project settings.
+4. Restart `npm run dev` whenever you change environment variables.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
@@ -52,3 +62,11 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
   - Vault → Sign (stub flow).
   - Insights → Download CSV.
   - Share → Open public link.
+
+### Week 3 status
+
+- Status: Functional draft (run `docs/SMOKE_WEEK3.md` before merging).
+- Builder: AI generate, manual fallback, save to Vault versions, load via docId.
+- Vault: Supabase-backed docs table with version counts + open-in-builder.
+- Share: Render endpoint + passcode prompts, scroll telemetry.
+- Global light/dark theme, header sidebar logo, PostHog events for generate/save/share.

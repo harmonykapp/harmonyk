@@ -45,3 +45,5 @@ next-env.d.ts
 .env.*.local
 
 public/generated/*.md
+
+gcs-key.json

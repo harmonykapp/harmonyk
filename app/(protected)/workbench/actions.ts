@@ -1,6 +1,6 @@
 "use server";
 
-import { aiAnalyze } from "@/lib/ai";
+import { aiAnalyze } from "@/lib/ai-analyze";
 
 export async function analyzeRowAction(row: {
   title: string;

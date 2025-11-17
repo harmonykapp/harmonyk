@@ -2,66 +2,17 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <div
-      role="presentation"
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "3rem 1.5rem",
-        fontFamily: "system-ui, sans-serif",
-        background: "#f8fafc",
-      }}
-    >
-      <div
-        role="alert"
-        style={{
-          width: "100%",
-          maxWidth: 420,
-          background: "#ffffff",
-          borderRadius: 16,
-          padding: "2rem",
-          boxShadow: "0 20px 40px rgba(15, 23, 42, 0.12)",
-          border: "1px solid rgba(148, 163, 184, 0.18)",
-          textAlign: "center",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "1.6rem",
-            fontWeight: 600,
-            margin: 0,
-            color: "#0f172a",
-          }}
-        >
-          Page not found
-        </h1>
-        <p
-          style={{
-            marginTop: "0.75rem",
-            color: "#475569",
-            lineHeight: 1.6,
-          }}
-        >
-          We couldn’t find that page. It may have been moved or deleted.
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 px-4">
+      <div className="max-w-md rounded-xl border border-slate-200 bg-white px-6 py-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h1 className="mb-2 text-2xl font-semibold">Page not found</h1>
+        <p className="mb-6 text-sm text-slate-600 dark:text-slate-400">
+          This page doesn&apos;t exist or may have moved. You can return to your documents.
         </p>
         <Link
-          href="/"
-          style={{
-            display: "inline-flex",
-            justifyContent: "center",
-            alignItems: "center",
-            marginTop: "1.5rem",
-            padding: "0.8rem 1.25rem",
-            borderRadius: 12,
-            fontWeight: 600,
-            color: "#111827",
-            textDecoration: "none",
-            background: "#e2e8f0",
-          }}
+          href="/vault"
+          className="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-white shadow dark:bg-slate-100 dark:text-slate-900"
         >
-          Back to home
+          Back to Vault
         </Link>
       </div>
     </div>

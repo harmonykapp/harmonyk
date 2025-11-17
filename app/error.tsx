@@ -1,77 +1,43 @@
 "use client";
 
-export default function Error({
+import Link from "next/link";
+
+export default function GlobalError({
   error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const message = error?.message?.trim() ? error.message : "Please try again.";
+  console.error(error);
 
   return (
-    <div
-      role="presentation"
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "3rem 1.5rem",
-        fontFamily: "system-ui, sans-serif",
-        background: "#f8fafc",
-      }}
-    >
-      <div
-        role="alert"
-        style={{
-          width: "100%",
-          maxWidth: 420,
-          background: "#ffffff",
-          borderRadius: 16,
-          padding: "2rem",
-          boxShadow: "0 20px 40px rgba(15, 23, 42, 0.12)",
-          border: "1px solid rgba(148, 163, 184, 0.18)",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "1.6rem",
-            fontWeight: 600,
-            margin: 0,
-            color: "#0f172a",
-          }}
-        >
-          Something went wrong
-        </h1>
-        <p
-          style={{
-            marginTop: "0.75rem",
-            color: "#475569",
-            lineHeight: 1.6,
-          }}
-        >
-          {message}
-        </p>
-        <button
-          type="button"
-          onClick={() => reset()}
-          style={{
-            marginTop: "1.5rem",
-            width: "100%",
-            padding: "0.85rem 1.25rem",
-            borderRadius: 12,
-            border: "none",
-            background: "#111827",
-            color: "#ffffff",
-            fontWeight: 600,
-            fontSize: "1rem",
-            cursor: "pointer",
-          }}
-        >
-          Try again
-        </button>
-      </div>
-    </div>
+    <html>
+      <body className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <div className="flex min-h-screen items-center justify-center px-4">
+          <div className="max-w-md rounded-xl border border-slate-200 bg-white px-6 py-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h1 className="mb-2 text-2xl font-semibold">Something went wrong</h1>
+            <p className="mb-6 text-sm text-slate-600 dark:text-slate-400">
+              An unexpected error occurred. You can try again or go back to the Vault.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={reset}
+                className="rounded-md bg-slate-900 px-4 py-2 text-white shadow dark:bg-slate-100 dark:text-slate-900"
+              >
+                Try again
+              </button>
+              <Link
+                href="/vault"
+                className="rounded-md border border-slate-300 px-4 py-2 text-slate-800 dark:border-slate-700 dark:text-slate-100"
+              >
+                Back to Vault
+              </Link>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
   );
 }

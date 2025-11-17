@@ -1,20 +1,75 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import BuilderClient from "@/components/builder/BuilderClient";
-import { TEMPLATES } from "@/data/templates";
+import { TEMPLATES, type TemplateDef } from "@/data/templates";
+import { supabaseServer } from "@/lib/supabase-server";
 
-// Adapt whatever your TEMPLATES shape is into the minimal fields BuilderClient needs.
-const normalize = (t: any) => ({
-  id: String(t.id ?? t.slug ?? t.name ?? t.title ?? Math.random().toString(36).slice(2)),
-  name: String(t.name ?? t.title ?? "Untitled"),
-  tags: (t.tags ?? t.keywords ?? t.labels ?? []).map(String),
-  country: t.country ?? t.region ?? t.locale ?? "USA",
-});
+type BuilderTemplate = TemplateDef;
 
-export default function Page() {
-  const templates = Array.isArray(TEMPLATES) ? TEMPLATES.map(normalize) : [];
-  return (
-    <div className="p-6">
-      <h1 className="mb-4 text-3xl font-semibold">Builder</h1>
-      <BuilderClient templates={templates} />
-    </div>
-  );
+type InitialDoc = {
+  id: string;
+  title: string;
+  templateId?: string;
+  content: string;
+  versionNumber?: number;
+};
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const docId = Array.isArray(sp?.docId) ? sp?.docId[0] : (sp?.docId as string | undefined);
+  const templates = TEMPLATES as BuilderTemplate[];
+  const initialDoc = docId ? await loadInitialDoc(docId) : null;
+
+  return <BuilderClient templates={templates} initialDoc={initialDoc} />;
+}
+
+async function loadInitialDoc(docId: string): Promise<InitialDoc | null> {
+  const supabase = supabaseServer();
+  const { data: doc, error: docError } = await supabase
+    .from("documents")
+    .select("id, title, template_id")
+    .eq("id", docId)
+    .maybeSingle();
+
+  if (docError || !doc) {
+    return null;
+  }
+
+  const { data: version, error: versionError } = await supabase
+    .from("versions")
+    .select("number, content_md, content_url")
+    .eq("doc_id", docId)
+    .order("number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (versionError || !version) {
+    return null;
+  }
+
+  let content = version.content_md ?? "";
+  if (!content && version.content_url) {
+    const filePath = path.join(
+      process.cwd(),
+      "public",
+      version.content_url.replace(/^\/+/, "")
+    );
+    try {
+      content = await fs.readFile(filePath, "utf8");
+    } catch {
+      content = "";
+    }
+  }
+
+  return {
+    id: doc.id as string,
+    title: doc.title as string,
+    templateId: (doc as { template_id?: string | null }).template_id ?? undefined,
+    content,
+    versionNumber: version.number ?? 1,
+  };
 }

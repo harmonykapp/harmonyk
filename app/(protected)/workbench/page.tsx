@@ -3,6 +3,7 @@
 import DriveRecent from "@/components/workbench/DriveRecent";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { analyzeRowAction } from "./actions";
+import { phCapture } from "@/lib/posthog-client";
 
 type Row = {
   id: string;
@@ -16,20 +17,26 @@ type Row = {
 
 type Analysis =
   | {
-    ok: true;
-    triage?: {
-      priority?: "low" | "medium" | "high";
-      label?: string;
-      suggestedAction?: string;
-    };
-    analysis?: {
-      summary?: string;
-      entities?: string[];
-      dates?: string[];
-    };
-    raw?: unknown;
-  }
+      ok: true;
+      triage?: {
+        priority?: "low" | "medium" | "high";
+        label?: string;
+        suggestedAction?: string;
+      };
+      analysis?: {
+        summary?: string;
+        entities?: string[];
+        dates?: string[];
+      };
+      raw?: unknown;
+    }
   | { ok: false; reason?: string; raw?: unknown };
+
+type IntegrationStatusResponse = {
+  googleDrive?: "connected" | "needs_reauth" | "error" | "unknown";
+};
+
+type AnalysisSuccess = Extract<Analysis, { ok: true }>;
 
 // Safe UUID helper
 function uuid() {
@@ -37,12 +44,29 @@ function uuid() {
     ?? Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
 }
 
+function isAnalysis(input: unknown): input is Analysis {
+  return Boolean(
+    input &&
+      typeof input === "object" &&
+      "ok" in input &&
+      typeof (input as { ok?: unknown }).ok === "boolean"
+  );
+}
+
 function normalizeToAnalysis(raw: unknown): Analysis {
+  if (isAnalysis(raw)) {
+    return raw;
+  }
   if (raw && typeof raw === "object") {
-    const r = raw as any;
-    if ("ok" in r) return r as Analysis;
-    if (r.error) return { ok: false, reason: String(r.error), raw };
-    return { ok: true, triage: r.triage, analysis: r.analysis, raw };
+    const candidate = raw as {
+      error?: unknown;
+      triage?: AnalysisSuccess["triage"];
+      analysis?: AnalysisSuccess["analysis"];
+    };
+    if (typeof candidate.error === "string") {
+      return { ok: false, reason: candidate.error, raw };
+    }
+    return { ok: true, triage: candidate.triage, analysis: candidate.analysis, raw };
   }
   return { ok: false, reason: "Invalid AI result", raw };
 }
@@ -58,8 +82,10 @@ export default function WorkbenchPage() {
     setLoading(true);
     let driveConnected = false;
     try {
-      const s = await fetch("/api/integrations/status", { cache: "no-store" }).then((r) => r.json());
-      driveConnected = (s?.googleDrive ?? "unknown") === "connected";
+      const status: IntegrationStatusResponse = await fetch("/api/integrations/status", {
+        cache: "no-store",
+      }).then((r) => r.json());
+      driveConnected = (status.googleDrive ?? "unknown") === "connected";
     } catch {
       driveConnected = false;
     }
@@ -107,6 +133,7 @@ export default function WorkbenchPage() {
     const t = setTimeout(() => {
       if (!cancelled) void load();
     }, 0);
+    phCapture("workbench_view", { ts: Date.now() });
     return () => {
       cancelled = true;
       clearTimeout(t);
