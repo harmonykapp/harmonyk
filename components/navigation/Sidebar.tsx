@@ -65,9 +65,9 @@ export function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-sidebar border-r flex flex-col h-full">
-      <div className="px-6 py-5 border-b">
-        <Link href="/dashboard" className="flex items-center group">
+    <div className="w-64 bg-sidebar border-r flex flex-col h-full" suppressHydrationWarning>
+      <div className="px-6 py-5 border-b" suppressHydrationWarning>
+        <Link href="/dashboard" className="flex items-center group" suppressHydrationWarning>
           <Image
             src="/Monologo_horizontal-transp copy.png"
             alt="Monolyth"
@@ -75,6 +75,7 @@ export function Sidebar() {
             height={40}
             className="h-10 w-auto dark:hidden"
             priority
+            suppressHydrationWarning
           />
           <Image
             src="/Monologo_horizontal-dark-transp.png"
@@ -83,11 +84,12 @@ export function Sidebar() {
             height={40}
             className="h-10 w-auto hidden dark:block"
             priority
+            suppressHydrationWarning
           />
         </Link>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto" suppressHydrationWarning>
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
           const isExpanded = expandedItems.includes(item.name);
@@ -135,6 +137,7 @@ export function Sidebar() {
                               ? 'bg-sidebar-active text-primary'
                               : 'text-sidebar-foreground hover:bg-sidebar-active/50 hover:text-sidebar-foreground'
                           )}
+                          suppressHydrationWarning
                         >
                           {subitem.name}
                         </Link>
@@ -156,6 +159,7 @@ export function Sidebar() {
                   ? 'bg-sidebar-active text-primary'
                   : 'text-sidebar-foreground hover:bg-sidebar-active/50 hover:text-sidebar-foreground'
               )}
+              suppressHydrationWarning
             >
               <Icon className="h-5 w-5" />
               {item.name}

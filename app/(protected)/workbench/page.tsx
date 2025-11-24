@@ -3,17 +3,16 @@
 
 "use client";
 
-import DriveRecent from "@/components/workbench/DriveRecent";
-import { useCallback, useEffect, useState, useRef } from "react";
-import { phCapture } from "@/lib/posthog-client";
-import { analyzeItem } from "@/lib/ai/analyze";
-import type { AnalyzeResult } from "@/lib/ai/schemas";
-import { useToast } from "@/hooks/use-toast";
-import { handleApiError } from "@/lib/handle-api-error";
-import { isFeatureEnabled } from "@/lib/feature-flags";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -30,27 +29,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Search,
-  Filter,
-  FileText,
-  Sparkles,
-  Eye,
-  Download,
-  Share2,
-  FileSignature,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import DriveRecent from "@/components/workbench/DriveRecent";
+import { useToast } from "@/hooks/use-toast";
+import { analyzeItem } from "@/lib/ai/analyze";
+import type { AnalyzeResult } from "@/lib/ai/schemas";
+import { isFeatureEnabled } from "@/lib/feature-flags";
+import { handleApiError } from "@/lib/handle-api-error";
+import { phCapture } from "@/lib/posthog-client";
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
-import { useMemo } from "react";
+import { cn } from "@/lib/utils";
+import {
+  FileSignature,
+  FileText,
+  Filter,
+  Search,
+  Sparkles
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Row = {
   id: string;
@@ -66,6 +61,12 @@ type Row = {
 
 type IntegrationStatusResponse = {
   googleDrive?: "connected" | "needs_reauth" | "error" | "unknown";
+};
+
+type PlaybookSummary = {
+  id: string;
+  name: string;
+  status: string;
 };
 
 // Safe UUID helper
@@ -92,6 +93,8 @@ export default function WorkbenchPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const analyzingRef = useRef(false);
+  const [playbooks, setPlaybooks] = useState<PlaybookSummary[]>([]);
+  const [runPlaybookPending, setRunPlaybookPending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -142,6 +145,53 @@ export default function WorkbenchPage() {
       cancelled = true;
     };
   }, [sb]);
+
+  // Load Playbooks summary for "Run Playbook on selection"
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/playbooks/all", {
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          console.warn(
+            "[workbench] Failed to load playbooks summary",
+            res.status,
+          );
+          if (!cancelled) {
+            setPlaybooks([]);
+          }
+          return;
+        }
+
+        const data = (await res.json()) as
+          | {
+            ok?: boolean;
+            items?: { id: string; name: string; status: string }[];
+          }
+          | null;
+
+        if (!data?.ok || !data.items) {
+          if (!cancelled) setPlaybooks([]);
+          return;
+        }
+
+        if (!cancelled) {
+          setPlaybooks(data.items);
+        }
+      } catch (err) {
+        console.warn("[workbench] Error loading playbooks summary", err);
+        if (!cancelled) setPlaybooks([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -341,7 +391,7 @@ export default function WorkbenchPage() {
     } catch (err) {
       const errorMessage = (err as Error).message ?? "Analyze failed";
       setAnalyzeError(errorMessage);
-      
+
       const status = errorMessage.includes("401") ? 401 : errorMessage.includes("403") ? 403 : 500;
       handleApiError({
         status,
@@ -403,7 +453,7 @@ export default function WorkbenchPage() {
 
       // Clone response before reading to preserve body for error handling
       const responseClone = response.clone();
-      
+
       let data: any = null;
       try {
         data = await response.json();
@@ -486,7 +536,7 @@ export default function WorkbenchPage() {
         stack: error instanceof Error ? error.stack : undefined,
       };
       console.error("[workbench] Save to Vault unexpected error", errorDetails);
-      
+
       const status = errorMessage.includes("401") ? 401 : errorMessage.includes("403") ? 403 : 500;
       handleApiError({
         status,
@@ -534,21 +584,21 @@ export default function WorkbenchPage() {
         } catch {
           // Ignore JSON parse errors
         }
-        
+
         const errorMessage = data.error ?? "Failed to send for signature";
-        
+
         const isExpectedError =
           errorMessage.includes("No file available for signature") ||
           errorMessage.includes("Save this document to Vault") ||
           errorMessage.includes("Unified item not found") ||
           errorMessage.includes("Document not found");
-        
+
         if (isExpectedError) {
           console.warn("[workbench] Send for signature: item not saved to Vault", {
             unifiedItemId: signRow.id,
             error: errorMessage,
           });
-          
+
           if (errorMessage.includes("No file available for signature") || errorMessage.includes("Save this document to Vault")) {
             toast({
               title: "Document not ready",
@@ -600,7 +650,7 @@ export default function WorkbenchPage() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       console.error("[workbench] Send for signature exception", err);
-      
+
       const status = errorMessage.includes("401") ? 401 : errorMessage.includes("403") ? 403 : 500;
       handleApiError({
         status,
@@ -615,17 +665,97 @@ export default function WorkbenchPage() {
 
   // Filter rows based on search and filters
   const filteredRows = rows.filter((row) => {
-    const matchesSearch = searchQuery === "" || 
+    const matchesSearch = searchQuery === "" ||
       row.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       row.preview?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSource = sourceFilter === "all" || row.source.toLowerCase() === sourceFilter.toLowerCase();
-    const matchesStatus = statusFilter === "all" || 
+    const matchesStatus = statusFilter === "all" ||
       (statusFilter === "signed" && row.signingStatus === "completed") ||
       (statusFilter === "pending" && row.signingStatus && row.signingStatus !== "completed");
     return matchesSearch && matchesSource && matchesStatus;
   });
 
   const selectedRow = sel ? filteredRows.find((r) => r.id === sel.id) || sel : null;
+
+  const onRunPlaybookFromSelection = useCallback(async () => {
+    if (!selectedRow) {
+      toast({
+        title: "No document selected",
+        description: "Select a row in Workbench first, then run a Playbook.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!playbooks.length) {
+      toast({
+        title: "No Playbooks available",
+        description: "Create and enable at least one Playbook in the Playbooks tab first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const enabled = playbooks.filter((p) => p.status === "enabled");
+    const chosen = enabled[0] ?? playbooks[0];
+
+    setRunPlaybookPending(true);
+
+    try {
+      const res = await fetch("/api/playbooks/run", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playbook_id: chosen.id,
+          scope: {
+            mode: "selection",
+            source: "workbench",
+            selected_unified_ids: [selectedRow.id],
+            selected_titles: [selectedRow.title],
+          },
+          dryRun: true,
+        }),
+      });
+
+      const data = (await res.json().catch(() => null)) as
+        | {
+          ok?: boolean;
+          message?: string;
+          runId?: string;
+          mode?: string;
+        }
+        | null;
+
+      if (!res.ok || !data?.ok) {
+        const errorMessage =
+          data?.message ?? `Playbook run failed (status ${res.status})`;
+        toast({
+          title: "Playbook run failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Playbook dry-run started",
+        description:
+          "Open the Playbooks tab to review runs and time saved.",
+      });
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown error";
+      toast({
+        title: "Playbook run failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setRunPlaybookPending(false);
+    }
+  }, [selectedRow, playbooks, toast]);
 
   return (
     <div className="h-full flex flex-col">
@@ -694,6 +824,16 @@ export default function WorkbenchPage() {
 
             <Button variant="outline" size="icon">
               <Filter className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRunPlaybookFromSelection}
+              disabled={runPlaybookPending || !selectedRow}
+              className="ml-1"
+            >
+              {runPlaybookPending ? "Running…" : "Run Playbook (dry-run)"}
             </Button>
           </div>
         </div>

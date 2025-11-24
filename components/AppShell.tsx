@@ -21,10 +21,10 @@ export function AppShell({ children, monoContext }: AppShellProps) {
     : monoContext || { route: '/dashboard' };
 
   return (
-    <div className="h-screen flex overflow-hidden">
+    <div className="h-screen flex overflow-hidden" suppressHydrationWarning>
       <Sidebar />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0" suppressHydrationWarning>
         <TopBar onMonoToggle={() => setMonoOpen(!monoOpen)} monoOpen={monoOpen} />
 
         <main
@@ -32,6 +32,7 @@ export function AppShell({ children, monoContext }: AppShellProps) {
             'flex-1 overflow-auto transition-all duration-300',
             monoOpen && 'mr-[400px]'
           )}
+          suppressHydrationWarning
         >
           {children}
         </main>

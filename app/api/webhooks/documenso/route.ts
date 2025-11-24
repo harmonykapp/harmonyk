@@ -5,6 +5,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { logActivity } from "@/lib/activity-log";
+import {
+  queuePlaybooksForEvent,
+  type PlaybookEventPayload,
+} from "@/lib/playbooks/events";
 
 // Documenso webhook event types (based on common e-signature webhook patterns)
 type DocumensoWebhookEvent = {
@@ -185,6 +189,26 @@ export async function POST(req: NextRequest) {
       mappedStatus,
       envelopeId: envelope.id,
     });
+
+    // Only fire Playbooks event for completed signatures
+    const playbookEventType =
+      (body?.event as string | undefined) ??
+      (body?.type as string | undefined) ??
+      "";
+
+    if (playbookEventType.toLowerCase() === "completed" || playbookEventType.toLowerCase() === "envelope.completed") {
+      try {
+        await queuePlaybooksForEvent({
+          type: "signature_completed",
+          payload: body as PlaybookEventPayload,
+        });
+      } catch (err) {
+        console.warn(
+          "[playbooks] Failed to queue event for signature_completed",
+          err,
+        );
+      }
+    }
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {

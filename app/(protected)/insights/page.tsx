@@ -239,6 +239,126 @@ export default function InsightsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Week 7 Day 6 – Playbooks time-saved card */}
+      <section>
+        <PlaybooksTimeSavedCard />
+      </section>
     </div>
+  );
+}
+
+type PlaybooksSummary = {
+  totalMinutes: number;
+  runsCount: number;
+  runsWithStats: number;
+  runsWithoutStats: number;
+};
+
+function PlaybooksTimeSavedCard() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<PlaybooksSummary | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/insights/playbooks-summary", {
+          cache: "no-store",
+        });
+
+        const data = (await res.json().catch(() => null)) as
+          | {
+              ok?: boolean;
+              message?: string;
+              totalMinutes?: number;
+              runsCount?: number;
+              runsWithStats?: number;
+              runsWithoutStats?: number;
+            }
+          | null;
+
+        if (!res.ok || !data?.ok) {
+          if (!cancelled) {
+            setError(
+              data?.message ??
+                `Failed to load Playbooks insights (status ${res.status})`,
+            );
+            setLoading(false);
+          }
+          return;
+        }
+
+        if (!cancelled) {
+          setSummary({
+            totalMinutes: data.totalMinutes ?? 0,
+            runsCount: data.runsCount ?? 0,
+            runsWithStats: data.runsWithStats ?? 0,
+            runsWithoutStats: data.runsWithoutStats ?? 0,
+          });
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const msg =
+            err instanceof Error ? err.message : "Unexpected error loading insights.";
+          setError(msg);
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const totalMinutes = summary?.totalMinutes ?? 0;
+  const runsCount = summary?.runsCount ?? 0;
+  const hours = totalMinutes / 60;
+
+  let headline = "—";
+  if (totalMinutes > 0 && hours < 1) {
+    headline = `${totalMinutes.toFixed(0)} min`;
+  } else if (hours >= 1) {
+    headline = `${hours.toFixed(1)} h`;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Playbooks – Time Saved (v1)</CardTitle>
+        <CardDescription>
+          Approximate time saved by Playbooks runs. v1 uses 5 minutes per run
+          when detailed stats are not available.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading && (
+          <p className="text-sm text-muted-foreground">Loading Playbooks insights…</p>
+        )}
+        {error && !loading && (
+          <p className="text-sm text-destructive">
+            Failed to load Playbooks insights: {error}
+          </p>
+        )}
+        {!loading && !error && (
+          <div className="flex flex-col gap-2">
+            <div className="text-3xl font-semibold">{headline}</div>
+            <div className="text-xs text-muted-foreground">
+              {runsCount === 0
+                ? "No Playbook runs recorded yet."
+                : `${runsCount} runs total · ${
+                    summary?.runsWithStats ?? 0
+                  } with detailed stats · ${
+                    summary?.runsWithoutStats ?? 0
+                  } using default estimate.`}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
