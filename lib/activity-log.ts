@@ -1,5 +1,207 @@
+// Week 8: ActivityLog query helper
+//
+// This module centralizes ActivityLog querying logic so that:
+// - /activity can use the same filters as CSV export
+// - /insights can reuse the same base query when needed
+//
+// IMPORTANT:
+// - This file does NOT create a Supabase client. Callers must inject one.
+// - Callers are responsible for enforcing workspace / owner scoping.
+
+import type { ActivityEventType } from "./activity-events";
+
+// NOTE: keep this in sync with docs/ACTIVITY_EVENTS.md and the actual DB schema.
+export interface ActivityLogRow {
+  id: string;
+  created_at: string;
+  workspace_id: string;
+  owner_id: string;
+  document_id: string | null;
+  share_link_id: string | null;
+  playbook_run_id: string | null;
+  connector_id: string | null;
+  event_type: ActivityEventType | string;
+  source: string | null;
+  payload: any | null;
+  error: any | null;
+}
+
+export interface ActivityQueryFilters {
+  /**
+   * ISO 8601 start of range (inclusive).
+   * Example: "2025-11-01T00:00:00Z"
+   */
+  from?: string;
+
+  /**
+   * ISO 8601 end of range (exclusive or inclusive depending on use).
+   * Example: "2025-11-30T23:59:59Z"
+   */
+  to?: string;
+
+  /**
+   * Restrict to a subset of event types.
+   */
+  eventTypes?: ActivityEventType[];
+
+  /**
+   * Filter by a specific document.
+   */
+  documentId?: string;
+
+  /**
+   * Filter by high-level source:
+   * - "builder"
+   * - "vault"
+   * - "workbench"
+   * - "share"
+   * - "signatures"
+   * - "playbooks"
+   * - "connector"
+   */
+  source?: string;
+
+  /**
+   * If true, only events that have an error payload.
+   * If false, only events without error.
+   * If undefined, don't filter on error.
+   */
+  hasError?: boolean;
+
+  /**
+   * Simple search by document/file name, using payload metadata.
+   * We assume payload.file_name or payload->>file_name is set for
+   * save_to_vault / share related events.
+   */
+  search?: string;
+
+  /**
+   * Max rows to return. Keep this reasonable (eg 50–200) for UI.
+   */
+  limit?: number;
+}
+
+// Minimal shape we expect from a Supabase-like client for this helper.
+// We keep it as `any` in practice to avoid coupling to a specific version.
+export type SupabaseLikeClient = any;
+
+const DEFAULT_ACTIVITY_LIMIT = 100;
+
+/**
+ * Build a Supabase query for ActivityLog with the given filters.
+ *
+ * Callers still need to execute the query (eg `.then(...)` or `await`).
+ */
+export function buildActivityLogQuery(
+  supabase: SupabaseLikeClient,
+  opts: {
+    /**
+     * Optional workspace scoping. If omitted, the query will not filter
+     * on workspace_id and will return all matching events visible to the
+     * underlying Supabase client (typically project-wide for dev).
+     */
+    workspaceId?: string;
+    ownerId?: string;
+    filters?: ActivityQueryFilters;
+  }
+) {
+  const { workspaceId, ownerId, filters } = opts;
+
+  let query = supabase
+    .from("activity_log")
+    // NOTE: adjust column list once you know exactly what the UI needs.
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (workspaceId) {
+    query = query.eq("workspace_id", workspaceId);
+  }
+
+  if (ownerId) {
+    query = query.eq("owner_id", ownerId);
+  }
+
+  if (!filters) {
+    return query.limit(DEFAULT_ACTIVITY_LIMIT);
+  }
+
+  const {
+    from,
+    to,
+    eventTypes,
+    documentId,
+    source,
+    hasError,
+    search,
+    limit,
+  } = filters;
+
+  if (from) {
+    query = query.gte("created_at", from);
+  }
+
+  if (to) {
+    query = query.lte("created_at", to);
+  }
+
+  if (eventTypes && eventTypes.length > 0) {
+    query = query.in("event_type", eventTypes);
+  }
+
+  if (documentId) {
+    query = query.eq("document_id", documentId);
+  }
+
+  if (source) {
+    query = query.eq("source", source);
+  }
+
+  if (typeof hasError === "boolean") {
+    if (hasError) {
+      query = query.not("error", "is", null);
+    } else {
+      query = query.is("error", null);
+    }
+  }
+
+  if (search && search.trim().length > 0) {
+    // Simple file name / title search via payload metadata.
+    // This assumes payload->>file_name is populated for relevant events.
+    const value = `%${search.trim()}%`;
+    query = query.ilike("payload->>file_name", value);
+  }
+
+  query = query.limit(limit && limit > 0 ? limit : DEFAULT_ACTIVITY_LIMIT);
+
+  return query;
+}
+
+/**
+ * Convenience wrapper that executes the query and returns rows+error.
+ *
+ * This is useful for simple pages or API routes that don't need to
+ * customize the select list.
+ */
+export async function fetchActivityLog(
+  supabase: SupabaseLikeClient,
+  opts: {
+    workspaceId?: string;
+    ownerId?: string;
+    filters?: ActivityQueryFilters;
+  }
+): Promise<{ data: ActivityLogRow[] | null; error: any }> {
+  const query = buildActivityLogQuery(supabase, opts);
+  const { data, error } = await query;
+  return { data: (data as ActivityLogRow[] | null) ?? null, error };
+}
+
+// ============================================================================
+// Legacy logging functions (kept for backward compatibility)
+// TODO: Migrate these to use the new ActivityEventType system
+// ============================================================================
+
 import { createServerSupabaseClient } from './supabase-server';
-import { logServerEvent, logServerError } from './telemetry-server';
+import { logServerError, logServerEvent } from './telemetry-server';
 
 export type ActivityType =
   | 'vault_save'
@@ -25,21 +227,13 @@ export interface LogActivityParams {
   shareLinkId?: string | null;
   envelopeId?: string | null;
   context?: Record<string, unknown>;
-  source?: string | null; // e.g. "workbench", "builder", "vault", "mono", "activity"
-  triggerRoute?: string | null; // e.g. "/api/mono"
+  source?: string | null;
+  triggerRoute?: string | null;
   durationMs?: number | null;
 }
 
-/**
- * Logs an activity to the activity_log table using the service-role Supabase client.
- * This function throws on error so callers can handle failures explicitly.
- *
- * @param params - Activity log parameters
- * @throws Error if the insert fails
- */
 export async function logActivity(params: LogActivityParams): Promise<void> {
   const supabase = createServerSupabaseClient();
-
   const {
     orgId,
     userId,
@@ -55,9 +249,7 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
     durationMs,
   } = params;
 
-  // Defensive: verify unified_item exists; if not, log with unified_item_id = null to avoid FK errors.
   let unifiedItemIdToInsert: string | null = null;
-
   if (unifiedItemId) {
     try {
       const { data: unifiedItem, error: lookupError } = await supabase
@@ -65,29 +257,16 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
         .select('id')
         .eq('id', unifiedItemId)
         .maybeSingle();
-
-      if (lookupError) {
-        console.warn('[logActivity] Error looking up unified_item', {
-          unifiedItemId,
-          error: lookupError,
-        });
-        unifiedItemIdToInsert = null;
-      } else if (!unifiedItem) {
-        console.warn('[logActivity] unified_item not found for id', unifiedItemId);
+      if (lookupError || !unifiedItem) {
         unifiedItemIdToInsert = null;
       } else {
         unifiedItemIdToInsert = unifiedItemId;
       }
-    } catch (lookupErr) {
-      console.warn('[logActivity] Exception during unified_item lookup', {
-        unifiedItemId,
-        error: lookupErr,
-      });
+    } catch {
       unifiedItemIdToInsert = null;
     }
   }
 
-  // Build enriched context with metadata
   const enrichedContext: Record<string, unknown> = {
     ...(context ?? {}),
     ...(triggerRoute ? { trigger_route: triggerRoute } : {}),
@@ -95,8 +274,6 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
     ...(source ? { source } : {}),
   };
 
-  // Supabase handles jsonb automatically, so we can pass the object directly
-  // Note: We use snake_case for database columns, matching the schema
   const { error, data } = await supabase.from('activity_log').insert({
     org_id: orgId,
     user_id: userId ?? null,
@@ -110,14 +287,8 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
   }).select('id').single();
 
   if (error) {
-    const errorMessage = `logActivity failed: ${error.message} (code: ${error.code}, details: ${error.details || 'none'})`;
-    console.error('[logActivity]', errorMessage, {
-      orgId,
-      userId,
-      type,
-      error,
-    });
-    
+    const errorMessage = `logActivity failed: ${error.message}`;
+    console.error('[logActivity]', errorMessage, { orgId, userId, type, error });
     logServerError({
       event: "activity_log_write",
       userId,
@@ -125,19 +296,15 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
       docId: unifiedItemIdToInsert ?? documentId ?? null,
       source: source ?? null,
       route: triggerRoute ?? null,
-      properties: {
-        action: type,
-      },
+      properties: { action: type },
       error,
     });
-    
     throw new Error(errorMessage);
   }
 
   if (!data) {
     const errorMessage = 'logActivity: insert succeeded but no data returned';
     console.error('[logActivity]', errorMessage);
-    
     logServerError({
       event: "activity_log_write",
       userId,
@@ -145,22 +312,12 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
       docId: unifiedItemIdToInsert ?? documentId ?? null,
       source: source ?? null,
       route: triggerRoute ?? null,
-      properties: {
-        action: type,
-      },
+      properties: { action: type },
       error: new Error(errorMessage),
     });
-    
     throw new Error(errorMessage);
   }
 
-  console.log('[logActivity] Successfully inserted activity_log row', {
-    id: data.id,
-    type,
-    orgId,
-  });
-
-  // Log telemetry event after successful insert
   logServerEvent({
     event: "activity_log_write",
     userId,
@@ -168,15 +325,10 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
     docId: unifiedItemIdToInsert ?? documentId ?? null,
     source: source ?? null,
     route: triggerRoute ?? null,
-    properties: {
-      action: type,
-    },
+    properties: { action: type },
   });
 }
 
-/**
- * Helper to log analyze_completed events
- */
 export async function logAnalyzeCompleted(params: {
   orgId: string;
   userId?: string | null;
@@ -200,9 +352,6 @@ export async function logAnalyzeCompleted(params: {
   });
 }
 
-/**
- * Helper to log doc_generated events (from Builder)
- */
 export async function logDocGenerated(params: {
   orgId: string;
   userId?: string | null;
@@ -226,9 +375,6 @@ export async function logDocGenerated(params: {
   });
 }
 
-/**
- * Helper to log doc_saved_to_vault events
- */
 export async function logDocSavedToVault(params: {
   orgId: string;
   userId?: string | null;
@@ -252,9 +398,6 @@ export async function logDocSavedToVault(params: {
   });
 }
 
-/**
- * Helper to log mono_query events
- */
 export async function logMonoQuery(params: {
   orgId: string;
   userId?: string | null;
@@ -278,4 +421,3 @@ export async function logMonoQuery(params: {
     durationMs: params.durationMs,
   });
 }
-
