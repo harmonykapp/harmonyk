@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteAuthContext } from "@/lib/auth/route-auth";
 import { logMonoQuery } from "@/lib/activity-log";
+import { searchRag } from "@/lib/rag";
 import { logServerEvent, logServerError } from "@/lib/telemetry-server";
 import type { MonoContext } from "@/components/mono/mono-pane";
 
@@ -78,8 +79,54 @@ export async function POST(req: NextRequest) {
       console.error("[mono] failed to log mono_query", logError);
     }
 
+    // Base system prompt for Mono
+    const baseSystemPrompt =
+      "You are Mono, Monolyth's AI assistant. Answer the user's questions helpfully and concisely.";
+
+    // Get RAG context if a document is selected
+    let ragContextText: string | null = null;
+    const documentId =
+      context?.selectedDocumentId || context?.selectedUnifiedItemId || null;
+
+    if (documentId && typeof documentId === "string") {
+      try {
+        const ragResults = await searchRag(message.trim(), {
+          filters: { documentId },
+          limit: 6,
+        });
+
+        if (ragResults.length > 0) {
+          const snippets = ragResults.map((result, index) => {
+            const snippet = result.chunk.content;
+            return `(${index + 1}) ${snippet}`;
+          });
+
+          ragContextText = [
+            "Relevant excerpts from the document:",
+            "",
+            ...snippets,
+          ].join("\n");
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.debug("[rag] searchRag failed (non-blocking)", err);
+        }
+      }
+    }
+
+    // Build system prompt with RAG context if available
+    const systemContent = ragContextText
+      ? `${baseSystemPrompt.trim()}
+
+----
+RAG CONTEXT
+${ragContextText}`
+      : baseSystemPrompt;
+
     // For now, return a stubbed response
     // TODO: Integrate with OpenAI client (same as Analyze) when ready
+    // When OpenAI is integrated, use systemContent in the system message
     const reply = `Mono stub: I see you are on ${context?.route || "unknown"}. You asked: "${message.trim()}". This is a placeholder response. Real AI integration will be added in a future update.`;
 
     const durationMs = performance.now() - startedAt;

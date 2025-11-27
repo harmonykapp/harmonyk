@@ -1,3 +1,115 @@
+# Activity Events
+
+## Connector Events
+
+Connector-related Activity events capture what happens when external accounts
+
+are connected, disconnected, or synced. They are provider-agnostic and should
+
+work for Google Drive, Gmail, and future connectors.
+
+### `connector_account_connected`
+
+Emitted when a connector account is successfully connected/authorised.
+
+Payload (example):
+
+```json
+
+{
+
+  "provider": "google_drive",
+
+  "account_id": "00000000-0000-0000-0000-000000000000",
+
+  "scopes": [
+
+    "https://www.googleapis.com/auth/drive.readonly"
+
+  ]
+
+}
+
+```
+
+### `connector_account_disconnected`
+
+Emitted when a connector account is explicitly disconnected from Monolyth.
+
+```json
+
+{
+
+  "provider": "google_drive",
+
+  "account_id": "00000000-0000-0000-0000-000000000000"
+
+}
+
+```
+
+### `connector_sync_started`
+
+Emitted when a sync/import job starts for a connector account.
+
+```json
+
+{
+
+  "provider": "google_drive",
+
+  "account_id": "00000000-0000-0000-0000-000000000000",
+
+  "run_id": "11111111-1111-1111-1111-111111111111"
+
+}
+
+```
+
+### `connector_sync_completed`
+
+```json
+
+{
+
+  "provider": "google_drive",
+
+  "account_id": "00000000-0000-0000-0000-000000000000",
+
+  "run_id": "11111111-1111-1111-1111-111111111111",
+
+  "file_count": 42,
+
+  "duration_ms": 1234
+
+}
+
+```
+
+### `connector_sync_failed`
+
+Emitted when a sync/import job fails for a connector account.
+
+```json
+
+{
+
+  "provider": "google_drive",
+
+  "account_id": "00000000-0000-0000-0000-000000000000",
+
+  "run_id": "11111111-1111-1111-1111-111111111111",
+
+  "error_code": "rate_limit",
+
+  "error_msg": "rateLimitExceeded"
+
+}
+
+```
+
+---
+
 # Activity Events Catalog (Week 8)
 
 Monolyth's `activity_log` table is the telemetry backbone for:

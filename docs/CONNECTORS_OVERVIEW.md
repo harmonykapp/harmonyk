@@ -1,293 +1,281 @@
-# Connectors v1 – Overview
+# Connectors Overview (v1)
 
-> Week 9 goal: make Drive import trustworthy, observable, and safe; add an optional, feature-flagged Gmail path without destabilising the core app.
+This document describes the initial connector model for Monolyth, focused on:
 
-This document defines the **Connectors v1** architecture for Monolyth:
+- **Google Drive** (v1)
 
-- Which services we support first.
-- The data model in Postgres/Supabase.
-- How connector jobs run and are retried.
-- Which ActivityLog events we emit so Insights can reason about connectors later.
+- **Optional Gmail** (feature-flagged)
 
----
+The design is **metadata-first**: we ingest and normalise external metadata into
 
-## 1. Supported services (v1)
+connector tables and/or Vault, then let Insights, Playbooks, and Mono build on
 
-For Week 9 we treat connectors as:
-
-- **Google Drive** – primary, must be robust.
-
-- **Gmail** – optional, behind a feature flag, minimal metadata-only import.
-
-Future services (eg. OneDrive, Dropbox, Slack) should follow the same patterns:
-
-- Exactly one **connector_account** per user ↔ external account pairing.
-- Jobs tracked via **connector_jobs**.
-- Imported items normalised and linked into Vault via **connector_files**.
+top of that.
 
 ---
 
-## 2. Data model (DB schema)
+## 1. Data Model
 
-All connector tables live in the `public` schema.
+Three core tables back all connectors:
 
-### 2.1 `connector_accounts`
+### `connector_accounts`
 
-Represents a single user ↔ provider account (eg. Adam's Google Drive).
+Represents a single external account (e.g. a Google Drive install) owned by an
 
-**Table:** `public.connector_accounts`
+org or user.
 
-**Columns (v1):**
+- `id uuid` – primary key
 
-- `id :: uuid` – PK, default `gen_random_uuid()`.
+- `owner_id uuid` – owning org/user (app code decides which)
 
-- `user_id :: uuid` – FK → `auth.users.id` (or our `profiles.id`), **NOT NULL**.
+- `provider text` – e.g. `google_drive`, `gmail`
 
-- `provider :: text` – eg. `'google_drive'`, `'gmail'`, **NOT NULL**.
+- `status text` – `connected | disconnected | error | pending`
 
-- `provider_account_id :: text` – opaque external ID (eg. Google `sub`), **NOT NULL**.
+- `token_json jsonb` – OAuth tokens and provider-specific auth state
 
-- `display_name :: text` – something like `adam.weigold@gmail.com`.
+- `created_at timestamptz`
 
-- `status :: text` – `'connected' | 'error' | 'revoked' | 'disconnected'` (CHECK constraint).
+- `updated_at timestamptz`
 
-- `last_sync_at :: timestamptz` – last successful sync completion.
+### `connector_jobs`
 
-- `last_error_at :: timestamptz` – last failure time (if any).
+Tracks sync/import executions so we can observe, retry, and debug.
 
-- `last_error_message :: text` – short human-readable error snippet.
+- `id uuid` – primary key
 
-- `created_at :: timestamptz` – default `now()`.
+- `account_id uuid` – FK → `connector_accounts.id`
 
-- `updated_at :: timestamptz` – default `now()`.
+- `kind text` – e.g. `drive_import`, `gmail_import`
 
-- `metadata :: jsonb` – provider-specific metadata (scopes, locale, etc.).
+- `status text` – `pending | running | completed | failed`
 
-> **Note:** Refresh/access tokens should be stored in an encrypted store / KMS or in an encrypted column – we keep the DB structure generic and encryption is handled at the application layer.
+- `started_at timestamptz`
 
-**Uniqueness:**
+- `finished_at timestamptz`
 
-- `UNIQUE (user_id, provider)` – one active account per provider per user in v1.
+- `attempts int`
 
-### 2.2 `connector_jobs`
+- `last_error text`
 
-Represents one sync or import job for a given connector account.
+- `meta_json jsonb` – free-form job metadata (limits, filters, counters)
 
-**Table:** `public.connector_jobs`
+- `created_at timestamptz`
 
-**Columns (v1):**
+### `connector_files`
 
-- `id :: uuid` – PK, default `gen_random_uuid()`.
+Normalised metadata for fetched items (files, threads, messages) from external
 
-- `connector_account_id :: uuid` – FK → `connector_accounts.id`, **NOT NULL**.
+providers.
 
-- `job_type :: text` – eg. `'initial_sync'`, `'incremental_sync'`, `'gmail_import'`.
+- `id uuid` – primary key
 
-- `status :: text` – `'pending' | 'running' | 'success' | 'failed' | 'cancelled'`.
+- `account_id uuid` – FK → `connector_accounts.id`
 
-- `scheduled_at :: timestamptz` – when the job was enqueued.
+- `provider text` – redundant but convenient filter
 
-- `started_at :: timestamptz` – when processing actually began.
+- `external_id text` – provider id (e.g. Drive file id, Gmail message id)
 
-- `finished_at :: timestamptz` – when processing finished (success or failure).
+- `title text`
 
-- `attempts :: integer` – how many tries so far (default `0`).
+- `mime text`
 
-- `max_attempts :: integer` – ceiling for retries (default `5`).
+- `size bigint`
 
-- `backoff_seconds :: integer` – current backoff duration (exponential policy).
+- `modified_at timestamptz`
 
-- `last_error_message :: text` – final or most recent error snippet.
+- `url text` – web view URL if available
 
-- `payload :: jsonb` – small job configuration or cursor (eg. Drive page token, Gmail label).
+- `meta_json jsonb` – provider raw payload (owners, labels, attachment info)
 
-- `created_at :: timestamptz` – default `now()`.
+- `created_at timestamptz`
 
-Indexes:
-
-- `CREATE INDEX ON connector_jobs (connector_account_id);`
-
-- `CREATE INDEX ON connector_jobs (status, scheduled_at);`
-
-### 2.3 `connector_files`
-
-Represents the relationship between an external item and our Vault.
-
-**Table:** `public.connector_files`
-
-**Columns (v1):**
-
-- `id :: uuid` – PK, default `gen_random_uuid()`.
-
-- `connector_account_id :: uuid` – FK → `connector_accounts.id`, **NOT NULL**.
-
-- `provider :: text` – eg. `'google_drive'`, `'gmail'`, **NOT NULL`.
-
-- `provider_file_id :: text` – provider's stable ID for the file/message, **NOT NULL**.
-
-- `vault_document_id :: uuid` – FK → `vault_documents.id` (or equivalent), nullable if not yet imported.
-
-- `path :: text` – logical path or folder hint (eg. `/Contracts/2025/`), best-effort.
-
-- `name :: text` – file name or subject line.
-
-- `mime_type :: text` – MIME type if applicable.
-
-- `size_bytes :: bigint` – approximate size.
-
-- `modified_at :: timestamptz` – provider's last modified time.
-
-- `sync_status :: text` – `'pending' | 'synced' | 'skipped' | 'error'`.
-
-- `last_sync_job_id :: uuid` – FK → `connector_jobs.id`, nullable.
-
-- `created_at :: timestamptz` – default `now()`.
-
-- `updated_at :: timestamptz` – default `now()`.
-
-Indexes:
-
-- `UNIQUE (connector_account_id, provider_file_id)` – prevents duplicates.
-
-- `CREATE INDEX ON connector_files (vault_document_id);`
+`(account_id, external_id)` is unique per provider.
 
 ---
 
-## 3. ActivityLog events (connectors)
+## 2. Google Drive – v1
 
-Connectors must emit structured ActivityLog events so:
+Drive is the first-class connector in v1.
 
-- `/activity` can show connector-related actions.
+### 2.1 Auth Flow
 
-- `/insights` can derive metrics later (eg. "X files imported from Drive this week").
+- User connects Drive from `/integrations`.
 
-Connector-related events (namespaced under `connector_*`):
+- We create or update a `connector_accounts` row with:
 
-### Connection lifecycle
+  - `provider = 'google_drive'`
 
-- `connector_connect_started`
+  - `status` derived from auth result (`connected` / `error`)
 
-  - `context`: `{ provider, connector_account_id }`
+  - `token_json` containing the OAuth tokens.
 
-- `connector_connect_succeeded`
+- Activity events:
 
-  - `context`: `{ provider, connector_account_id }`
+  - `connector_account_connected { provider, account_id, scopes }`
 
-- `connector_connect_failed`
+  - `connector_account_disconnected { provider, account_id }`
 
-  - `context`: `{ provider, connector_account_id, error_code?, error_message? }`
+### 2.2 Import / Sync Flow
 
-- `connector_disconnect_started`
+Triggered by:
 
-  - `context`: `{ provider, connector_account_id }`
+- Manual "Sync now" on `/integrations` (v1).
 
-- `connector_disconnect_succeeded`
+- Later: scheduled jobs / cron.
 
-  - `context`: `{ provider, connector_account_id }`
+Flow:
 
-- `connector_disconnect_failed`
+1. Create a `connector_jobs` row with `kind = 'drive_import'`.
 
-  - `context`: `{ provider, connector_account_id, error_code?, error_message? }`
+2. Log `connector_sync_started { provider, account_id, run_id }`.
 
-### Sync & import lifecycle
+3. Fetch recent Drive files within v1 limits:
+
+   - `MAX_FILES_PER_RUN`
+
+   - `MAX_FILE_SIZE_MB`
+
+   - `SUPPORTED_MIME_TYPES = Docs/Sheets/Slides/PDFs`
+
+4. Normalise to:
+
+```json
+
+{
+
+  "id": "drive-file-id",
+
+  "name": "Document title",
+
+  "mimeType": "application/vnd.google-apps.document",
+
+  "modifiedTime": "2025-11-27T12:34:56Z",
+
+  "owners": [{ "emailAddress": "owner@example.com" }],
+
+  "webViewLink": "https://drive.google.com/..."
+
+}
+
+```
+
+5. Persist either:
+
+   - **Option A (metadata-first):** rows in `connector_files` only.
+
+   - **Option B (direct to Vault):** create Vault docs with
+
+     `source="google_drive"` and `external_id = driveId` while still recording
+
+     imports in `connector_jobs`.
+
+6. Log completion:
+
+   - `connector_sync_completed { provider, account_id, run_id, file_count, duration_ms }`
+
+7. On error:
+
+   - Update `connector_jobs.status = 'failed'`, set `last_error`.
+
+   - Log `connector_sync_failed { provider, account_id, run_id, error_code, error_msg }`.
+
+---
+
+## 3. Optional Gmail – v1 (Feature-Flagged)
+
+Gmail is behind a feature flag (e.g. `int_gmail`) and **must not** surface in
+
+the UI unless the flag is enabled.
+
+### 3.1 Auth Flow
+
+Very similar to Drive:
+
+- `connector_accounts.provider = 'gmail'`
+
+- Email-specific scopes and tokens stored in `token_json`.
+
+- Connector events mirror Drive:
+
+  - `connector_account_connected`
+
+  - `connector_account_disconnected`
+
+### 3.2 Import / Sync Flow
+
+v1 is intentionally small and metadata-only:
+
+- Pull last **N threads** from a label such as `"Contracts"`.
+
+- Normalise to:
+
+```json
+
+{
+
+  "subject": "Signed NDA – ACME",
+
+  "from": "legal@acme.com",
+
+  "date": "2025-11-27T10:00:00Z",
+
+  "messageId": "<message-id@example.com>",
+
+  "attachments": [
+
+    {
+
+      "filename": "NDA.pdf",
+
+      "mimeType": "application/pdf",
+
+      "size": 123456
+
+    }
+
+  ]
+
+}
+
+```
+
+Storage options:
+
+- **Metadata only:** write a row per message/thread into `connector_files`
+
+  (`provider='gmail'`) with attachment metadata in `meta_json`.
+
+- **Selective import:** allow selected attachments to be ingested into Vault
+
+  with `source='gmail'`.
+
+Activity events mirror Drive:
 
 - `connector_sync_started`
 
-  - `context`: `{ provider, connector_account_id, job_id, job_type }`
-
 - `connector_sync_completed`
-
-  - `context`: `{ provider, connector_account_id, job_id, job_type, files_imported, files_skipped }`
 
 - `connector_sync_failed`
 
-  - `context`: `{ provider, connector_account_id, job_id, job_type, error_code?, error_message? }`
-
-Optional extended events (for retries / backoff):
-
-- `connector_job_scheduled`
-
-  - `context`: `{ provider, connector_account_id, job_id, job_type, scheduled_at }`
-
-- `connector_job_retried`
-
-  - `context`: `{ provider, connector_account_id, job_id, job_type, attempts, max_attempts }`
-
-> Implementation note: these events should be surfaced in `/activity` using a "Connector" chip/filter and reasonable human-readable descriptions (eg. "Google Drive sync completed – 37 files imported").
-
 ---
 
-## 4. Data flow – Google Drive (v1)
+## 4. Activity Events & Observability
 
-High-level flow for Drive:
+Connector activity is observable via:
 
-1. **User connects Drive**
+- `connector_accounts` (status per provider)
 
-   - User hits "Connect Google Drive" on `/integrations`.
+- `connector_jobs` (per-run status, attempts, last_error)
 
-   - We run OAuth and create a `connector_accounts` row with `status = 'connected'`.
+- `connector_files` (what we've seen from each provider)
 
-   - Emit `connector_connect_*` events as appropriate.
+- ActivityLog events (see `docs/ACTIVITY_EVENTS.md`).
 
-2. **Initial sync job**
+These are the minimal fields required so Insights and Playbooks can:
 
-   - Create `connector_jobs` row: `job_type = 'initial_sync'`, `status = 'pending'`.
+- Filter by provider.
 
-   - Background worker (Edge Function / server action) picks it up, marks `status = 'running'`.
+- Count successful vs failed runs.
 
-   - Fetch recent Drive files (with sensible limits).
-
-   - For each, upsert into `connector_files` and optionally map to `vault_documents`.
-
-   - On success: `status = 'success'`, set `finished_at`, update `last_sync_at` on account.
-
-   - Emit `connector_sync_started` / `connector_sync_completed` events.
-
-3. **Incremental sync**
-
-   - Same pattern, but with `job_type = 'incremental_sync'` and Drive page tokens stored in `payload`.
-
-4. **Error handling**
-
-   - On transient errors (rate limits, timeouts), update `connector_jobs` with incremented `attempts`, `backoff_seconds`, and reschedule.
-
-   - On permanent errors (invalid_grant, revoked tokens), set `status = 'failed'`, mark `connector_accounts.status = 'error'` and capture `last_error_message`.
-
-   - Emit `connector_sync_failed` + `connector_job_retried` where appropriate.
-
----
-
-## 5. Gmail (optional, feature-flagged)
-
-Gmail v1 is **metadata-only**:
-
-- We ingest a small batch of recent messages (eg. label = "Contracts").
-
-- We create `connector_files` rows with:
-
-  - `provider = 'gmail'`
-
-  - `name = subject`
-
-  - `path` representing label/folder.
-
-  - `vault_document_id` optionally set if/when we pull attachments into Vault.
-
-- We log all jobs via `connector_jobs` and ActivityLog events using the same schema.
-
-Gmail should be behind a feature flag so we can disable it safely in production while Drive matures.
-
----
-
-## 6. Next steps (later days in Week 9)
-
-- Wire up the **Drive connector service module** to this data model.
-
-- Implement server routes for connect / disconnect / "sync now".
-
-- Surface connector state, last sync and errors on the Integrations UI.
-
-- Ensure ActivityLog surfaces connector events and filters cleanly.
-
-This file is the source of truth for future connector implementations.
-
+- Compute per-doc / per-account usage over time.

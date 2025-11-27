@@ -1,11 +1,14 @@
 "use server";
 
+import { TEMPLATES } from "@/data/templates";
+import { buildMonoPreferenceConfig, getMonoProfiles, recordTemplateUsage } from "@/lib/mono/memory";
+import { buildMonoAwareSystemPrompt, formatMonoPreferenceConfigForDebug } from "@/lib/mono/prompt";
+import type { MonoBuilderType } from "@/lib/mono/types";
+import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import fs from "fs";
-import path from "path";
 import OpenAI from "openai";
-import { TEMPLATES } from "@/data/templates";
-import { createClient } from "@supabase/supabase-js";
+import path from "path";
 
 type CreateArgs = { templateId: string; prompt: string; userId: string };
 
@@ -17,18 +20,35 @@ export async function createDocFromTemplate({ templateId, prompt, userId }: Crea
   let body = `# ${tmpl.name}\n\nGenerated draft based on: ${tmpl.description}\n\n---\n\n${prompt}\n\n`;
   if (process.env.OPENAI_API_KEY) {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    // Base system prompt for contracts
+    const baseSystemPrompt = `Draft a concise, business-ready ${tmpl.name}.
+Guidance:
+- Use neutral labels ("Party A", "Party B") unless roles are provided.
+- Include headings and numbered clauses where appropriate.
+- Insert placeholders like [ADDRESS], [AMOUNT], [DATE] when info is missing.`;
+
+    // Get Mono preferences and build Mono-aware system prompt
+    const profiles = await getMonoProfiles();
+    const prefs = buildMonoPreferenceConfig(profiles);
+    const systemPrompt = buildMonoAwareSystemPrompt(baseSystemPrompt, prefs);
+
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.debug(formatMonoPreferenceConfigForDebug(prefs));
+    }
+
     const r = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.2,
       messages: [
         {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
           role: "user",
-          content: `Draft a concise, business-ready ${tmpl.name}.
-Guidance:
-- Use neutral labels ("Party A", "Party B") unless roles are provided.
-- Include headings and numbered clauses where appropriate.
-- Insert placeholders like [ADDRESS], [AMOUNT], [DATE] when info is missing.
-Context/requirements:
+          content: `Context/requirements:
 ${prompt}`,
         },
       ],
@@ -62,6 +82,24 @@ ${prompt}`,
     .from("versions")
     .insert({ doc_id: doc.id, number: 1, content_url: contentUrl });
   if (e2) return { error: e2.message };
+
+  // Log Mono template usage (fire-and-forget)
+  try {
+    const builderType: MonoBuilderType = "contract";
+    await recordTemplateUsage({
+      userId,
+      orgId: null,
+      builderType,
+      templateKey: templateId,
+      clauseKey: null,
+      source: "ai",
+    });
+  } catch (err) {
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.debug("[mono] recordTemplateUsage failed (non-blocking)", err);
+    }
+  }
 
   return { ok: true, docId: doc.id, version: 1, contentUrl };
 }
