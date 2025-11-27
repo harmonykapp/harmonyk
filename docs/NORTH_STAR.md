@@ -1,418 +1,713 @@
-# Monolyth — NORTH_STAR (v2025-11-24)
+# Monolyth — NORTH_STAR (v2025-11-26, GA Scope Locked)
 
-## 1. Tagline & Vision
+> **Tagline:**  
+> **Monolyth – All your docs. One brain.**
 
-**Tagline**  
-Monolyth — **All your docs. One brain.**
+This document is the **single source of truth** for what Monolyth is, who it’s for, and what we are shipping for GA in the 20-week build.
 
-**Vision**  
+If something in the code or UI disagrees with this, the code/UI is wrong unless we explicitly update this doc.
+
+---
+
+## 1. Vision
+
 Monolyth is the **document-first business OS** for founders and small teams.
 
-It connects all your important documents, automates the boring workflow glue around them, and gives you one AI operator — **Mono** — that knows what’s happening across your business.
+It connects your contracts, decks, and financial statements, puts them into one Vault, and gives you an AI operator — **Mono** — that:
 
-If you plug in your current doc mess (contracts, decks, PDFs, share links), Monolyth should feel like you suddenly hired a sharp operations person who:
-- Knows where every important doc lives.
-- Remembers what’s been done with it.
-- Nudges you on what needs to happen next.
+- Knows what’s in your docs.
+- Remembers your preferences.
+- Automates the “next steps” around those docs via tasks and Playbooks.
 
----
+The outcome:
 
-## 2. Who Monolyth Is For
-
-- Solo founders and lean teams who run their business out of Google Docs, Drive, PDFs, slides, and links.
-- SMBs drowning in contracts, proposals, and updates with no real system.
-- People who hate juggling 5–7 tools just to get a contract drafted, signed, shared, and tracked.
-
-Monolyth is **not** an enterprise ECM or a generic note-taking app. It’s a **doc-first business task organizer** for small teams that want leverage, not bureaucracy.
+- You stop juggling 5–7 tools (Docs, Slides, Sheets, e-sign, email, random trackers).
+- You stop losing track of deals, renewals, and investor updates.
+- You get a “doc ops brain” that sits on top of your Google Drive and Gmail.
 
 ---
 
-## 3. Core Job To Be Done
+## 2. Who Monolyth Is For (ICP)
 
-> “Show me everything that matters across my documents,  
-> help me get the next steps done automatically,  
-> and keep track of who did what, when.”
+Primary ICP for GA + first 12 months:
 
-In practical terms:
-- One pane of glass for your important docs and their status.
-- Smart workflows that move documents along without you micro-managing them.
-- A trustworthy log + analytics layer so you aren’t flying blind.
+- **Early-stage tech founders / operators**
+  - 0–20 employees
+  - B2B SaaS, agencies, consultancies, productised services
+- Running primarily on **Google Workspace**:
+  - Google Drive, Docs, Sheets, Slides
+  - Gmail
 
----
+They:
 
-## 4. Product Truths (Non-Negotiables)
+- Live in a mess of folders, drafts, and email threads.
+- Are constantly:
+  - Sending/negotiating contracts
+  - Building/updating decks
+  - Explaining basic financials to investors / advisors
 
-1. **Metadata-first ingestion**  
-   - Only pull full file content on **Preview / Save to Vault / Send for Signature**.  
-   - Connectors start as metadata + keyword search.
+They want:
 
-2. **Vault-only semantics**  
-   - Embeddings and semantic search **only** apply to docs stored in Vault.  
-   - External sources stay **keyword-federated**, not semantically blended.
-
-3. **Human-in-the-loop**  
-   - Mono proposes; users approve.  
-   - No silent changes to Playbooks, permissions, or critical workflows.
-
-4. **Explainability & Undo**  
-   - Every AI/automation has a reason, a log, and a path to undo.  
-   - Playbooks runs and AI actions are fully traceable.
-
-5. **Privacy by design**  
-   - Least-privilege scopes on integrations.  
-   - Doc-scoped guest tokens with TTL.  
-   - Watermarks/redactions where feasible on sensitive shares.
+- Less chaos.
+- Fewer tools.
+- Confidence that contracts, decks, and numbers are **in sync** and under control.
 
 ---
 
-## 5. Navigation & Information Architecture (GA)
+## 3. The Core Problem
 
-**Primary nav (GA):**  
-Dashboard · Workbench · Builder · Vault · Playbooks · Share Hub · Integrations · Insights · Task Hub · Settings
+Today, founders experience:
 
-**Conceptual groupings**
+1. **Contract chaos**
+   - NDAs, MSAs, SOWs, contractor agreements in random folders.
+   - No system for renewals, obligations, or changes.
+   - Cobbling together templates from old emails and Google search.
 
-- **Workspace:** Dashboard, Workbench, Builder, Vault.  
-- **Automation:** Playbooks, Task Hub.  
-- **Collaboration:** Share Hub (links, signatures, Guest Spaces).  
-- **Ops & Governance:** Insights, Settings, Integrations.
+2. **Deck chaos**
+   - Multiple versions of pitch and update decks.
+   - Story rarely matches the latest numbers.
+   - Decks built in a rush every time they need to send something out.
 
-Rule of thumb: every feature must clearly support one of these groups. If it doesn’t, it probably doesn’t belong in core.
+3. **Number chaos**
+   - Financials spread across Sheets, accounting tools, and half-finished dashboards.
+   - Investor snapshots rebuilt manually from scratch.
+   - Numbers in decks often out of date or inconsistent.
 
-**Golden Path (core flow)**  
-Workbench → Analyze → Builder → Save to Vault → Share → Sign → Activity/Insights.
+4. **Workflow glue hell**
+   - Use 5–7 tools to:
+     - Draft a contract,
+     - Get it signed,
+     - Track it,
+     - Build a deck,
+     - Send an update,
+     - Chase a renewal.
 
----
-
-## 6. Product Pillars
-
-### 6.1 Vault — Source of Truth
-
-- Stores Monolyth-native docs and references to external docs (e.g., Drive, OneDrive).  
-- Holds rich metadata: type, status, owner, tags, last activity, lineage.  
-- **Semantic index is Vault-only** for safety and clarity.  
-- Versioning and lineage: track how docs evolve, including Builder-generated versions.  
-- Storage metering is **Vault bytes only** (see Storage section).
-
-### 6.2 Builder — AI Document Studios
-
-- **Studios:**  
-  - **Contracts:** NDAs, MSAs, SOWs, employment docs, SLAs, etc.  
-  - **Decks:** pitch, board, updates; AI outline → slide auto-layout.  
-  - **Accounts:** receipts → entries, simple statements and summaries.
-
-- **Contracts (near-term focus)**  
-  - Template + Mono-driven drafting and redlining.  
-  - ClauseGraph: structured clause library with reuse and risk scoring (beta at GA).  
-  - Bundles: “hire packet”, “board pack”, “fundraising packet”.
-
-- **Decks & Accounts (GA)**  
-  - Decks: structured sections (problem, solution, traction, ask) with AI layouts.  
-  - Accounts: map receipts and docs to simple statements and exports.
-
-### 6.3 Workbench — Single Pane of Glass
-
-- Unified triage table across Vault + connectors.  
-- Federated keyword search over external sources; full semantics over Vault.  
-- Smart queues and filters: by source, owner, doc type, status, last activity.  
-- First place to:  
-  - Find a doc across your mess.  
-  - Run Analyze.  
-  - Kick off a Playbook on a selection or Saved View.  
-
-### 6.4 Playbooks — Automation Engine
-
-- **Deterministic workflows:**  
-  - Triggers / Conditions / Actions / Branching / Wait / Retry.  
-  - Event + manual triggers (e.g., “share_link_created”, “signature_completed”, “Run on selection”).
-
-- **Scope:**  
-  - Scoped to selection, folder, tag, or Saved View.  
-  - Users explicitly choose where a Playbook applies.
-
-- **Guardrails:**  
-  - “Save & Enable” required before anything runs on events.  
-  - Dry-run mode shows a plan and diff before live runs.  
-  - Logs + undo for supported actions (e.g., undo created share links).
-
-- **Library (v1 seeds):**  
-  - Inbound NDA → Save → Sign → Share.  
-  - Aging Proposals → reminder/bump.  
-  - Receipt detected → create expense doc → file to Accounts.
-
-Mono assists with design and explanation, but users approve and enable. No fully autonomous “run wild” automations.
-
-### 6.5 Share Hub — External Surface
-
-- Share Center for secure share links (passwords, expiries, download controls).  
-- Smart Share Page so external guests see everything relevant in one place.  
-- Basic **Guest Spaces** to cluster related docs and simplify guest access.  
-- E-signatures via **Documenso** (with room for other providers later).  
-
-### 6.6 Insights — Brain Telemetry
-
-- Activity Log records all meaningful events:  
-  - generate, analyze, save_to_vault, share_link_created, envelope status changes, playbook_run, Mono queries, etc.  
-- Dashboards show:  
-  - Time saved (Playbooks, Mono actions).  
-  - Bottlenecks (stalled docs, long approval chains).  
-  - Share/sign performance and risk hotspots.  
-- Export to CSV/PDF and (later) scheduled reports.
-
-### 6.7 Task Hub — Tasks & SLAs (GA+)
-
-- Two-way calendar + tasks sync (Google/Outlook).  
-- Tie documents and Playbooks to deadlines and owners.  
-- SLAs and simple escalation for Teams tier.
-
-### 6.8 Mono — AI Operator
-
-- Lives in a right-hand pane plus global “Ask Mono” entrypoint.  
-- Page-aware with **context chips** (route, selection, filters, doc status).  
-- Per module:
-  - **Workbench:** analyzes docs, suggests actions, organizes queues.  
-  - **Builder:** drafts contracts, clauses, decks; explains risks and changes.  
-  - **Vault:** explains status, suggests tags/owners, surfaces gaps.  
-  - **Playbooks:** helps design and explain triggers/conditions/actions.  
-  - **Share Hub:** suggests permissions/protections and next steps.  
-  - **Insights/Activity:** explains what the audit trail is telling you.
-
-Mono is a **copilot**, not an autonomous agent:
-- It **proposes** drafts and optimizations.  
-- You **approve** changes to Playbooks, permissions, and critical workflows.
+No one is watching the whole system. No one is reminding them what matters when.
 
 ---
 
-## 7. Storage, Import & Plan Caps
+## 4. Monolyth’s Answer (Conceptual Model)
 
-### 7.1 Storage & Metering
+Monolyth is a **single, opinionated system** with these core components:
 
-- Meter by **Vault storage (GB) only**. External docs are references and don’t count.  
-- Heavy media should stay as references where possible.  
-- Per-file size caps:
-  - Free: **25 MB**  
-  - Starter: **100 MB**  
-  - Pro: **250 MB**  
-  - Team: **500 MB**
+1. **Vault**  
+   - One place for all important docs.
+   - Metadata-first: who, what, when, how much, status, deal/round.
+   - Backed by RAG for retrieval.
 
-### 7.2 Import Windows
+2. **Builders**
+   - AI-assisted document builders for:
+     - Contracts
+     - Decks
+     - Financial statements/snapshots
 
-- Default import window = **YTD**.  
-- Presets: **12m / 36m / custom**, with progressive backfill on demand.  
-- Goal: avoid importing 10k low-value docs and blowing up Vault or UX on day one.
+3. **Mono (AI Operator)**
+   - The “brain” that can:
+     - Draft and revise documents.
+     - Explain and compare clauses.
+     - Summarise and interpret numbers.
+     - Suggest what to do next.
 
-### 7.3 Email & Receipts
+4. **Tasks**
+   - Internal Monolyth tasks, created mainly by Playbooks.
+   - Attached to docs and deals/rounds.
+   - Show up on Workbench and can send email reminders.
 
-- Email/receipts are parsed into lightweight records.  
-- Attachments are stored as Vault files **only when the user chooses** (“Save to Vault”).  
-- Keeps storage cheap and the Vault clean.
+5. **Playbooks**
+   - Deterministic workflows that respond to doc events (e.g. “contract signed”) and create tasks and notifications.
 
----
+6. **Connectors**
+   - For GA:
+     - Google Drive
+     - Gmail
+   - Post-GA:
+     - Slack, Notion, OneDrive, Google Calendar, Google Tasks, etc.
 
-## 8. Integrations (GA Direction)
+All of this is anchored around **deals/rounds**, so founders can see:
 
-**Storage & Docs**  
-- Google Drive, OneDrive, Box, Dropbox.  
-- Google Docs/Sheets/Slides; Microsoft 365; Canva (RO); Adobe (RO).
-
-**Email**  
-- Gmail and Outlook — **multi-account** per workspace.
-
-**Comms/PM/CRM**  
-- Slack, Notion, Asana, Trello, ClickUp.  
-- Salesforce/HubSpot files (RO).
-
-**Legal & Sign**  
-- Documenso (primary sign provider).  
-- DocuSign / Adobe Sign (RO surfacing of envelopes/status).
-
-**Finance**  
-- QuickBooks/Xero exports (RO).  
-- Long-term: map receipts and docs to accounting entries via Accounts Studio.
+> “Everything for this client / this funding round in one place.”
 
 ---
 
-## 9. Pricing & Plans
+## 5. GA Scope (Frozen)
 
-Pricing is designed so **Free drives virality**, and paid plans buy more docs, more automations, more AI, and more history.
+GA is a **20-week build** with the following frozen scope:
 
-- **Free** – $0  
-  - 100 MB Vault  
-  - 30 AI actions / month  
-  - 10 share links  
-  - 5 signatures / month  
-  - 2 built-in Playbooks/week, 1 rebuild/week  
-  - Limited Activity history
+### 5.1 Builders
 
-- **Starter** – $30/seat/month  
-  - 2 GB Vault  
-  - 300 AI actions / month  
-  - 50 share links  
-  - 50 signatures / month  
+We ship **three Builders**:
 
-- **Pro** – $60/seat/month  
-  - 10 GB Vault  
-  - 2,000 AI actions / month  
-  - 200 share links  
-  - 300 signatures / month  
+1. **Contracts Builder (Hero)**
+2. **Deck Builder** – exactly 2 flows:
+   - Fundraising Deck
+   - Investor Update Deck
+3. **Accounts Builder** – exactly 2 flows:
+   - SaaS Financial Pack
+   - Investor Financial Snapshot
 
-- **Team** – $200/month for 3 seats (+$50/additional seat)  
-  - 100 GB pooled Vault  
-  - 10,000 AI actions / month  
-  - 1,000 share links  
-  - 1,000 signatures / month  
+No additional Builders or flows are added before GA.
 
-**Annual**: ~20% discount.
+### 5.2 Connectors
 
-Upgrade nudges kick in around **80% of limits** (storage, AI actions, links, signatures).
+At GA, only:
 
----
+- **Google Drive** (live)
+- **Gmail** (live)
 
-## 10. 18-Week Delivery Plan (W1 → W18)
+All other connectors are **Post-GA**.
 
-**Beta target:** end of **Week 6** (hit).  
-**GA window:** **Weeks 14–18** (final polish + launch ops).
+### 5.3 AI Vendors
 
-High-level week focus:
+At GA, only:
 
-- **W1 – Repo & Auth Foundations**  
-  - Next.js app, Supabase auth, base layout, healthcheck. ✅
+- **OpenAI** (LLMs)
+- **Google** (for slides/visuals where needed)
 
-- **W2 – Vault & Builder v0**  
-  - Vault schema, basic doc model, first contract templates & generation. ✅
+No Claude, Llama, Grok, or others before GA.
 
-- **W3 – Generate → Save → Share v0**  
-  - Builder → Vault → Share flow, Documenso POC, initial ActivityLog. ✅
+### 5.4 Tasks
 
-- **W4 – Wiring & Telemetry**  
-  - Single Analyze path, ActivityLog events, debug routes, error handling. ✅
+At GA:
 
-- **W5 – New UI + Mono + Nav**  
-  - Bolt UI migrated; Mono pane on core pages; shells for Playbooks/Share/Activity. ✅
+- Tasks are **internal Monolyth tasks**:
+  - Created by Playbooks.
+  - Shown on Workbench.
+  - Linked to docs and deals/rounds.
+  - Support email reminders.
 
-- **W6 – Beta Hardening & Release**  
-  - Feature flags; onboarding doc; closed beta; fixes from feedback. ✅
-
-- **W7 – Playbooks Engine v1**  
-  - Deterministic engine (Triggers/Conditions/Actions/Wait/Retry), seed library, logs/undo, dry-run guardrails.
-
-- **W8 – Insights & Activity v1**  
-  - Filters, simple dashboards (time saved, bottlenecks), CSV/PDF export; tie to ActivityLog.
-
-- **W9 – Connectors v1**  
-  - Harden Drive; optional Gmail import; connector error states & backoff.
-
-- **W10 – Share Hub & Guest Spaces v1**  
-  - Smart Share Page (un/branded by plan), basic Guest Spaces; link management polish.
-
-- **W11 – Builder Expansion**  
-  - Studios scaffolds for Decks & Accounts; bundle flows (hire packet, board pack).
-
-- **W12 – Playbooks v2 & Automation UX**  
-  - Better editor; more triggers/actions; Mono-assisted playbook design.
-
-- **W13 – Pricing & Plan Caps**  
-  - Enforce plan-based limits (docs, AI actions, links, signatures, GB storage) with 80% nudges.
-
-- **W14 – Onboarding & Stability**  
-  - Setup flows, in-app tours, error UX, performance tuning; GA dress rehearsal.
-
-- **W15 – Federated Search GA**  
-  - Keyword across connectors; Saved Views; semantic/full-text on Vault only.
-
-- **W16 – Task Hub (Two-Way)**  
-  - Google/Outlook two-way calendar & tasks; SLAs for Teams.
-
-- **W17 – Governance & Storage UI**  
-  - Branding/allowlists; retention (Teams); GB metering UI (Vault bytes only).
-
-- **W18 – GA Ops & Launch**  
-  - Perf polish, a11y AA, security, docs; pricing/caps enforcement; launch ops.
+No external task/calendar sync until Post-GA.
 
 ---
 
-## 11. Telemetry & KPIs
+## 6. Core Modules (Detailed)
 
-### 11.1 KPIs
+### 6.1 Workbench
 
-- **Activation**  
-  - Connect ≥1 integration **and** run ≥1 Playbook in first 7 days.
+Workbench is the default entry point.
 
-- **Time-to-Value**  
-  - Minutes to first “Saved to Vault” doc and first signature sent.
+It shows:
 
-- **Weekly Active Workspaces**  
-  - ≥3 meaningful actions/week (generate, share, sign, playbook run, etc.).
+- **Recent Activity**
+  - Contracts:
+    - Created, sent, viewed, signed.
+  - Decks:
+    - Generated, updated.
+  - Accounts:
+    - New snapshots/packs created.
 
-- **Automation Impact**  
-  - Time saved via Playbooks and Mono (per workspace).  
-  - Signature conversion rate.  
-  - Share link engagement.
+- **Open Tasks**
+  - Internal tasks that need attention:
+    - “Review renewal for Client X”
+    - “Send investor update deck”
+    - “Refresh SaaS metrics”
 
-- **Upgrade Triggers**  
-  - Users hitting 80% of storage, AI actions, links, signatures.
+- **Active Deals & Rounds**
+  - Cards representing:
+    - Important clients (deals)
+    - Fundraising rounds
+  - Each card links to:
+    - Related contracts
+    - Latest deck
+    - Latest financial snapshot
+    - Open tasks
 
-### 11.2 Telemetry (PostHog Event IDs)
+- **Mono Side Panel**
+  - Context-aware assistant:
+    - “What changed this week?”
+    - “What should I focus on?”
+    - “Explain this contract / deck / snapshot.”
 
-- workbench_view  
-- search_federated_query  
-- import_started / import_completed  
-- vault_doc_created  
-- version_pruned  
-- ai_analyze_completed  
-- builder_generate  
-- share_link_created  
-- guest_signup  
-- envelope_status_changed  
-- playbook_run  
-- storage_warning_shown  
-- upgrade_nudge_clicked  
-
-Coverage target: **≥95%** of key flows by GA.
-
----
-
-## 12. Non-Goals (Next 12–18 Months)
-
-- No heavy enterprise ECM/DMS bloat.  
-- No generic “chat-over-everything” agent that quietly rewires workflows.  
-- No wiki / knowledge base focus; we care about **docs that move money or risk**  
-  (contracts, proposals, board packs, investor updates, statements).  
-- No marketplace sprawl before core flows are rock-solid.
+- **Quick Actions**
+  - New Contract
+  - New Deck
+  - New Statement
+  - Analyze Doc
+  - Send for Signature
 
 ---
 
-## 13. Definition of Done (GA) vs Win
+### 6.2 Vault
 
-### 13.1 Definition of Done (Product/Engineering)
+Vault is the central store for docs and their metadata.
 
-By GA:
+Each doc in Vault has:
 
-- All GA nav routes live and stable: Dashboard, Workbench, Builder, Vault, Playbooks, Share Hub, Integrations, Insights, Task Hub, Settings.  
-- Playbooks and Guest Spaces production-ready with guardrails (dry-run, logs, undo).  
-- Vault GB metering and per-file limits enforced **with visible UI**.  
-- ClauseGraph and Decks/Accounts exports stable.  
-- Telemetry coverage ≥95%, alerting wired.  
-- Runbooks in place:  
-  - Incident response  
-  - Data export/delete  
-  - Support SLAs
+- ID
+- Type: contract / deck / statement / other
+- Source: Builder / Drive / Gmail / upload
+- Parties / counterparties (contracts)
+- Dates:
+  - Created
+  - Effective
+  - Signed
+  - Renewal
+  - Expiry
+- Amounts:
+  - Fees
+  - MRR / ARR
+  - Other key metrics where applicable
+- Status: draft / sent / signed / archived
+- Links:
+  - Share links
+  - E-sign IDs
+- **Deal / Round / Project Tag**
 
-### 13.2 Definition of “Win” for This Phase (Customer/Market)
+Vault also:
 
-By the end of this 18-week cycle:
+- Serves as the **RAG corpus**:
+  - Content is chunked and embedded.
+- Drives search / filters for:
+  - Workbench
+  - Builders
+  - Mono
 
-- **5–10 active teams** using Monolyth weekly for real contract/proposal/deck flows.  
-- At least **2–3 workflows** where Playbooks + Mono clearly save **hours per week**.  
-- Clear usage patterns that justify going deeper on:
-  - Playbooks (automation)  
-  - Share Hub / Guest Spaces (external workflows)  
-  - or both.
+---
 
-If founders and small teams can honestly say:
+### 6.3 Contracts Builder
 
-> “I finally know what’s happening across all my docs,  
-> and I don’t have to search other apps or chase people for next steps,”
+Contracts Builder is the **flagship**.
 
-then this North Star is on track.
+It supports:
 
+- Common startup-focused templates:
+  - Mutual NDA
+  - Service Agreement / MSA
+  - SOW / Work Order
+  - Contractor Agreement
+- Clause library with:
+  - Clause categories (confidentiality, liability, termination, etc.)
+  - Standard positions (friendly / balanced / aggressive).
+
+Flows:
+
+1. **Create from template**
+   - Pick contract type.
+   - Answer a guided UI for key parameters.
+   - Mono generates a first draft.
+
+2. **Edit with Mono**
+   - Ask Mono to:
+     - Explain clauses.
+     - Compare versions.
+     - Suggest alternative wording (based on tone/risk profile).
+   - Mono is grounded in:
+     - Org/User preferences (Mono Memory).
+     - Similar past contracts (RAG).
+
+3. **Send & Sign**
+   - Generate a share link / signature request via e-sign provider.
+   - Track:
+     - Sent
+     - Viewed
+     - Signed
+
+4. **Post-sign**
+   - Store executed version in Vault.
+   - Trigger Playbooks to create tasks:
+     - Renewal review tasks.
+     - Key obligation tasks.
+
+---
+
+### 6.4 Deck Builder (2 Flows)
+
+Deck Builder:
+
+1. **Fundraising Deck**
+2. **Investor Update Deck**
+
+Inputs:
+
+- Company basics (name, stage, sector).
+- Metrics from Accounts Builder outputs (where available).
+- Existing deck (optional) for remix.
+
+Outputs:
+
+- A structured deck:
+  - Headline
+  - Problem / solution
+  - Traction
+  - Business model
+  - Market
+  - Team
+  - Ask / use of funds (for fundraising)
+- Slide-level content that can be exported to:
+  - Google Slides
+  - PDF
+
+Mono helps:
+
+- Rewrite content for clarity and tone.
+- Align story with latest numbers (via RAG over financial snapshots).
+
+---
+
+### 6.5 Accounts Builder (2 Flows)
+
+Accounts Builder:
+
+1. **SaaS Financial Pack**
+   - Revenue / MRR / ARR
+   - Basic P&L shape
+   - Simple balance sheet/runway view
+2. **Investor Financial Snapshot**
+   - Headline metrics:
+     - MRR / ARR
+     - Growth rates
+     - Burn and runway
+     - High-level unit economics where available
+
+Inputs:
+
+- Manual entry or CSV upload.
+- Later: direct Sheet reading (if possible within GA without scope creep).
+
+Mono:
+
+- Explains trends.
+- Highlights anomalies against previous snapshots.
+
+Deck Builder can pull from Accounts outputs to keep decks aligned.
+
+---
+
+### 6.6 Tasks
+
+Tasks are:
+
+- Internal Monolyth objects at GA.
+- Created mainly via Playbooks.
+- Linked to:
+  - Contracts
+  - Decks
+  - Statements
+  - Deals / rounds
+
+Each task has:
+
+- Title
+- Description (optional)
+- Linked object(s)
+- Due date / relative schedule
+- Status (open / completed)
+
+Tasks appear:
+
+- On Workbench (“Open Tasks”).
+- Potentially on a simple Tasks view (if implemented within GA effort).
+
+Tasks can trigger:
+
+- Email reminders (via a simple scheduled job or Playbook).
+
+No external sync to Google Tasks/Calendar until Post-GA.
+
+---
+
+### 6.7 Playbooks
+
+Playbooks are deterministic automations like:
+
+- **On Contract Signed**
+  - Store executed contract.
+  - Create renewal review task.
+  - Optional follow-up email.
+
+- **On Fundraising Deck Generated**
+  - Log activity.
+  - Create “send to investors” task.
+
+- **On Investor Snapshot Created**
+  - Link to latest deck.
+  - Create “send investor update” task.
+
+The engine:
+
+- Reads event payloads from ActivityLog.
+- Writes tasks and logs back to DB.
+- May call OpenAI for summaries where needed (but flows are deterministic).
+
+User-built Playbooks and a marketplace are Post-GA.
+
+---
+
+### 6.8 Connectors
+
+**GA Live Connectors:**
+
+- **Google Drive**
+  - Folder selection.
+  - File import (docs, slides, PDFs).
+  - Store file references + snapshots in Vault.
+
+- **Gmail**
+  - Limited-scope ingestion:
+    - Recent attachments.
+    - Important links (e.g. share links).
+  - Attach to Vault docs.
+
+**UI-only (Coming Soon) Connectors (No Sync at GA):**
+
+- Google Calendar
+- Google Tasks
+- Slack
+- Notion
+- OneDrive
+- Others
+
+These are visible but disabled to signal future breadth.
+
+---
+
+## 7. AI Architecture
+
+### 7.1 Vendors
+
+At GA:
+
+- **OpenAI** – single LLM provider for:
+  - Contracts Builder
+  - Decks Builder
+  - Accounts Builder
+  - Mono
+  - Playbooks summarisation (where needed)
+
+- **Google** – for:
+  - Slides/visual generation or integration.
+  - OCR/vision tasks if required.
+
+No multi-provider switching before GA.
+
+---
+
+### 7.2 Mono Memory v1
+
+Mono Memory has two main tables:
+
+1. `mono_org_profile`
+   - `org_id`
+   - `default_tone` (`formal` | `neutral` | `casual`)
+   - `default_risk_profile` (`friendly` | `balanced` | `aggressive`)
+   - `default_jurisdiction` (e.g. “Delaware, USA”)
+   - `default_locale` (e.g. “en-US”)
+
+2. `mono_user_profile`
+   - `user_id` (auth.users)
+   - `org_id` (optional)
+   - `tone`
+   - `risk_profile`
+   - `default_jurisdiction`
+   - `default_locale`
+
+Helpers:
+
+- `getMonoProfiles()` – loads user + org profile, with sane defaults if missing.
+- `buildMonoPreferenceConfig()` – returns a small object used in prompts.
+
+Mono and Builders:
+
+- Read these preferences on every call.
+- Use them to shape:
+  - Draft tone.
+  - Risk posture for clauses.
+  - Jurisdiction defaults.
+  - Spelling/format (locale).
+
+---
+
+### 7.3 Template Usage Logging
+
+`mono_template_usage` table:
+
+- `user_id`
+- `org_id`
+- `builder_type` (`contract` | `deck` | `accounts`)
+- `template_id`
+- `clause_id`
+- `usage_count`
+- `last_used_at`
+
+For GA:
+
+- We **insert** rows whenever:
+  - A template is selected.
+  - A clause is added/accepted.
+- We **log** errors but never block the main request.
+
+Post-GA:
+
+- Use this data for:
+  - Re-ranking templates/clauses.
+  - “Frequently used” suggestions.
+  - User-level and org-level learning.
+
+---
+
+### 7.4 RAG
+
+RAG components:
+
+- Embedding store (in Supabase or external vector DB).
+- Chunking strategy:
+  - Contract sections, deck slides, snapshot sections.
+- Query API:
+  - `searchRag(query, options)` returns matched chunks + metadata.
+
+Usage:
+
+- Mono:
+  - When explaining a contract, deck, or snapshot, fetch top-k chunks of that doc.
+  - When asked about “past deals” or “similar contracts”, search across Vault.
+
+- Builders:
+  - Contracts Builder:
+    - Reuse language from previous similar contracts.
+  - Deck Builder:
+    - Pull in latest metrics from financial snapshots.
+  - Accounts Builder:
+    - Compare with previous snapshots for trend context.
+
+For GA:
+
+- RAG is **basic but real**:
+  - Index docs written by Builders and imported from connectors.
+  - Use retrieval in a few key flows.
+- Advanced ranking and cross-doc analytics are Post-GA.
+
+### 7.5 Mono Memory + RAG (Week 9)
+
+- Week 9 ships the first version of Mono's "brain" layer:
+  - Mono Memory v1 (org/user profiles + template usage logging) wired into Contracts Builder.
+  - RAG foundations (embeddings table + helpers) wired into Mono's analyze/explain path.
+- The detailed architecture lives in `docs/AI_MONO_MEMORY_AND_RAG_V1.md`.
+- Behavioural goal: every contract generation and Mono doc-explain call can be conditioned on stable preferences and, later, grounded in stored document chunks.
+
+This is a foundation-only milestone; real embeddings and profile UI will be implemented in later weeks, without changing the public APIs introduced here.
+
+---
+
+## 8. Product Strategy Guardrails
+
+Until GA:
+
+- No new Builders.
+- No new flows beyond the 2 Deck and 2 Accounts flows.
+- No new live connectors beyond Google Drive + Gmail.
+- No new AI vendors beyond OpenAI + Google.
+- No rewriting the whole product vision.
+
+We can:
+
+- Improve prompts.
+- Improve UX.
+- Improve metadata and tasks.
+- Tighten the “Contracts First” path.
+
+---
+
+## 9. Hero Paths
+
+GA must support **three excellent hero paths**:
+
+1. **Close a New Client**
+   - Create NDA (Contracts Builder).
+   - Create MSA/SOW.
+   - Send for signature.
+   - Store executed docs in Vault.
+   - Auto-create renewal/obligation tasks.
+
+2. **Run a Fundraise**
+   - Build/refresh SaaS Financial Pack + Investor Snapshot.
+   - Generate Fundraising Deck.
+   - Create tasks to send to target investors.
+   - Keep deck narrative in sync with snapshot metrics.
+
+3. **Do Monthly Investor Updates**
+   - Refresh metrics.
+   - Generate Investor Snapshot.
+   - Generate Investor Update Deck.
+   - Create “send update” tasks.
+
+These three flows should be obvious in:
+
+- Onboarding.
+- Workbench.
+- Marketing site.
+- Your founder launch video.
+
+---
+
+## 10. Pricing & Plans (Guiding Idea)
+
+Not strictly enforced at GA but guiding:
+
+- **Free**
+  - Single user
+  - Limited docs
+  - Limited Playbooks and tasks
+
+- **Starter**
+  - Ideal for solo founders
+  - Unlocks Contracts, simple Decks, basic Accounts
+
+- **Pro**
+  - For 2–10 person teams
+  - More volume, more tasks, better Playbooks
+
+- **Team**
+  - For small teams with multiple builders
+  - Higher limits, more collaboration features
+
+Pricing can move, but the structure should reinforce the wedge:
+- People pay more as they rely on Monolyth for **core contract, deck, and number workflows**.
+
+---
+
+## 11. Post-GA Direction (High Level)
+
+After GA, success looks like:
+
+- 50–100 real signups.
+- 20–30 active teams.
+- 5+ founders using Monolyth as their primary way to:
+  - Manage contracts
+  - Communicate with investors
+  - Share key numbers
+
+Post-GA roadmap (only after GA ships):
+
+- More connectors:
+  - Slack, Notion, OneDrive, Google Calendar, Google Tasks
+- Richer Tasks:
+  - Two-way sync with Calendar/Tasks
+- User Playbooks:
+  - Custom automations, sharing, marketplace
+- “AI Library” UI:
+  - Template/Clause usage analytics
+  - Org knowledge views
+- Verticalisation:
+  - More template packs for specific verticals
+
+But **none** of that changes GA scope.
+
+---
+
+## 12. Final Rule
+
+> **We do not change this North Star or GA scope until GA is shipped.**
+
+We can:
+
+- Fix bugs.
+- Improve UX.
+- Tune prompts and defaults.
+- Tighten product language.
+
+We **cannot**:
+
+- Add new modules.
+- Add new Builders/flows.
+- Introduce new AI vendors.
+
+We ship the GA we’ve defined here, then iterate in public.
