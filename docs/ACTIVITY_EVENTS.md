@@ -297,11 +297,40 @@ These are mirrored in `lib/activity-events.ts`. Don't invent one-off strings in 
     }
     ```
 
-- `signature_request_sent`
+- `send_for_signature` ✅ **Implemented (Week 12 Day 1)**
+
+  - **When:** A document is sent for signature via Documenso.
+
+  - **Source:** `signatures`
+
+  - **Location:** `app/api/sign/documenso/route.ts:360`
+
+  - **Payload:**
+
+    ```json
+    {
+      "document_id": "uuid",
+      "version_id": "uuid | null",
+      "unified_item_id": "uuid | null",
+      "envelope_id": "uuid",
+      "context": {
+        "provider": "documenso",
+        "envelope_id": "uuid",
+        "provider_envelope_id": "string",
+        "recipient_email": "user@example.com",
+        "recipient_name": "User Name",
+        "documenso_response": {...}
+      }
+    }
+    ```
+
+- `signature_request_sent` ⚠️ **Referenced but not implemented**
 
   - **When:** A signature request is sent to one or more recipients.
 
   - **Source:** `signatures`
+
+  - **Status:** Referenced in `app/api/activity/list/route.ts` but not currently logged. May be an alias for `send_for_signature`.
 
   - **Payload:**
 
@@ -315,11 +344,13 @@ These are mirrored in `lib/activity-events.ts`. Don't invent one-off strings in 
     }
     ```
 
-- `signature_completed`
+- `signature_completed` ⚠️ **Referenced but not implemented**
 
   - **When:** All required signatures are completed and the document is marked executed.
 
   - **Source:** `signatures`
+
+  - **Status:** Referenced in `app/api/activity/list/route.ts` but not currently logged. Should be triggered by Documenso webhook or polling (planned for Week 12 Day 2).
 
   - **Payload:**
 

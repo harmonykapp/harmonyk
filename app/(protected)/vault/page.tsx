@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
 import { phCapture } from "@/lib/posthog-client";
 import { TEMPLATES } from "@/data/templates";
+import { logBuilderEvent } from "@/lib/telemetry/builder";
 import type { Document, Version } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ type VersionSummary = Pick<Version, "document_id" | "number" | "content" | "crea
 type Row = {
   id: string;
   title: string;
+  kind?: string | null;
   templateId?: string | null;
   created_at: string;
   updated_at: string;
@@ -214,10 +216,11 @@ export default function VaultPage() {
       const merged: Row[] = (docs ?? []).map((d) => {
         const meta = info.get(d.id) ?? { latest: undefined, count: 0, updatedAt: d.created_at };
         return {
-        id: d.id,
-        title: d.title,
+          id: d.id,
+          title: d.title,
+          kind: d.kind ?? null,
           templateId: null,
-        created_at: d.created_at,
+          created_at: d.created_at,
           updated_at: meta.updatedAt ?? d.created_at,
           versionCount: meta.count,
           latestVersion: meta.latest,
@@ -271,7 +274,72 @@ export default function VaultPage() {
     }
     await logEvent(r.id, "view");
     phCapture("vault_view_doc", { docId: r.id });
-    const blob = new Blob([r.latestVersion.content], { type: "text/markdown" });
+
+    // For decks, use the export route which renders HTML properly
+    if (r.kind === "deck") {
+      const exportUrl = `/api/decks/${r.id}/export`;
+      window.open(exportUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    // For other documents, render markdown as HTML
+    // Strip metadata comments if present
+    let content = r.latestVersion.content;
+    const metadataMatch = content.match(/<!-- MONO_[A-Z_]+:({.*?}) -->\s*\n*/s);
+    if (metadataMatch) {
+      content = content.replace(metadataMatch[0], "");
+    }
+
+    // Simple markdown to HTML conversion (basic rendering)
+    // Convert headers, lists, code blocks, etc.
+    let html = content
+      .replace(/^# (.*$)/gim, "<h1>$1</h1>")
+      .replace(/^## (.*$)/gim, "<h2>$1</h2>")
+      .replace(/^### (.*$)/gim, "<h3>$1</h3>")
+      .replace(/^\* (.*$)/gim, "<li>$1</li>")
+      .replace(/^- (.*$)/gim, "<li>$1</li>")
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/`(.*?)`/g, "<code>$1</code>")
+      .replace(/\n\n/g, "</p><p>")
+      .replace(/\n/g, "<br>");
+
+    // Wrap lists
+    html = html.replace(/(<li>.*?<\/li>)/g, "<ul>$1</ul>");
+    html = "<p>" + html + "</p>";
+
+    // Create full HTML document
+    const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${r.title || "Document"}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+      color: #333;
+    }
+    h1 { font-size: 2rem; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 2px solid #ddd; padding-bottom: 0.5rem; }
+    h2 { font-size: 1.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #555; }
+    h3 { font-size: 1.25rem; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+    p { margin: 1rem 0; }
+    ul, ol { margin: 1rem 0; padding-left: 2rem; }
+    code { background: #f5f5f5; padding: 0.2rem 0.4rem; border-radius: 3px; font-family: "Courier New", monospace; font-size: 0.9em; }
+    pre { background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>${r.title || "Document"}</h1>
+  ${html}
+</body>
+</html>`;
+
+    const blob = new Blob([fullHtml], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener,noreferrer");
     setTimeout(() => URL.revokeObjectURL(url), 100);
@@ -286,6 +354,19 @@ export default function VaultPage() {
     }
     await logEvent(r.id, "download");
     phCapture("vault_download_doc", { docId: r.id });
+
+    // For decks, use the export route
+    if (r.kind === "deck") {
+      const exportUrl = `/api/decks/${r.id}/export`;
+      window.open(exportUrl, "_blank", "noopener,noreferrer");
+      toast({
+        title: "Export opened",
+        description: "Use your browser's print function (Ctrl+P / Cmd+P) to save as PDF.",
+      });
+      return;
+    }
+
+    // For other documents, download as markdown
     const blob = new Blob([r.latestVersion.content], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -323,13 +404,23 @@ export default function VaultPage() {
       if (!response.ok) {
         const status = response.status;
         let payload: { id?: string; url?: string; error?: string } = {};
-        try {
-          payload = await response.json();
-        } catch {
-          // Ignore JSON parse errors
-        }
+        let errorMessage = "Failed to create share link";
         
-        const errorMessage = payload?.error || "Failed to create share link";
+        try {
+          const text = await response.text();
+          if (text) {
+            try {
+              payload = JSON.parse(text) as { id?: string; url?: string; error?: string };
+              errorMessage = payload?.error || errorMessage;
+            } catch {
+              // If JSON parse fails, use the text as error message
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          // If response.text() fails, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
         
         handleApiError({
           status,
@@ -607,9 +698,38 @@ export default function VaultPage() {
                           <h3 className="font-medium text-sm line-clamp-2 leading-tight">
                             {doc.title}
                           </h3>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {doc.templateId ? templateNameMap.get(doc.templateId) ?? "—" : "—"}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {doc.kind === "deck" && (
+                              <Badge variant="secondary" className="text-xs">
+                                {(() => {
+                                  const deckType = doc.latestVersion?.content
+                                    ? (() => {
+                                        const metadataMatch = doc.latestVersion.content.match(/<!-- MONO_DECK_METADATA:({.*?}) -->/);
+                                        if (metadataMatch) {
+                                          try {
+                                            const metadata = JSON.parse(metadataMatch[1]) as { deck_type?: string };
+                                            if (metadata.deck_type === "fundraising") return "Fundraising";
+                                            if (metadata.deck_type === "investor_update") return "Investor Update";
+                                          } catch {
+                                            // Ignore
+                                          }
+                                        }
+                                        return "Deck";
+                                      })()
+                                    : "Deck";
+                                  return `Deck: ${deckType}`;
+                                })()}
+                              </Badge>
+                            )}
+                            {doc.templateId && (
+                              <span className="text-xs text-muted-foreground">
+                                {templateNameMap.get(doc.templateId) ?? "—"}
+                              </span>
+                            )}
+                            {!doc.kind && !doc.templateId && (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </div>
                         </div>
                         {vaultExperimental && (
                           <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -635,9 +755,38 @@ export default function VaultPage() {
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="space-y-1 flex-1">
                         <h2 className="text-xl font-semibold">{selectedDocument.title}</h2>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedDocument.templateId ? templateNameMap.get(selectedDocument.templateId) ?? "—" : "—"}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          {selectedDocument.kind === "deck" && (
+                            <Badge variant="secondary" className="text-xs">
+                              {(() => {
+                                const deckType = selectedDocument.latestVersion?.content
+                                  ? (() => {
+                                      const metadataMatch = selectedDocument.latestVersion.content.match(/<!-- MONO_DECK_METADATA:({.*?}) -->/);
+                                      if (metadataMatch) {
+                                        try {
+                                          const metadata = JSON.parse(metadataMatch[1]) as { deck_type?: string };
+                                          if (metadata.deck_type === "fundraising") return "Fundraising";
+                                          if (metadata.deck_type === "investor_update") return "Investor Update";
+                                        } catch {
+                                          // Ignore
+                                        }
+                                      }
+                                      return "Deck";
+                                    })()
+                                  : "Deck";
+                                return `Deck: ${deckType}`;
+                              })()}
+                            </Badge>
+                          )}
+                          {selectedDocument.templateId && (
+                            <span className="text-sm text-muted-foreground">
+                              {templateNameMap.get(selectedDocument.templateId) ?? "—"}
+                            </span>
+                          )}
+                          {!selectedDocument.kind && !selectedDocument.templateId && (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
@@ -697,6 +846,93 @@ export default function VaultPage() {
                         onClick={() => openDoc(selectedDocument.id)}
                       >
                         Open in Builder
+                      </Button>
+                    )}
+                    {selectedDocument.kind === "deck" && (
+                      <Button
+                        className="w-full justify-start"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const exportUrl = `/api/decks/${selectedDocument.id}/export`;
+                            toast({
+                              title: "Exporting deck",
+                              description: "Generating export...",
+                            });
+
+                            // Get current user ID to pass to API for auth
+                            let currentUserId: string | null = userId;
+                            if (!currentUserId) {
+                              try {
+                                const { data: { user } } = await sb.auth.getUser();
+                                if (user) {
+                                  currentUserId = user.id;
+                                }
+                              } catch {
+                                // Ignore errors, will fall back to cookie-based auth
+                              }
+                            }
+
+                            // Fetch with credentials to ensure cookies are sent
+                            const response = await fetch(exportUrl, {
+                              method: "GET",
+                              credentials: "include",
+                              headers: {
+                                Accept: "text/html",
+                                ...(currentUserId && { "x-user-id": currentUserId }),
+                              },
+                            });
+
+                            if (!response.ok) {
+                              const errorText = await response.text().catch(() => "Unknown error");
+                              throw new Error(errorText || `HTTP ${response.status}`);
+                            }
+
+                            const htmlBlob = await response.blob();
+                            const blobUrl = URL.createObjectURL(htmlBlob);
+                            const newWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
+
+                            // Clean up blob URL after a delay (even if window.open returns null)
+                            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+
+                            if (!newWindow) {
+                              // window.open can return null even when it succeeds in some browsers
+                              // Log a warning but don't fail - the blob URL is accessible
+                              console.warn("[export-deck] window.open() returned null, but export may have succeeded");
+                              toast({
+                                title: "Export generated",
+                                description: "Deck export ready. If a new tab didn't open, please check your popup blocker settings.",
+                              });
+                            } else {
+                              toast({
+                                title: "Export opened",
+                                description: "Deck export opened in a new tab.",
+                              });
+                            }
+
+                            // Log telemetry (fire-and-forget)
+                            try {
+                              logBuilderEvent("deck_exported", {
+                                doc_id: selectedDocument.id,
+                                source: "vault",
+                                // deck_type will be parsed from metadata if needed, or can be added later
+                              });
+                            } catch {
+                              // Ignore telemetry errors
+                            }
+                          } catch (error) {
+                            console.error("[export-deck] Error", error);
+                            toast({
+                              title: "Export failed",
+                              description: error instanceof Error ? error.message : "Failed to export deck",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        disabled={actionsDisabled}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export Deck
                       </Button>
                     )}
                     <Button

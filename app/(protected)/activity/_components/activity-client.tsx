@@ -14,6 +14,7 @@ import type { ActivityLogRow } from "@/lib/activity-log";
 import { phCapture } from "@/lib/posthog-client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition, useRef } from "react";
+import Link from "next/link";
 
 type Props = {
   workspaceId?: string;
@@ -379,8 +380,8 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
                 <tbody>
                   {events.map((row) => {
                     // The API returns 'type' field, not 'event_type'
-                    const eventType = ((row as any).type || (row as any).event_type || "unknown") as string;
-                    const context = ((row as any).context ?? {}) as any;
+                    const eventType = ((row as any).type || row.event_type || "unknown") as string;
+                    const context = ((row as any).context ?? row.payload ?? {}) as any;
                     const fileName =
                       context.file_name ??
                       context.document_title ??
@@ -391,6 +392,14 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
                     const humanizedType = eventType
                       .replace(/_/g, " ")
                       .replace(/\b\w/g, (l: string) => l.toUpperCase());
+
+                    // Determine relevant links based on event data
+                    const hasDocumentId = row.document_id != null;
+                    const isSignatureEvent = 
+                      (row.source ?? "").toLowerCase().includes("signature") ||
+                      eventType.toLowerCase().includes("signature") ||
+                      eventType.toLowerCase().includes("envelope");
+                    const docId = row.document_id;
 
                     return (
                       <tr key={row.id} className="border-t hover:bg-muted/50 transition-colors">
@@ -414,13 +423,39 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
                           </div>
                         </td>
                         <td className="px-3 py-2 align-top">
-                          <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground max-w-[120px] truncate" title={(row as any).source ?? "unknown"}>
-                            {(row as any).source ?? "unknown"}
+                          <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground max-w-[120px] truncate" title={row.source ?? "unknown"}>
+                            {row.source ?? "unknown"}
                           </span>
                         </td>
                         <td className="px-3 py-2 align-top">
-                          <div className="max-w-[200px] truncate text-xs" title={fileName || row.document_id || undefined}>
-                            {fileName || row.document_id || "—"}
+                          <div className="max-w-[200px] truncate text-xs space-y-1">
+                            {hasDocumentId || fileName ? (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="truncate" title={fileName || docId || undefined}>
+                                  {fileName || docId || "—"}
+                                </span>
+                                {hasDocumentId && (
+                                  <Link
+                                    href="/vault"
+                                    className="text-primary hover:underline text-[10px] whitespace-nowrap"
+                                    title="View document in Vault"
+                                  >
+                                    View Doc
+                                  </Link>
+                                )}
+                                {isSignatureEvent && (
+                                  <Link
+                                    href="/signatures"
+                                    className="text-primary hover:underline text-[10px] whitespace-nowrap"
+                                    title="View signature details"
+                                  >
+                                    Signatures
+                                  </Link>
+                                )}
+                              </div>
+                            ) : (
+                              "—"
+                            )}
                           </div>
                         </td>
                       </tr>

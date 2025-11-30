@@ -215,7 +215,9 @@ export type ActivityType =
   | 'send_for_signature'
   | 'envelope_status_changed'
   | 'mono_query'
-  | 'selftest';
+  | 'selftest'
+  // Week 15 — Accounts Packs v1
+  | 'accounts_pack_failure';
 
 export interface LogActivityParams {
   orgId: string;

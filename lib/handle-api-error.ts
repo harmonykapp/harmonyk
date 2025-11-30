@@ -35,7 +35,10 @@ export function handleApiError(params: {
       variant: "destructive",
     });
 
-    console.error(`${label} auth error`, { status, errorMessage });
+    console.error(`${label} auth error`, {
+      status: status ?? "unknown",
+      errorMessage: errorMessage ?? "No error message provided",
+    });
 
     if (redirectToLogin && router) {
       // Soft redirect to login if provided; do not throw if router is missing.
@@ -52,7 +55,24 @@ export function handleApiError(params: {
     variant: "destructive",
   });
 
-  console.error(`${label} api error`, { status, errorMessage });
+  // Log error - use string message to ensure visibility
+  const statusValue = status ?? 500;
+  const errorMsg = errorMessage ?? "No error message provided";
+  const errorDetailsStr = `Status: ${statusValue}, Message: ${errorMsg}, Context: ${context || "none"}`;
+  
+  console.error(`${label} api error -`, errorDetailsStr);
+  
+  // Also log structured data
+  const errorDetails = {
+    status: statusValue,
+    errorMessage: errorMsg,
+    context: context || "none",
+  };
+  try {
+    console.error(`${label} api error (structured):`, JSON.stringify(errorDetails, null, 2));
+  } catch (e) {
+    console.error(`${label} api error (structured, fallback):`, errorDetailsStr);
+  }
 
   return "error";
 }

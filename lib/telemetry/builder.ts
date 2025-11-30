@@ -2,7 +2,10 @@
 
 type BuilderEventName =
   | "builder_generate"
-  | "builder_generate_failed";
+  | "builder_generate_failed"
+  | "deck_generated"
+  | "deck_saved"
+  | "deck_exported";
 
 type BuilderEventPayload = Record<string, unknown>;
 

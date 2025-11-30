@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
     const titleFromBody = body.title as string | undefined;
     const contentFromBody = body.content as string | undefined;
     const templateId = body.templateId as string | undefined;
+    const kindFromBody = (body.kind as string | undefined) ?? "contract"; // Default to "contract" for backward compatibility
+    const metadataFromBody = body.metadata as Record<string, unknown> | undefined;
 
     // Use actual table names from Database schema
     const unifiedItemTable = "unified_item";
@@ -96,7 +98,7 @@ export async function POST(req: NextRequest) {
         const newUnifiedItemPayload: any = {
           org_id: orgId,
           title: newTitle,
-          kind: "contract",
+          kind: kindFromBody,
           source: "workbench",
           status: "active",
         };
@@ -162,7 +164,7 @@ export async function POST(req: NextRequest) {
       const unifiedItemPayload: any = {
         org_id: effectiveOrgId,
         title: titleFromBody,
-        kind: "contract",
+        kind: kindFromBody,
         source: "builder",
         status: "active",
       };
@@ -222,7 +224,7 @@ export async function POST(req: NextRequest) {
       org_id: effectiveOrgId,
       owner_id: effectiveOwnerId,
       title: finalTitle,
-      kind: "contract",
+      kind: kindFromBody,
       status: "draft",
     };
 
@@ -327,24 +329,30 @@ export async function POST(req: NextRequest) {
       // Don't fail the save if logging fails
     }
 
-    // If this is Builder mode and content was generated, also log doc_generated
+    // If this is Builder mode and content was generated, also log doc_generated (for contracts) or deck_saved (for decks)
     if (!unifiedItemId && contentFromBody) {
       try {
         const logStartedAt = performance.now();
-        await logDocGenerated({
-          orgId: effectiveOrgId,
-          userId: effectiveUserId,
-          unifiedItemId: finalUnifiedItemId,
-          documentId: createdDocument.id,
-          metadata: {
+        if (kindFromBody === "deck" && metadataFromBody) {
+          // Log deck-specific event (deck_saved is handled by client-side telemetry, but we can log doc_saved_to_vault here)
+          // The client will log deck_saved separately
+        } else {
+          // Log contract doc_generated
+          await logDocGenerated({
+            orgId: effectiveOrgId,
+            userId: effectiveUserId,
+            unifiedItemId: finalUnifiedItemId,
+            documentId: createdDocument.id,
+            metadata: {
+              source: "builder",
+              templateId: templateId,
+              contentLength: contentFromBody.length,
+            },
             source: "builder",
-            templateId: templateId,
-            contentLength: contentFromBody.length,
-          },
-          source: "builder",
-          triggerRoute: "/api/documents/versions",
-          durationMs: performance.now() - logStartedAt,
-        });
+            triggerRoute: "/api/documents/versions",
+            durationMs: performance.now() - logStartedAt,
+          });
+        }
       } catch (logError) {
         console.error("[vault] failed to log doc_generated", logError);
         // Don't fail the save if logging fails

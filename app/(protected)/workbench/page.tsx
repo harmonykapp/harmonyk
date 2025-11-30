@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DriveRecent from "@/components/workbench/DriveRecent";
+import TaskReminders from "@/components/tasks/TaskReminders";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeItem } from "@/lib/ai/analyze";
 import type { AnalyzeResult } from "@/lib/ai/schemas";
@@ -772,6 +773,11 @@ export default function WorkbenchPage() {
           {/* Drive Recent */}
           <div className="mb-4">
             <DriveRecent />
+          </div>
+
+          {/* Task Reminders */}
+          <div className="mb-4">
+            <TaskReminders />
           </div>
 
           {/* Demo NDA empty state */}

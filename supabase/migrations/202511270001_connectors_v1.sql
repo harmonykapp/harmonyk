@@ -30,9 +30,37 @@ create table if not exists public.connector_accounts (
 
 );
 
-create index if not exists connector_accounts_owner_idx
+-- Index for querying connector_accounts by owner_id
+-- Some environments (or earlier migration sequences) may not yet have an owner_id column.
+-- Guard the index creation so it only runs when owner_id exists.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'connector_accounts'
+      and column_name = 'owner_id'
+  ) then
+    create index if not exists connector_accounts_owner_idx
+      on public.connector_accounts (owner_id);
+  end if;
+end $$;
 
-  on public.connector_accounts (owner_id);
+-- Comment on owner_id – also guarded so we don't fail if the column is missing.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'connector_accounts'
+      and column_name = 'owner_id'
+  ) then
+    comment on column public.connector_accounts.owner_id is
+      'Owner/org id – intentionally generic; wire to orgs/profiles in app code.';
+  end if;
+end $$;
 
 create index if not exists connector_accounts_provider_idx
 
@@ -41,10 +69,6 @@ create index if not exists connector_accounts_provider_idx
 comment on table public.connector_accounts is
 
   'External connector accounts (e.g. Google Drive, Gmail) per owner/org.';
-
-comment on column public.connector_accounts.owner_id is
-
-  'Owner/org id – intentionally generic; wire to orgs/profiles in app code.';
 
 comment on column public.connector_accounts.provider is
 
@@ -80,25 +104,60 @@ create table if not exists public.connector_jobs (
 
 );
 
-create index if not exists connector_jobs_account_idx
-
-  on public.connector_jobs (account_id);
+-- Index for listing jobs by account_id
+-- Guard index creation so it only runs when account_id exists.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'connector_jobs'
+      and column_name = 'account_id'
+  ) then
+    create index if not exists connector_jobs_account_idx
+      on public.connector_jobs (account_id);
+  end if;
+end $$;
 
 create index if not exists connector_jobs_status_idx
 
   on public.connector_jobs (status);
 
-create index if not exists connector_jobs_kind_idx
-
-  on public.connector_jobs (kind);
+-- Index for listing jobs by kind
+-- Guard index creation so it only runs when kind exists.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'connector_jobs'
+      and column_name = 'kind'
+  ) then
+    create index if not exists connector_jobs_kind_idx
+      on public.connector_jobs (kind);
+  end if;
+end $$;
 
 comment on table public.connector_jobs is
 
   'Execution records for connector sync/import jobs.';
 
-comment on column public.connector_jobs.kind is
-
-  'Job kind, e.g. drive_import, gmail_import.';
+-- Comment on kind – guard so we don't fail if the column is missing.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'connector_jobs'
+      and column_name = 'kind'
+  ) then
+    comment on column public.connector_jobs.kind is
+      'Job kind, e.g. drive_import, gmail_import.';
+  end if;
+end $$;
 
 comment on column public.connector_jobs.status is
 
@@ -132,9 +191,21 @@ create table if not exists public.connector_files (
 
 );
 
-create unique index if not exists connector_files_account_external_unique
-
-  on public.connector_files (account_id, external_id);
+-- Unique index for connector_files by (account_id, external_id)
+-- Guard index creation so it only runs when account_id exists.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'connector_files'
+      and column_name = 'account_id'
+  ) then
+    create unique index if not exists connector_files_account_external_unique
+      on public.connector_files (account_id, external_id);
+  end if;
+end $$;
 
 create index if not exists connector_files_provider_idx
 

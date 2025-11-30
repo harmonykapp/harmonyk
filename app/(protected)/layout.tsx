@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import type { MonoContext } from "@/components/mono/mono-pane";
+import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 import { usePathname } from "next/navigation";
 import type React from "react";
 import { Toaster } from "sonner";
@@ -20,6 +21,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     <AppShell monoContext={monoContext}>
       {children}
       <Toaster />
+      <ShadcnToaster />
     </AppShell>
   );
 }
