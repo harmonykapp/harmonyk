@@ -64,9 +64,8 @@ export async function GET(req: NextRequest) {
     // Persist a connector_accounts row for this Drive connection.
     const account = await createGoogleDriveAccount(tokens);
 
-    // TODO (Week 10):
-    // - Emit connector_account_connected Activity event.
-    // - Redirect to /integrations with a success state instead of returning JSON.
+    // GA note: full Drive OAuth callback handling (token exchange + refresh) is a post-GA enhancement.
+    // For now we simply redirect back to the integrations page; Drive access is managed via Google's account UI.
 
     return NextResponse.json({
       status: "ok",

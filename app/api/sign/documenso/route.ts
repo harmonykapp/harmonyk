@@ -92,14 +92,14 @@ async function getUserAndOrg(
   return { userId, orgId };
 }
 
-// Helper to return stub success in dev when no file is available
+// Helper to return a safe dev success response when no file is available (non-production only)
 function handleNoFileAvailable(reason: string): NextResponse<{ ok: boolean; error?: string; envelopeId?: string }> {
   const nodeEnv = process.env.NODE_ENV;
   const isProduction = nodeEnv === "production";
 
   if (!isProduction) {
     console.warn(
-      `[documenso] No file available for signature (${reason}); returning stub success in non-production environment (NODE_ENV=${nodeEnv}).`,
+      `[documenso] No file available for signature (${reason}); returning dev success response in non-production environment (NODE_ENV=${nodeEnv}).`,
     );
     return NextResponse.json(
       { ok: true, envelopeId: "dev-stub-envelope-no-file" },

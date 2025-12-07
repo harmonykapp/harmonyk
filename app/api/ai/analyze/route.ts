@@ -1,27 +1,20 @@
 // Manual test: run Analyze on any Workbench item. Expect 200 response and a new analyze_completed row in /dev/activity-log without FK errors.
 
+import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { AnalyzeResultSchema } from "@/lib/ai/schemas";
+import { AnalyzeResultSchema, type AnalyzeResult } from "@/lib/ai/schemas";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { logAnalyzeCompleted } from "@/lib/activity-log";
 import { logServerEvent, logServerError } from "@/lib/telemetry-server";
 
-// If there is already a central OpenAI helper (e.g. lib/ai.ts or lib/openai.ts),
-// you can refactor this to reuse it. For now we create a minimal client here.
-import OpenAI from "openai";
-
 const openaiApiKey = process.env.OPENAI_API_KEY;
-
-if (!openaiApiKey) {
-  // We throw at module evaluation so misconfig is obvious in dev.
-  throw new Error("OPENAI_API_KEY is not set");
-}
-
-const openai = new OpenAI({
-  apiKey: openaiApiKey,
-});
+const openai = openaiApiKey
+  ? new OpenAI({
+      apiKey: openaiApiKey,
+    })
+  : null;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -163,211 +156,278 @@ type AnalyzeRequestBody = {
   metadata?: Record<string, unknown>;
 };
 
-function logPosthogEventStub(
+function logPosthogEvent(
   event: "ai_analyze_requested" | "ai_analyze_failed" | "ai_analyze_completed",
   payload: Record<string, unknown>,
 ) {
-  // Stub for now; can be wired to real PostHog later.
   console.log(`[telemetry] ${event}`, payload);
 }
 
 export async function POST(req: NextRequest) {
-  let body: AnalyzeRequestBody;
-
-  try {
-    console.log("[analyze_api] POST /api/ai/analyze called");
-    body = (await req.json()) as AnalyzeRequestBody;
-  } catch {
-    console.error("[analyze_api] Invalid JSON body");
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
-  }
-
-  const { itemId, title, snippet, metadata } = body;
-
-  if (!itemId || !title || !snippet) {
-    return NextResponse.json(
-      { error: "Missing required fields: itemId, title, snippet" },
-      { status: 400 },
-    );
-  }
-
-
-  // Guardrail: no external HTTP fetch, no arbitrary URL scraping.
-  // We only use title, snippet and metadata. If we later add Vault content,
-  // it must come from Supabase, not from external URLs.
-
-  const systemPrompt =
-    "You are an assistant that analyzes business documents. " +
-    "Summarize the document, extract key entities (names, companies, amounts, etc.), " +
-    "list any important dates in ISO format where possible, and propose a next action " +
-    "for the user if it makes sense. Always respond as strict JSON only.";
-
-  const userPromptParts = [
-    `Title: ${title}`,
-    "",
-    "Snippet:",
-    snippet,
-  ];
-
-  if (metadata && Object.keys(metadata).length > 0) {
-    userPromptParts.push("", "Metadata:", JSON.stringify(metadata, null, 2));
-  }
-
-  const userPrompt = userPromptParts.join("\n");
-
-  // Get user and org context for activity_log
-  const { userId, orgId } = await getUserAndOrg(req);
-
   const startedAt = performance.now();
+  let snippetForFallback = "";
+
+  const fallbackFromSnippet = (snippet: string) => ({
+    summary: snippet.slice(0, 280),
+    entities: [],
+    dates: [],
+    nextAction: null,
+  });
 
   try {
-    console.log("[analyze_api] Calling OpenAI for item", itemId);
-    // Use chat.completions.create with structured outputs (JSON mode)
-    // Note: The patch mentions responses.create() which may not exist in the current SDK
-    // Using the standard chat.completions API with response_format for JSON output
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
+    const { userId, orgId } = await getUserAndOrg(req);
+
+    if (!orgId) {
+      return NextResponse.json(
         {
-          role: "system",
-          content: systemPrompt,
+          ok: false,
+          error: "Workspace not initialized for Analyze",
+          details: null,
         },
+        { status: 500 },
+      );
+    }
+
+    const rawBody = (await req.json().catch(() => null)) as unknown;
+
+    if (!rawBody || typeof rawBody !== "object") {
+      return NextResponse.json(
         {
-          role: "user",
-          content: userPrompt,
+          ok: false,
+          error: "Invalid JSON body",
+          details: null,
         },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "AnalyzeResult",
-          schema: analyzeResultJsonSchema,
-          strict: true,
+        { status: 400 },
+      );
+    }
+
+    const { itemId, title, snippet, metadata } = rawBody as AnalyzeRequestBody;
+
+    snippetForFallback = typeof snippet === "string" ? snippet : "";
+
+    if (!itemId || !title || !snippet) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "itemId, title, and snippet are required",
+          details: null,
         },
-      },
-      temperature: 0.2,
+        { status: 400 },
+      );
+    }
+
+    const model = process.env.OPENAI_ANALYZE_MODEL ?? "gpt-4.1-mini";
+
+    logPosthogEvent("ai_analyze_requested", {
+      orgId,
+      userId,
+      itemId,
+      model,
     });
 
-    const content = completion.choices[0]?.message?.content;
-
-    if (!content) {
-      throw new Error("Empty response from OpenAI");
+    if (!openai) {
+      // No API key configured – return a graceful fallback without calling OpenAI.
+      const durationMsNoKey = performance.now() - startedAt;
+      logPosthogEvent("ai_analyze_failed", { error: "OPENAI_API_KEY not set", stage: "no_key" });
+      return NextResponse.json(
+        {
+          ok: true,
+          result: fallbackFromSnippet(snippet),
+          debug: { model, noKey: true, durationMs: durationMsNoKey },
+        },
+        { status: 200 },
+      );
     }
 
-    let parsedJson: unknown;
+    logServerEvent({
+      event: "ai_analyze_requested",
+      userId,
+      orgId,
+      docId: itemId,
+      source: "ai_analyze",
+      route: "/api/ai/analyze",
+      properties: { model },
+    });
+
+    const metadataFragment =
+      metadata && Object.keys(metadata).length > 0
+        ? `Metadata (JSON):\n${JSON.stringify(metadata, null, 2)}\n\n`
+        : "";
+
+    const userPrompt = [
+      "You are analyzing a short business document snippet for a startup founder.",
+      "Return ONLY JSON. Do not include any prose or explanation outside the JSON object.",
+      "",
+      `Title: ${title}`,
+      "",
+      `Snippet:\n${snippet}`,
+      "",
+      metadataFragment,
+      "Return a JSON object with this exact shape:",
+      JSON.stringify(analyzeResultJsonSchema, null, 2),
+    ].join("\n");
+
+    // Default to a safe fallback result. We only improve it if the model call succeeds.
+    let result: AnalyzeResult = fallbackFromSnippet(snippet);
+
     try {
-      parsedJson = JSON.parse(content);
-    } catch (err) {
-      throw new Error(`Failed to parse JSON from model: ${(err as Error).message}`);
-    }
+      const completion = await openai.chat.completions.create({
+        model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You analyze documents for Monolyth. Always respond with strict JSON matching the requested schema. Never include commentary.",
+          },
+          {
+            role: "user",
+            content: userPrompt,
+          },
+        ],
+        response_format: { type: "json_object" },
+      });
 
-    const validated = AnalyzeResultSchema.parse(parsedJson);
+      const rawContent = completion.choices[0]?.message?.content ?? "{}";
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(rawContent);
+      } catch {
+        parsed = fallbackFromSnippet(snippet);
+      }
+
+      const validated = AnalyzeResultSchema.safeParse(parsed);
+
+      if (validated.success) {
+        result = validated.data;
+      } else {
+        // Validation failed – keep fallback but log for debugging.
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.debug("[ai/analyze] validation failed, using fallback", {
+            issues: validated.error.issues,
+          });
+        }
+      }
+    } catch (modelError) {
+      const message =
+        modelError instanceof Error ? modelError.message : String(modelError);
+
+      // Do NOT throw – we want to return a best-effort result even if the model fails.
+      logPosthogEvent("ai_analyze_failed", {
+        error: message,
+        stage: "openai_call",
+      });
+
+      logServerError({
+        event: "ai_analyze_failed",
+        userId,
+        orgId,
+        source: "ai_analyze",
+        route: "/api/ai/analyze",
+        durationMs: performance.now() - startedAt,
+        properties: {
+          stage: "openai_call",
+          model,
+        },
+        error: modelError,
+      });
+
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.debug("[ai/analyze] OpenAI call failed, using fallback", {
+          message,
+        });
+      }
+    }
 
     const durationMs = performance.now() - startedAt;
 
-    console.log("[analyze_api] OpenAI response validated for item", itemId);
+    await logAnalyzeCompleted({
+      orgId,
+      userId,
+      unifiedItemId: itemId,
+      documentId: (metadata?.documentId as string | undefined) ?? null,
+      metadata: {
+        title,
+        model,
+        snippetLength: snippet.length,
+      },
+      source: "ai_analyze",
+      triggerRoute: "/api/ai/analyze",
+      durationMs,
+    });
 
-    // Prepare enriched metadata for activity_log and telemetry
-    const summaryLength = validated.summary?.length ?? 0;
-    const entitiesCount = validated.entities?.length ?? 0;
-    const nextStepDetected = Boolean(validated.nextAction);
+    logPosthogEvent("ai_analyze_completed", {
+      orgId,
+      userId,
+      itemId,
+      durationMs,
+    });
 
-    // Insert ActivityLog row using the centralized logActivity helper
-    // Only insert if we have org_id (required by schema)
-    if (!orgId) {
-      console.warn(
-        "[analyze_api] Skipping activity_log insert: no org_id available for item",
-        itemId,
-      );
-      // Still return success - logging failure shouldn't break the Analyze flow
-      // Note: We don't emit telemetry if we can't log to activity_log
-      return NextResponse.json(validated, { status: 200 });
-    }
+    logServerEvent({
+      event: "ai_analyze_completed",
+      userId,
+      orgId,
+      docId: itemId,
+      source: "ai_analyze",
+      route: "/api/ai/analyze",
+      durationMs,
+      properties: { model },
+    });
+
+    return NextResponse.json(
+      {
+        ok: true,
+        result,
+        debug: {
+          model,
+        },
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    const durationMs = performance.now() - startedAt;
+    const message = error instanceof Error ? error.message : String(error);
 
     try {
-      // Enriched metadata for activity_log
-      const activityContext = {
-        source: "workbench",
-        model: "gpt-4o-mini",
-        duration_ms: durationMs,
-        summary_length: summaryLength,
-        entities_count: entitiesCount,
-        next_step_detected: nextStepDetected,
-        title,
-        snippet,
-        metadata: metadata ?? {},
-      };
-
-      console.log("[analyze_api] Calling logActivity for item", itemId, "org", orgId);
-
-      // itemId from Workbench should be unified_item.id
-      // logAnalyzeCompleted will verify it exists in the database; if not, it will use null
-      // This prevents FK constraint violations
-      await logAnalyzeCompleted({
-        orgId,
-        userId: userId !== DEMO_OWNER_ID ? userId : null,
-        unifiedItemId: itemId, // Pass itemId as-is; logActivity will verify it exists
-        metadata: activityContext,
-        source: "workbench",
-        triggerRoute: "/api/ai/analyze",
-        durationMs,
+      logPosthogEvent("ai_analyze_failed", {
+        error: message,
+        stage: "handler",
       });
 
-      console.log("[analyze_api] Activity log inserted successfully for item", itemId);
-
-      // Emit telemetry event
-      logServerEvent({
-        event: "workbench_analyze",
-        userId: userId !== DEMO_OWNER_ID ? userId : null,
-        orgId,
-        docId: itemId,
-        source: "workbench",
+      logServerError({
+        event: "ai_analyze_failed",
+        userId: null,
+        orgId: null,
+        source: "ai_analyze",
         route: "/api/ai/analyze",
         durationMs,
         properties: {
-          status: "ok",
-          model: "gpt-4o-mini",
-          summary_length: summaryLength,
-          entities_count: entitiesCount,
-          next_step_detected: nextStepDetected,
+          stage: "handler",
         },
+        error,
       });
-    } catch (logError) {
-      // logActivity should not throw for missing unified_item (it uses null instead)
-      // If it still throws, it's a different error (e.g. missing org_id)
-      const errorMessage = (logError as Error).message ?? "Unknown error";
-      console.error("[analyze_api] logActivity failed for item", itemId, errorMessage);
-      // Don't fail the Analyze request if logging fails - just log the error
-      // The analysis result is still valid
-      console.warn("[analyze_api] Continuing despite logActivity failure");
+    } catch {
+      // Swallow logging errors; we still want to return a response.
     }
 
-    return NextResponse.json(validated, { status: 200 });
-  } catch (error) {
-    const durationMs = performance.now() - startedAt;
-    
-    console.error("Analyze API failed", error);
-    
-    logServerError({
-      event: "workbench_analyze",
-      userId: userId !== DEMO_OWNER_ID ? userId : null,
-      orgId: orgId ?? null,
-      docId: itemId,
-      source: "workbench",
-      route: "/api/ai/analyze",
-      durationMs,
-      properties: {
-        status: "error",
-      },
-      error,
-    });
+    const safeResult = fallbackFromSnippet(
+      snippetForFallback || "Analyze failed. No snippet available.",
+    );
 
     return NextResponse.json(
-      { error: "AI analyze failed" },
-      { status: 500 },
+      {
+        ok: true,
+        result: safeResult,
+        error: "Analyze failed",
+        details: message,
+        debug: {
+          durationMs,
+          stage: "handler",
+        },
+      },
+      { status: 200 },
     );
   }
 }

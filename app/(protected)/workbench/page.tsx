@@ -3,6 +3,7 @@
 
 "use client";
 
+import TaskReminders from "@/components/tasks/TaskReminders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,14 +31,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DriveRecent from "@/components/workbench/DriveRecent";
-import TaskReminders from "@/components/tasks/TaskReminders";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeItem } from "@/lib/ai/analyze";
 import type { AnalyzeResult } from "@/lib/ai/schemas";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { handleApiError } from "@/lib/handle-api-error";
-import { phCapture } from "@/lib/posthog-client";
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
+import { trackEvent } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
 import {
   FileSignature,
@@ -46,6 +46,7 @@ import {
   Search,
   Sparkles
 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Row = {
@@ -351,11 +352,7 @@ export default function WorkbenchPage() {
     const t = setTimeout(() => {
       if (!cancelled) void load();
     }, 0);
-    try {
-      phCapture("workbench_view", { ts: Date.now() });
-    } catch {
-      // Ignore PostHog errors
-    }
+    trackEvent("flow_workbench_view", { ts: Date.now() });
     return () => {
       cancelled = true;
       clearTimeout(t);
@@ -374,6 +371,11 @@ export default function WorkbenchPage() {
     analyzingRef.current = true;
 
     try {
+      trackEvent("flow_workbench_analyze", {
+        unified_item_id: r.id,
+        source: r.source,
+      });
+
       const payload = {
         itemId: r.id,
         title: r.title,
@@ -399,6 +401,11 @@ export default function WorkbenchPage() {
         errorMessage,
         toast,
         context: "workbench",
+      });
+      trackEvent("flow_workbench_analyze", {
+        unified_item_id: r.id,
+        source: r.source,
+        error: true,
       });
     } finally {
       setAnalyzing(false);
@@ -529,6 +536,10 @@ export default function WorkbenchPage() {
         title: "Saved to Vault",
         description: "Document has been saved successfully.",
       });
+      trackEvent("flow_workbench_save_to_vault", {
+        unified_item_id: row.id,
+        title: row.title,
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorDetails = {
@@ -608,8 +619,8 @@ export default function WorkbenchPage() {
             });
           } else if (errorMessage.includes("Unified item not found") || errorMessage.includes("Document not found")) {
             toast({
-              title: "Document not found",
-              description: "This item may not be saved to Vault yet.",
+              title: "Demo item cannot be signed",
+              description: "This Workbench sample item is for analysis only. Use a document from Vault or Builder to test signatures.",
               variant: "destructive",
             });
           } else {
@@ -648,6 +659,12 @@ export default function WorkbenchPage() {
         description: "Document has been sent via Documenso.",
       });
       onCloseSignModal();
+      if (signRow) {
+        trackEvent("flow_workbench_send_for_signature", {
+          unified_item_id: signRow.id,
+          recipient_email: recipientEmail,
+        });
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       console.error("[workbench] Send for signature exception", err);
@@ -745,6 +762,12 @@ export default function WorkbenchPage() {
         description:
           "Open the Playbooks tab to review runs and time saved.",
       });
+      trackEvent("flow_playbook_run_started", {
+        playbook_id: chosen.id,
+        mode: "selection",
+        source: "workbench",
+        unified_item_ids: [selectedRow.id],
+      });
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Unknown error";
@@ -763,10 +786,9 @@ export default function WorkbenchPage() {
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="p-6 space-y-4">
           <div className="mb-4 rounded-lg border bg-background p-4">
-            <h1 className="text-lg font-semibold">Workbench</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Workbench</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Workbench is where you send documents for analysis. Start with a doc from Vault
-              or a sample, run an analysis, then refine results in Builder.
+              Where you organize and analyze your documents and tasks.
             </p>
           </div>
 
@@ -780,8 +802,36 @@ export default function WorkbenchPage() {
             <TaskReminders />
           </div>
 
+          {/* Empty state when no active work */}
+          {!loading && filteredRows.length === 0 && (
+            <div className="mb-4 rounded-lg border bg-card p-6 text-center">
+              <div className="space-y-4">
+                <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                  <FileText className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold mb-2">No active work yet</h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Get started by generating a contract, deck, or saving a document to Vault.
+                  </p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <Button asChild variant="outline">
+                      <Link href="/builder?tab=contracts">Generate a contract</Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                      <Link href="/builder?tab=decks">Generate a deck</Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                      <Link href="/vault">Save a document to Vault</Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Demo NDA empty state */}
-          {hasVaultDocs === false && !loading && (
+          {hasVaultDocs === false && !loading && filteredRows.length > 0 && (
             <div className="mb-4 rounded-lg border border-dashed bg-muted/40 p-4 text-sm">
               <h2 className="font-medium">Demo NDA (sample only)</h2>
               <p className="mt-1 text-muted-foreground">

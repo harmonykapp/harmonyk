@@ -1,8 +1,11 @@
 // Week 7 Day 1: core Playbooks types used by API + UI
+// Legacy types are kept for compatibility with early Week 7 endpoints.
+// New code should prefer the normalized types defined later in this file.
 
-export type PlaybookStatus = 'draft' | 'enabled' | 'disabled';
+// Legacy types - deprecated, use normalized types below
+export type PlaybookStatusLegacy = 'draft' | 'enabled' | 'disabled';
 
-export type PlaybookRunStatus = 'started' | 'completed' | 'failed' | 'dry_run';
+export type PlaybookRunStatusLegacy = 'started' | 'completed' | 'failed' | 'dry_run';
 
 export type PlaybookStepStatus =
   | 'pending'
@@ -42,7 +45,8 @@ export interface PlaybookDefinition {
   steps: PlaybookStep[];
 }
 
-export interface Playbook {
+// Old Playbook interface - deprecated, use normalized Playbook below
+export interface PlaybookLegacy {
   id: string;
   ownerId: string;
   name: string;
@@ -62,7 +66,8 @@ export interface PlaybookRunStats {
   timeSavedSeconds?: number;
 }
 
-export interface PlaybookRun {
+// Old PlaybookRun interface - deprecated, use normalized PlaybookRun below
+export interface PlaybookRunLegacy {
   id: string;
   playbookId: string;
   status: PlaybookRunStatus;
@@ -80,6 +85,70 @@ export interface PlaybookStepRecord {
   output?: Record<string, unknown>;
   status: PlaybookStepStatus;
   startedAt: string | null;
+  completedAt: string | null;
+}
+
+// =============================================================================
+// Week 17 Day 1: Normalized Playbooks types for GA
+// Week 17 Day 1: Playbooks schema and types stabilized for GA
+// =============================================================================
+
+export type PlaybookTrigger = "activity_event" | "accounts_pack_run";
+
+export type PlaybookActionType = "log_activity" | "enqueue_task";
+
+export type PlaybookStatus = "active" | "inactive" | "archived";
+
+export type PlaybookRunStatus = "pending" | "success" | "failed" | "skipped";
+
+// Week 17 Day 2: Condition operators
+export type PlaybookConditionOp =
+  | "equals"
+  | "not_equals"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "includes"
+  | "not_includes"
+  | "exists"
+  | "not_exists";
+
+// Week 17 Day 2: Condition DSL
+export interface PlaybookCondition {
+  field: string; // dot-notation path into event payload (e.g. "activity.type", "metrics.runway_months")
+  op: PlaybookConditionOp;
+  value?: unknown; // not required for exists / not_exists
+}
+
+// Week 17 Day 2: Action DSL
+export interface PlaybookAction {
+  type: PlaybookActionType;
+  params?: Record<string, unknown>;
+}
+
+export interface Playbook {
+  id: string;
+  orgId: string;
+  name: string;
+  trigger: PlaybookTrigger;
+  conditions: PlaybookCondition[];
+  actions: PlaybookAction[];
+  status: PlaybookStatus;
+  createdAt: string;
+  updatedAt: string;
+  lastRunAt: string | null;
+}
+
+export interface PlaybookRun {
+  id: string;
+  playbookId: string;
+  orgId: string;
+  triggerEvent: unknown;
+  status: PlaybookRunStatus;
+  error: string | null;
+  metrics: Record<string, unknown>;
+  createdAt: string;
   completedAt: string | null;
 }
 

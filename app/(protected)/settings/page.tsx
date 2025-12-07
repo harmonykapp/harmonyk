@@ -9,13 +9,131 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { User, Bell, Shield, CreditCard, Users, Plug, Sparkles, Download, Check } from "lucide-react";
 
+type BillingPlanId = "free" | "starter" | "pro" | "teams";
+
+type BillingPlanLimits = {
+  connectedSources: string;
+  shareLinks: string;
+  aiAnalysesPerMonth: string;
+  playbooks: string;
+};
+
+type BillingPlan = {
+  id: BillingPlanId;
+  name: string;
+  price: string;
+  period: string;
+  description: string;
+  billingLabel: string;
+  limits: BillingPlanLimits;
+  features: string[];
+  current: boolean;
+};
+
+const BILLING_PLANS: BillingPlan[] = [
+  {
+    id: "free",
+    name: "Free",
+    price: "$0",
+    period: "forever",
+    description: "For individuals getting started",
+    billingLabel: "$0 • forever",
+    limits: {
+      connectedSources: "2 connected sources",
+      shareLinks: "10 active share links",
+      aiAnalysesPerMonth: "30 AI analyses per month",
+      playbooks: "No custom Playbooks",
+    },
+    features: [
+      "2 connected sources",
+      "10 active share links",
+      "30 AI analyses per month",
+      "Basic search",
+      "Monolyth branding",
+    ],
+    current: false,
+  },
+  {
+    id: "starter",
+    name: "Starter",
+    price: "$30",
+    period: "per seat/month",
+    description: "For small teams and professionals",
+    billingLabel: "$30 per seat/month • billed monthly",
+    limits: {
+      connectedSources: "5 connected sources",
+      shareLinks: "Unlimited share links",
+      aiAnalysesPerMonth: "100 AI analyses per month",
+      playbooks: "1 custom Playbook",
+    },
+    features: [
+      "5 connected sources",
+      "Unlimited share links",
+      "100 AI analyses per month",
+      "Federated search",
+      "Custom branding",
+      "1 custom Playbook",
+    ],
+    current: false,
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: "$60",
+    period: "per seat/month",
+    description: "For growing teams and power users",
+    billingLabel: "$60 per seat/month • billed monthly",
+    limits: {
+      connectedSources: "10 connected sources",
+      shareLinks: "Unlimited share links",
+      aiAnalysesPerMonth: "Unlimited AI analyses",
+      playbooks: "Unlimited Playbooks",
+    },
+    features: [
+      "10 connected sources",
+      "Unlimited AI analyses",
+      "Semantic & full-text search",
+      "Unlimited Playbooks",
+      "Two-way calendar sync",
+      "Advanced analytics",
+      "Priority support",
+    ],
+    current: true,
+  },
+  {
+    id: "teams",
+    name: "Teams",
+    price: "$200",
+    period: "for 3 seats/month",
+    description: "For larger organizations",
+    billingLabel: "$200 for 3 seats/month • billed monthly",
+    limits: {
+      connectedSources: "20 pooled sources",
+      shareLinks: "Unlimited share links",
+      aiAnalysesPerMonth: "Unlimited AI analyses",
+      playbooks: "Org-wide Playbooks",
+    },
+    features: [
+      "20 pooled sources",
+      "Org-wide Playbooks",
+      "Custom retention rules",
+      "Team governance",
+      "SLA guarantees",
+      "Dedicated support",
+      "Advanced security",
+    ],
+    current: false,
+  },
+];
+
 export default function SettingsPage() {
+  const currentPlan = BILLING_PLANS.find((plan) => plan.current) ?? BILLING_PLANS[0];
   return (
-    <div className="p-8 max-w-[1200px] mx-auto space-y-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Manage your account and application preferences
           </p>
         </div>
@@ -222,7 +340,9 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>Current Plan</CardTitle>
-                    <CardDescription>You are on the Pro plan</CardDescription>
+                    <CardDescription>
+                      You are on the {currentPlan.name} plan
+                    </CardDescription>
                   </div>
                   <Badge className="bg-primary text-primary-foreground">Active</Badge>
                 </div>
@@ -230,9 +350,17 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between p-6 bg-accent/50 rounded-lg">
                   <div>
-                    <h3 className="text-2xl font-bold">Pro Plan</h3>
+                    <h3 className="text-2xl font-bold">
+                      {currentPlan.name} Plan
+                    </h3>
                     <p className="text-muted-foreground mt-1">
-                      $60.00 per seat/month • Billed monthly
+                      {currentPlan.billingLabel}
+                    </p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Limits: {currentPlan.limits.connectedSources} ·{" "}
+                      {currentPlan.limits.shareLinks} ·{" "}
+                      {currentPlan.limits.aiAnalysesPerMonth} ·{" "}
+                      {currentPlan.limits.playbooks}
                     </p>
                   </div>
                   <Button variant="outline">Change Plan</Button>
@@ -287,71 +415,9 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 lg:grid-cols-4">
-                {[
-                  {
-                    name: "Free",
-                    price: "$0",
-                    period: "forever",
-                    description: "For individuals getting started",
-                    features: [
-                      "2 connected sources",
-                      "10 active share links",
-                      "30 AI analyses per month",
-                      "Basic search",
-                      "Monolyth branding",
-                    ],
-                    current: false,
-                  },
-                  {
-                    name: "Starter",
-                    price: "$30",
-                    period: "per seat/month",
-                    description: "For small teams and professionals",
-                    features: [
-                      "5 connected sources",
-                      "Unlimited share links",
-                      "100 AI analyses per month",
-                      "Federated search",
-                      "Custom branding",
-                      "1 custom Playbook",
-                    ],
-                    current: false,
-                  },
-                  {
-                    name: "Pro",
-                    price: "$60",
-                    period: "per seat/month",
-                    description: "For growing teams and power users",
-                    features: [
-                      "10 connected sources",
-                      "Unlimited AI analyses",
-                      "Semantic & full-text search",
-                      "Unlimited Playbooks",
-                      "Two-way calendar sync",
-                      "Advanced analytics",
-                      "Priority support",
-                    ],
-                    current: true,
-                  },
-                  {
-                    name: "Teams",
-                    price: "$200",
-                    period: "for 3 seats/month",
-                    description: "For larger organizations",
-                    features: [
-                      "20 pooled sources",
-                      "Org-wide Playbooks",
-                      "Custom retention rules",
-                      "Team governance",
-                      "SLA guarantees",
-                      "Dedicated support",
-                      "Advanced security",
-                    ],
-                    current: false,
-                  },
-                ].map((plan) => (
+                {BILLING_PLANS.map((plan) => (
                   <div
-                    key={plan.name}
+                    key={plan.id}
                     className={`relative p-6 border-2 rounded-lg ${
                       plan.current
                         ? "border-primary bg-primary/5"
@@ -373,6 +439,14 @@ export default function SettingsPage() {
                       </div>
                       <p className="text-sm text-muted-foreground mt-2">
                         {plan.description}
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Limits: {plan.limits.connectedSources} ·{" "}
+                        {plan.limits.shareLinks} ·{" "}
+                        {plan.limits.aiAnalysesPerMonth}
+                        {plan.limits.playbooks
+                          ? ` · ${plan.limits.playbooks}`
+                          : null}
                       </p>
                     </div>
                     <ul className="space-y-2 mb-6">
@@ -556,3 +630,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

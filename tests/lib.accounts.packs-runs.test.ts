@@ -8,7 +8,7 @@ import {
 } from "@/lib/accounts/packs";
 import type { SupabaseLikeClient } from "@/lib/activity-log";
 
-const mockInsert = vi.fn<Promise<{ error: { message: string } | null }>, [unknown]>();
+const mockInsert = vi.fn().mockResolvedValue({ error: null });
 const mockFrom = vi.fn(() => ({
   insert: mockInsert,
 }));
@@ -46,7 +46,6 @@ describe("accounts_pack_runs helpers", () => {
     mockInsert.mockReset();
     mockFrom.mockReset();
     mockInsert.mockResolvedValue({ error: null });
-
     // Restore the default implementation after reset so that
     // supabase.from("accounts_pack_runs") always returns an
     // object with an insert function.

@@ -29,6 +29,7 @@ import {
   Clock,
   FileText,
   Filter,
+  LayoutDashboard,
   Plus
 } from "lucide-react";
 import Link from "next/link";
@@ -50,6 +51,10 @@ type Task = {
 
 type TaskResponse = {
   tasks: Task[];
+};
+
+type CreateTaskResponse = {
+  task?: Task;
 };
 
 export default function TasksPage() {
@@ -162,6 +167,8 @@ export default function TasksPage() {
       return;
     }
 
+    let createdTask: Task | null = null;
+
     try {
       const dueAt = dueDate ? new Date(dueDate).toISOString() : null;
       const response = await fetch("/api/tasks", {
@@ -204,14 +211,36 @@ export default function TasksPage() {
         throw new Error(errorMessage);
       }
 
+      // Try to parse the created task from the response
+      try {
+        const data = (await response.json()) as CreateTaskResponse | null;
+        if (data && data.task) {
+          createdTask = data.task;
+        }
+      } catch (parseError) {
+        console.error("[TasksPage] Failed to parse create task response JSON:", parseError);
+      }
+
       toast({
         title: "Success",
         description: "Task created successfully",
       });
 
+      // Reset form inputs
       setTitle("");
       setDueDate("");
-      await loadTasks();
+
+      // If we successfully parsed a task from the response, prepend it into local state.
+      // This keeps dev/demo environments working even if the API is stubbed or the
+      // tasks table is missing, and avoids a hard dependency on the GET endpoint.
+      if (createdTask) {
+        setTasks((prev) => [createdTask as Task, ...prev]);
+      } else {
+        // Fallback: if for some reason we couldn't parse the created task,
+        // reload from the API. In dev/demo this may still be empty, but in
+        // a real environment it will reflect the DB state.
+        await loadTasks();
+      }
     } catch (error) {
       console.error("Failed to create task:", error);
       toast({
@@ -328,14 +357,31 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Task Hub</h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-            Manage document-related tasks and to-dos
-          </p>
-        </div>
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
+      {/* Heading + tagline */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Task Hub</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
+          Schedule your important tasks, get reminders.
+        </p>
+      </div>
+
+      {/* Top tabs (Overview / Calendar) */}
+      <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+        <a
+          href="/tasks"
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-background text-foreground shadow-sm"
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          Overview
+        </a>
+        <a
+          href="/calendar"
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <Calendar className="h-4 w-4" />
+          Calendar
+        </a>
       </div>
 
       {!error && <TaskReminders />}

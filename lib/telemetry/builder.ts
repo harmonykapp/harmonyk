@@ -1,5 +1,13 @@
 "use client";
 
+declare global {
+  interface Window {
+    posthog?: {
+      capture: (event: string, properties?: Record<string, unknown>) => void;
+    };
+  }
+}
+
 type BuilderEventName =
   | "builder_generate"
   | "builder_generate_failed"
@@ -13,9 +21,17 @@ export function logBuilderEvent(
   event: BuilderEventName,
   payload: BuilderEventPayload = {},
 ): void {
-  // Stub for now; hook PostHog or other analytics here later.
-  // Keeping it simple so we can see something in the console.
+  try {
+    if (typeof window !== "undefined" && window.posthog?.capture) {
+      window.posthog.capture(event, payload);
+      return;
+    }
+  } catch {
+    // Fall through to console logging
+  }
+
+  // Fallback for local/dev when analytics is not wired
   // eslint-disable-next-line no-console
-  console.log(`[telemetry] ${event}`, payload);
+  console.debug(`[builder_telemetry] ${event}`, payload);
 }
 

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 import { getRouteAuthContext } from "@/lib/auth/route-auth";
 import { logMonoQuery } from "@/lib/activity-log";
 import { searchRag } from "@/lib/rag";
+import { buildMonoPreferenceConfigFromInput, getRecentMonoMessages } from "@/lib/mono/memory";
 import { logServerEvent, logServerError } from "@/lib/telemetry-server";
 import type { MonoContext } from "@/components/mono/mono-pane";
 
@@ -9,7 +11,13 @@ export async function POST(req: NextRequest) {
   const startedAt = performance.now();
   
   try {
-    const { isAuthenticated, userId, orgId, ownerId } = await getRouteAuthContext(req);
+    const {
+      isAuthenticated,
+      userId,
+      orgId,
+      ownerId,
+      supabase,
+    } = await getRouteAuthContext(req);
 
     if (!isAuthenticated || !userId) {
       return NextResponse.json(
@@ -30,21 +38,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if Mono/OpenAI is configured
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = process.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Mono is not configured yet in this dev build.",
+          error: "Mono is not configured yet in this build.",
           details: null,
         },
         { status: 503 }
       );
     }
 
-    const body = await req.json().catch(() => ({} as any));
-    const message = body.message as string | undefined;
-    const context = body.context as MonoContext | undefined;
+    const rawBody = (await req.json().catch(() => null)) as unknown;
+
+    if (!rawBody || typeof rawBody !== "object") {
+      return NextResponse.json(
+        { ok: false, error: "Invalid JSON body", details: null },
+        { status: 400 },
+      );
+    }
+
+    const { message, context } = rawBody as { message?: string; context?: MonoContext };
 
     if (!message || typeof message !== "string" || message.trim().length === 0) {
       return NextResponse.json(
@@ -79,9 +95,27 @@ export async function POST(req: NextRequest) {
       console.error("[mono] failed to log mono_query", logError);
     }
 
-    // Base system prompt for Mono
     const baseSystemPrompt =
       "You are Mono, Monolyth's AI assistant. Answer the user's questions helpfully and concisely.";
+
+    // Mono preference config (org/user tone, risk profile, etc.)
+    const preferenceConfig = buildMonoPreferenceConfigFromInput();
+    const preferenceInstructionLines = [
+      "Apply these conversational preferences where helpful:",
+      `- Tone: ${preferenceConfig.tone}`,
+      `- Risk profile: ${preferenceConfig.riskProfile}`,
+      `- Jurisdiction: ${preferenceConfig.jurisdiction}`,
+      `- Locale: ${preferenceConfig.locale}`,
+    ];
+    const preferenceInstruction = preferenceInstructionLines.join("\n");
+
+    // Recent conversation memory (last N mono_query events)
+    const recentMessages = await getRecentMonoMessages({
+      supabase,
+      orgId,
+      userId,
+      limit: 6,
+    }).catch(() => []);
 
     // Get RAG context if a document is selected
     let ragContextText: string | null = null;
@@ -115,19 +149,58 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Build system prompt with RAG context if available
-    const systemContent = ragContextText
-      ? `${baseSystemPrompt.trim()}
+    const systemSections: string[] = [baseSystemPrompt.trim(), "", preferenceInstruction];
 
-----
-RAG CONTEXT
-${ragContextText}`
-      : baseSystemPrompt;
+    if (ragContextText) {
+      systemSections.push(
+        "",
+        "RAG CONTEXT (currently informational only; RAG is disabled at GA):",
+        ragContextText,
+      );
+    }
 
-    // For now, return a stubbed response
-    // TODO: Integrate with OpenAI client (same as Analyze) when ready
-    // When OpenAI is integrated, use systemContent in the system message
-    const reply = `Mono stub: I see you are on ${context?.route || "unknown"}. You asked: "${message.trim()}". This is a placeholder response. Real AI integration will be added in a future update.`;
+    if (recentMessages.length > 0) {
+      const historyPreview = recentMessages
+        .slice(-3)
+        .map((m) => `- ${m.role}: ${m.content.slice(0, 120)}`)
+        .join("\n");
+
+      systemSections.push(
+        "",
+        "Recent Mono conversation snippets (for continuity):",
+        historyPreview,
+      );
+    }
+
+    const systemContent = systemSections.join("\n");
+
+    const openai = new OpenAI({ apiKey });
+    const model = process.env.OPENAI_MONO_MODEL ?? "gpt-4.1-mini";
+
+    const messagesForModel: { role: "system" | "user" | "assistant"; content: string }[] = [
+      { role: "system", content: systemContent },
+    ];
+
+    for (const m of recentMessages) {
+      messagesForModel.push({
+        role: m.role,
+        content: m.content,
+      });
+    }
+
+    messagesForModel.push({
+      role: "user",
+      content: message.trim(),
+    });
+
+    const completion = await openai.chat.completions.create({
+      model,
+      messages: messagesForModel,
+    });
+
+    const reply =
+      completion.choices[0]?.message?.content?.trim() ??
+      "I was unable to generate a response. Please try rephrasing your question.";
 
     const durationMs = performance.now() - startedAt;
     
@@ -156,10 +229,13 @@ ${ragContextText}`
     );
   } catch (error) {
     const durationMs = performance.now() - startedAt;
-    
+
+    const errorMessage =
+      error instanceof Error ? error.message : String(error);
+
     console.error("[mono] query error: unhandled exception", {
       error,
-      message: (error as any)?.message,
+      message: errorMessage,
     });
 
     // Try to get auth context for error logging
@@ -189,7 +265,7 @@ ${ragContextText}`
     return NextResponse.json(
       {
         ok: false,
-        error: `Mono failed: ${(error as any)?.message ?? "unknown error"}`,
+        error: `Mono failed: ${errorMessage}`,
         details: null,
       },
       { status: 500 }

@@ -31,28 +31,32 @@ type NavigationSubitem = {
 type NavigationItem = {
   name: string;
   href: string;
-  icon: LucideIcon;
+  icon: LucideIcon | React.ComponentType<{ className?: string }>;
   hasSubmenu?: boolean;
   submenu?: NavigationSubitem[];
 };
 
-const navigation: NavigationItem[] = [
+type NavItemOverride = {
+  title: string;
+  href: string;
+  icon?: React.ComponentType<{ className?: string }>;
+};
+
+const navigationDefault: NavigationItem[] = [
+  // Core GA top-level routes (NORTH_STAR order)
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Workbench', href: '/workbench', icon: Layers },
   { name: 'Builder', href: '/builder', icon: Hammer },
-  { name: 'Playbooks', href: '/playbooks', icon: Play },
   { name: 'Vault', href: '/vault', icon: Vault },
-  { name: 'Share', href: '/share', icon: Share2 },
-  { name: 'Signatures', href: '/signatures', icon: FileSignature },
-  { name: 'Integrations', href: '/integrations', icon: Plug },
+  { name: 'Playbooks', href: '/playbooks', icon: Play },
+  { name: 'Share Hub', href: '/share', icon: Share2 },
   { name: 'Insights', href: '/insights', icon: BarChart3 },
-  { name: 'Activity', href: '/activity', icon: Activity },
-  { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
+  { name: 'Integrations', href: '/integrations', icon: Plug },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ navOverride }: { navOverride?: NavItemOverride[] }) {
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Settings']);
 
@@ -63,6 +67,15 @@ export function Sidebar() {
         : [...prev, itemName]
     );
   };
+
+  // Convert navOverride to NavigationItem format
+  const navigation: NavigationItem[] = navOverride
+    ? navOverride.map((item) => ({
+        name: item.title,
+        href: item.href,
+        icon: (item.icon || LayoutDashboard) as LucideIcon,
+      }))
+    : navigationDefault;
 
   return (
     <div className="w-64 bg-sidebar border-r flex flex-col h-full" suppressHydrationWarning>

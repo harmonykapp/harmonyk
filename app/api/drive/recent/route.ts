@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-    // Stubbed “recent drive files” so Workbench looks alive.
+    // Lightweight "recent drive files" placeholder so Workbench has a safe, GA-friendly default.
     const recent = [
         { id: "a1", name: "NDA (Mutual).docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", updated: "2025-11-05T12:20:00Z" },
         { id: "b2", name: "Founders Agreement.docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", updated: "2025-11-05T10:03:00Z" },

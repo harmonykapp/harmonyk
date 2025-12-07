@@ -357,11 +357,21 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
 
         {!error && events.length === 0 && !isLoading && (
           <div className="px-4 py-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              {filters.groups.length > 0 || filters.search
-                ? "No events match your current filters. Try adjusting your search or event groups."
-                : "No activity in this time range. Try selecting a longer time period or check back later."}
-            </p>
+            <div className="max-w-md mx-auto space-y-3">
+              <p className="text-sm text-muted-foreground mb-2">
+                Activity shows a log of what you and Monolyth are doing with your docs.
+              </p>
+              {filters.groups.length > 0 || filters.search ? (
+                <p className="text-xs text-muted-foreground">
+                  No events match your current filters. Try adjusting your search or event groups.
+                </p>
+              ) : (
+                <div className="space-y-2 text-xs text-muted-foreground">
+                  <p>Generate a contract or deck to see activity appear here.</p>
+                  <p>Save a document to Vault.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

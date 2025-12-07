@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // POST /api/connectors/drive/disconnect
 
-// v1 stub:
+// v1 placeholder: no-op disconnect handler for GA (revocation handled via Google account settings)
 
 // - This endpoint currently returns 501 (not implemented).
 

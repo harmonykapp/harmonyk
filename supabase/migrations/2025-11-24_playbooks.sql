@@ -2,6 +2,7 @@
 -- NOTE:
 -- 1) Run this in Supabase SQL Editor against your database.
 -- 2) Keep this file in the repo as the migration source of truth.
+-- NOTE Week 17: This migration uses owner_id instead of org_id. See 202512010900_playbooks_v1.sql for normalized schema.
 
 create table if not exists public.playbooks (
   id uuid primary key default gen_random_uuid(),
@@ -54,8 +55,7 @@ comment on table public.playbooks is 'Deterministic Playbooks definitions (Trigg
 comment on table public.playbook_runs is 'Execution runs of Playbooks, including dry-run simulations.';
 comment on table public.playbook_steps is 'Per-step logs for each Playbook run, used for logs/undo and Insights.';
 
--- TODO (Week 7 Day 5):
--- Seed library templates (Inbound NDA, Aging Proposals, Receipt→Vault) once you have
--- a stable pattern for owner_id / workspace ownership. Keep seed inserts in a separate
--- migration or admin script.
+-- NOTE (Week 7 Day 5): legacy schema kept for reference; new installs should prefer 202512010900_playbooks_v1.sql.
+-- In a future maintenance window you can migrate existing owner_id-based playbooks
+-- to the org_id-based schema and drop this table.
 

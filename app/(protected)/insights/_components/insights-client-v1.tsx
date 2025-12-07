@@ -279,6 +279,11 @@ export default function InsightsClientV1({ data, error }: Props) {
           <div className="mt-1 text-xs text-muted-foreground">
             Docs created (7d)
           </div>
+          {metrics.docsCreated7d === 0 && (
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              Generate and send a contract to see signed vs draft ratios.
+            </div>
+          )}
         </div>
 
         {/* Mono Questions */}
@@ -326,6 +331,11 @@ export default function InsightsClientV1({ data, error }: Props) {
           <div className="mt-1 text-xs text-muted-foreground">
             Signatures completed (7d)
           </div>
+          {metrics.signaturesCompleted7d === 0 && (
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              Generate and send a contract to see signed vs draft ratios.
+            </div>
+          )}
         </div>
 
         {/* Active Docs (optional) */}
@@ -381,6 +391,11 @@ export default function InsightsClientV1({ data, error }: Props) {
                 <div className="mt-1 text-[11px] text-muted-foreground">
                   Last 30 days
                 </div>
+                {decks.generated_30d === 0 && (
+                  <div className="mt-1 text-[10px] text-muted-foreground">
+                    Create a deck and share it to see engagement metrics.
+                  </div>
+                )}
               </div>
               <div className="rounded-md border border-border/60 bg-background/80 p-3">
                 <div className="text-xs font-medium text-muted-foreground">
@@ -497,6 +512,11 @@ export default function InsightsClientV1({ data, error }: Props) {
               <div className="mt-1 text-[11px] text-muted-foreground">
                 Last 30 days
               </div>
+              {contracts.drafts_30d === 0 && (
+                <div className="mt-1 text-[10px] text-muted-foreground">
+                  Generate and send a contract to see signed vs draft ratios.
+                </div>
+              )}
             </div>
 
             {/* Sent for signature (30d) */}
@@ -572,7 +592,7 @@ export default function InsightsClientV1({ data, error }: Props) {
                 </>
               ) : (
                 <div className="mt-1 text-xs text-muted-foreground">
-                  No Monthly SaaS pack run yet – run it from Accounts.
+                  Run an Accounts pack to see burn and runway.
                 </div>
               )}
             </div>
@@ -599,7 +619,7 @@ export default function InsightsClientV1({ data, error }: Props) {
                 </>
               ) : (
                 <div className="mt-1 text-xs text-muted-foreground">
-                  No Investor Snapshot pack run yet – run it from Accounts.
+                  Run an Accounts pack to see burn and runway.
                 </div>
               )}
             </div>

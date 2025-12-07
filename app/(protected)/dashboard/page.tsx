@@ -18,6 +18,8 @@ import {
   X,
 } from 'lucide-react';
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
+import Link from "next/link";
+import { CheckCircle2 as CheckCircle } from "lucide-react";
 
 const summaryCards = [
   {
@@ -95,10 +97,20 @@ const aiInsights = [
   },
 ];
 
+type OnboardingStatus = {
+  hasConnectedGoogleDrive: boolean;
+  hasDraftedContract: boolean;
+  hasDraftedDeck: boolean;
+  hasVaultDoc: boolean;
+  hasRunAccountsPack: boolean;
+};
+
 export default function DashboardPage() {
   const sb = useMemo(() => getBrowserSupabaseClient(), []);
   const [showWelcome, setShowWelcome] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
+  const [loadingOnboarding, setLoadingOnboarding] = useState(true);
 
   useEffect(() => {
     // Load user ID
@@ -118,6 +130,40 @@ export default function DashboardPage() {
       cancelled = true;
     };
   }, [sb]);
+
+  // Load onboarding status
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch("/api/onboarding/status", {
+          cache: "no-store",
+        });
+        if (cancelled) return;
+        if (response.ok) {
+          const data = (await response.json()) as { ok: boolean } & OnboardingStatus;
+          if (data.ok) {
+            setOnboardingStatus({
+              hasConnectedGoogleDrive: data.hasConnectedGoogleDrive,
+              hasDraftedContract: data.hasDraftedContract,
+              hasDraftedDeck: data.hasDraftedDeck,
+              hasVaultDoc: data.hasVaultDoc,
+              hasRunAccountsPack: data.hasRunAccountsPack,
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("[dashboard] Failed to load onboarding status", err);
+      } finally {
+        if (!cancelled) {
+          setLoadingOnboarding(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     // Check if welcome card should be shown
@@ -199,6 +245,125 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Getting Started Card */}
+      {onboardingStatus && (
+        (() => {
+          const isOnboarded = onboardingStatus.hasDraftedContract && 
+                              onboardingStatus.hasDraftedDeck && 
+                              onboardingStatus.hasVaultDoc;
+          if (isOnboarded) return null;
+          
+          return (
+            <Card className="mb-4">
+              <CardHeader>
+                <CardTitle>Getting started with Monolyth</CardTitle>
+                <CardDescription>
+                  Complete these steps to get the most out of Monolyth
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    {onboardingStatus.hasConnectedGoogleDrive ? (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
+                    )}
+                    <div className="flex-1">
+                      {onboardingStatus.hasConnectedGoogleDrive ? (
+                        <span className="text-sm text-muted-foreground line-through">
+                          Connect Google Drive
+                        </span>
+                      ) : (
+                        <Link href="/integrations?source=onboarding" className="text-sm hover:underline">
+                          Connect Google Drive
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {onboardingStatus.hasDraftedContract ? (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
+                    )}
+                    <div className="flex-1">
+                      {onboardingStatus.hasDraftedContract ? (
+                        <span className="text-sm text-muted-foreground line-through">
+                          Generate your first contract
+                        </span>
+                      ) : (
+                        <Link href="/builder?tab=contracts&source=onboarding" className="text-sm hover:underline">
+                          Generate your first contract
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {onboardingStatus.hasDraftedDeck ? (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
+                    )}
+                    <div className="flex-1">
+                      {onboardingStatus.hasDraftedDeck ? (
+                        <span className="text-sm text-muted-foreground line-through">
+                          Generate your first deck
+                        </span>
+                      ) : (
+                        <Link href="/builder?tab=decks&source=onboarding" className="text-sm hover:underline">
+                          Generate your first deck
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {onboardingStatus.hasVaultDoc ? (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
+                    )}
+                    <div className="flex-1">
+                      {onboardingStatus.hasVaultDoc ? (
+                        <span className="text-sm text-muted-foreground line-through">
+                          Save a document to Vault
+                        </span>
+                      ) : (
+                        <Link href="/vault?source=onboarding" className="text-sm hover:underline">
+                          Save a document to Vault
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {onboardingStatus.hasRunAccountsPack ? (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
+                    )}
+                    <div className="flex-1">
+                      {onboardingStatus.hasRunAccountsPack ? (
+                        <span className="text-sm text-muted-foreground line-through">
+                          (Optional) Run an Accounts pack
+                        </span>
+                      ) : (
+                        <Link href="/builder?tab=accounts&source=onboarding" className="text-sm hover:underline">
+                          (Optional) Run an Accounts pack
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()
       )}
 
       <div className="mb-4 rounded-lg border bg-background p-4">

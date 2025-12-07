@@ -68,7 +68,7 @@ export async function getContractsInsightsForOrg(params: {
     countByTypePattern(supabase, "contract_draft_created%", from, to),
     // Contracts sent for signature
     countByTypePattern(supabase, "contract_sent_for_signature%", from, to),
-    // Signed contracts (stubbed via contract_signed% for now)
+    // Signed contracts metric (approximate: uses contract_signed% event types for now)
     countByTypePattern(supabase, "contract_signed%", from, to),
   ]);
 

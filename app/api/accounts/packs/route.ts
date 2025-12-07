@@ -11,6 +11,7 @@ import {
 } from "@/lib/accounts/packs";
 import { logActivity } from "@/lib/activity-log";
 import { getRouteAuthContext } from "@/lib/auth/route-auth";
+import { queuePlaybooksForEvent } from "@/lib/playbooks/events";
 
 interface AccountsPacksApiRequestBody {
   type?: AccountsPackType;
@@ -115,6 +116,54 @@ export async function POST(req: NextRequest) {
       console.error("[/api/accounts/packs] failed to record success run", {
         requestId,
         recordError,
+      });
+    }
+
+    // Trigger playbooks for accounts pack run (fire-and-forget)
+    try {
+      const derived = pack.type === "saas_monthly_expenses"
+        ? {
+            period: pack.headline.period,
+            metrics: {
+              totalAmount: pack.headline.totalAmount,
+              currency: pack.headline.currency,
+              vendorCount: pack.headline.vendorCount,
+              categoryCount: pack.headline.categoryCount,
+              averagePerVendor: pack.headline.averagePerVendor,
+              deltaAmount: pack.headline.deltaAmount ?? null,
+              deltaPercent: pack.headline.deltaPercent ?? null,
+              pack_type: pack.type,
+            },
+          }
+        : {
+            period: pack.headline.period,
+            metrics: {
+              cashBalance: pack.headline.cashBalance ?? null,
+              cashCurrency: pack.headline.cashCurrency ?? null,
+              monthlySaaSBurn: pack.headline.monthlySaaSBurn ?? null,
+              totalMonthlyBurn: pack.headline.totalMonthlyBurn ?? null,
+              estimatedRunwayMonths: pack.headline.estimatedRunwayMonths ?? null,
+              contractsInVault: pack.headline.contractsInVault ?? 0,
+              decksInVault: pack.headline.decksInVault ?? 0,
+              accountsDocsInVault: pack.headline.accountsDocsInVault ?? 0,
+              totalDocsInVault: pack.headline.totalDocsInVault ?? 0,
+              pack_type: pack.type,
+            },
+          };
+
+      await queuePlaybooksForEvent({
+        type: "accounts_pack_run",
+        payload: {
+          org_id: orgId,
+          type: pack.type,
+          ...derived,
+        },
+      });
+    } catch (playbookError) {
+      // eslint-disable-next-line no-console
+      console.error("[/api/accounts/packs] failed to trigger playbooks", {
+        requestId,
+        playbookError,
       });
     }
 

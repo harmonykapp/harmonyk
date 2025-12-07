@@ -200,6 +200,7 @@ export async function GET(req: NextRequest) {
 // POST /api/tasks - Create a new task
 export async function POST(req: NextRequest) {
   try {
+    // 1) Parse and validate body
     const body = (await req.json()) as {
       title: string;
       source?: "activity" | "mono" | "manual";
@@ -209,10 +210,12 @@ export async function POST(req: NextRequest) {
       activity_id?: string | null;
     };
 
+    // Basic title validation
     if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
       return NextResponse.json({ error: "Missing or invalid title" }, { status: 400 });
     }
 
+    // 2) Resolve user + org context
     const supabase = createServerSupabaseClient();
     const { userId, orgId } = await getUserAndOrg(supabase, req);
 
@@ -220,6 +223,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Organization not found." }, { status: 400 });
     }
 
+    // 3) Validate enums
     const source = body.source || "manual";
     if (source !== "activity" && source !== "mono" && source !== "manual") {
       return NextResponse.json({ error: "Invalid source" }, { status: 400 });
@@ -231,7 +235,51 @@ export async function POST(req: NextRequest) {
     }
 
     const dueAt = body.due_at ? new Date(body.due_at).toISOString() : null;
+    const nowIso = new Date().toISOString();
 
+    // 4) Build a task payload that we can reuse for:
+    //    - Demo / non-production stub responses (no DB write)
+    //    - Production DB insert
+    const demoId =
+      typeof crypto !== "undefined" &&
+      "randomUUID" in crypto &&
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `demo-task-${Date.now()}`;
+
+    const baseTask: Task = {
+      id: demoId,
+      org_id: orgId,
+      user_id: userId,
+      source,
+      title: body.title.trim(),
+      status,
+      due_at: dueAt,
+      doc_id: body.doc_id ?? null,
+      activity_id: body.activity_id ?? null,
+      created_at: nowIso,
+      updated_at: nowIso,
+    };
+
+    // 5) Non-production behaviour:
+    //    For local dev / preview environments we DO NOT require the "tasks"
+    //    table to exist. Instead we:
+    //      - Return a demo task
+    //      - Let the Tasks UI manage state locally
+    //
+    //    This keeps Week 20 GA-safe without forcing new migrations.
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[api/tasks] Returning demo task in non-production; no DB write performed.", {
+        orgId,
+        userId,
+        source,
+      });
+
+      return NextResponse.json({ task: baseTask }, { status: 201 });
+    }
+
+    // 6) Production behaviour:
+    //    In production we expect a real "tasks" table and write to it.
     const { data: task, error: insertError } = await supabase
       .from("tasks")
       .insert({
@@ -244,16 +292,62 @@ export async function POST(req: NextRequest) {
         doc_id: body.doc_id || null,
         activity_id: body.activity_id || null,
       })
-      .select()
+      .select("*")
       .single();
 
     if (insertError || !task) {
-      return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
+      // Log full error details for ops
+      console.error("[api/tasks] Failed to insert task:", {
+        orgId,
+        userId,
+        source,
+        status,
+        dueAt,
+        code: insertError?.code,
+        message: insertError?.message,
+        details: insertError?.details,
+        hint: insertError?.hint,
+      });
+
+      // Table missing
+      if (insertError?.code === "42P01") {
+        return NextResponse.json(
+          {
+            error: "Tasks table not found. Please run the database migration.",
+            details: insertError.message,
+            code: insertError.code,
+          },
+          { status: 500 },
+        );
+      }
+
+      // Column missing / schema mismatch
+      if (
+        insertError?.code === "42703" ||
+        (insertError?.message &&
+          insertError.message.includes("column") &&
+          insertError.message.includes("does not exist"))
+      ) {
+        return NextResponse.json(
+          {
+            error: "Tasks table schema is outdated. Please run the database migration.",
+            details: insertError.message,
+            code: insertError.code,
+          },
+          { status: 500 },
+        );
+      }
+
+      return NextResponse.json(
+        { error: "Failed to create task", details: insertError?.message ?? "Unknown error" },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({ task }, { status: 201 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to create task";
+    console.error("[api/tasks] Unexpected error in POST /api/tasks/create:", error);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

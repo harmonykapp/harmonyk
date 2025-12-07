@@ -1,11 +1,11 @@
-# Mono Memory + RAG Foundations (Week 9)
+# Mono Memory + RAG Foundations (GA)
 
-This doc describes the Week 9 foundations for Mono's "brain":
+This doc describes the GA foundations for Mono's "brain":
 
-- **Mono Memory v1** – user/org profiles and template usage logging.
-- **RAG foundations** – embeddings table and helpers that will later let Mono and Builder pull in grounded context from Vault and connectors.
+- **Mono Memory v1** – user/org profiles, template usage logging, and recent conversation traces.
+- **RAG foundations** – schema and helpers for embeddings that will be enabled post-GA.
 
-It is intentionally implementation-light. The goal is to define stable interfaces that the rest of the app can call.
+The goal is to define stable interfaces that the rest of the app can call, while keeping GA behaviour simple and predictable.
 
 ---
 
@@ -42,6 +42,25 @@ Helpers:
 - `buildMonoPreferenceConfig()` – turns `MonoProfiles` into a small, serialisable config used at call sites:
   - `{ tone, riskProfile, jurisdiction, locale }`.
 - `recordTemplateUsage()` – fire-and-forget logging for template and clause usage. It is non-blocking by design; failures are caught and logged only in development.
+
+### 1.4 Conversation traces (ActivityLog-backed)
+
+There is no dedicated "chat history" table at GA. Instead, Mono uses the existing `activity_log` table as a lightweight memory source:
+
+- `logMonoQuery()` writes a `mono_query` event with:
+  - `org_id`, `user_id`,
+  - `type: "mono_query"`,
+  - `context.message` (the user's question),
+  - route + timing metadata.
+- `getRecentMonoMessages()` in `lib/mono/memory.ts`:
+  - Accepts `{ supabase, orgId, userId, limit }`.
+  - Queries the last N `mono_query` events for the given user/org.
+  - Returns an ordered array of `{ role: "user", content, createdAt }` for prompt construction.
+
+The GA Mono endpoint (`/api/mono`) uses this helper to:
+
+- Pull the last few messages for continuity.
+- Feed them into the OpenAI chat call as prior user turns.
 
 ### 1.3 Prompt glue
 
@@ -93,6 +112,7 @@ Backed by `202511270900_rag_foundations_v1.sql`:
 Defined in `lib/rag/types.ts` and `lib/rag/index.ts`:
 
 - `RagChunk`, `RagQueryOptions`, `RagResult`, `RagIndexOptions`, `RagBackend`, `RagSearchContext`.
+- `RagStatusDisabled` and `getRagStatus()` to make the GA "RAG off" state explicit.
 - `indexDocument(documentId, options, context)` – stub; will later:
   - Load document content from Vault,
   - Chunk content,
@@ -101,7 +121,13 @@ Defined in `lib/rag/types.ts` and `lib/rag/index.ts`:
 - `deleteEmbeddingsForDocument(documentId, context)` – stub; will later delete all rows for a document.
 - `searchRag(query, options, context)` – stub; interface for Mono/Builder to fetch relevant chunks.
 
-In Week 9 these helpers only log debug information in non-production. They are safe to call but return empty results until we implement real indexing/search.
+In GA:
+
+- `getRagStatus()` returns `{ enabled: false, reason: "RAG disabled in GA" }`.
+- `indexDocument()` and `deleteEmbeddingsForDocument()` are no-ops that log in non-production.
+- `searchRag()` logs calls in non-production and always returns an empty array.
+
+This keeps call sites future-proof without accidentally implying that RAG is live.
 
 ---
 
@@ -110,18 +136,23 @@ In Week 9 these helpers only log debug information in non-production. They are s
 - Contracts Builder:
   - Uses Mono Memory v1 to shape its system prompt.
   - Logs template usage after generation.
-- Mono (analyze/explain):
-  - When a document id is provided by the client, attempts a `searchRag()` call scoped to that document and, if results exist, appends a "RAG CONTEXT" block to the system prompt.
+- Mono (chat via `/api/mono`):
+  - Uses preference config for tone / jurisdiction / locale.
+  - Reads recent `mono_query` events via `getRecentMonoMessages()` and feeds them into the chat call.
+  - Attempts a `searchRag()` call when a document id is provided, but GA behaviour is effectively "no RAG context" because RAG is disabled.
+- Analyze endpoint (`/api/ai/analyze`):
+  - Calls OpenAI with a JSON-only prompt and validates the response against `AnalyzeResultSchema`.
+  - Logs an `analyze_completed` activity event.
 
-Limitations (Week 9):
+Limitations (GA):
 
-- No automatic indexing pipeline yet; `vault_embeddings` stays empty until we implement it.
-- `searchRag()` always returns an empty array; behaviour is future-compatible but not yet grounded.
-- Client flows do not yet expose UI for editing org/user profiles; defaults are applied under the hood.
+- No automatic indexing pipeline yet; `vault_embeddings` is defined but unused.
+- `searchRag()` always returns an empty array; RAG is explicitly disabled at GA.
+- Client flows do not yet expose UI for editing org/user profiles; defaults are applied under the hood, with an option to override via direct DB changes if needed.
 
 Next steps (future weeks):
 
 - Implement document indexing jobs over Vault and connector imports.
 - Add UI for editing org/user preference profiles.
-- Expand Mono and Builder calls to rely on real RAG results once embeddings are populated.
+- Expand Mono and Builder calls to rely on real RAG results once embeddings are populated and `getRagStatus().enabled` is true.
 

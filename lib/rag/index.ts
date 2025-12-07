@@ -1,11 +1,8 @@
-// RAG Foundations v1 – helpers (stubs)
+// RAG foundations for GA.
 //
-// This file defines the public interface for RAG in Monolyth but intentionally
-// avoids hard-wiring any particular DB client or OpenAI call just yet.
-//
-// Week 9 goal:
-//  - Define the shape of RAG helpers that Builder / Mono can call.
-//  - Keep implementations as safe no-ops or minimal stubs for now.
+// Public interface is stable but RAG is disabled at GA. These helpers are
+// safe no-ops that log when called. Post-GA we will wire them to pgvector-
+// backed embeddings in Supabase.
 
 import type {
   RagIndexOptions,
@@ -18,16 +15,23 @@ const DEFAULT_RAG_BACKEND: RagSearchContext = {
   backend: "pgvector",
 };
 
+export interface RagStatusDisabled {
+  enabled: false;
+  reason: "RAG disabled in GA";
+}
+
+export function getRagStatus(): RagStatusDisabled {
+  return {
+    enabled: false,
+    reason: "RAG disabled in GA",
+  };
+}
+
 /**
  * indexDocument
  *
  * High-level entry point to (re)index a document into vault_embeddings.
- *
- * In Week 9 this is a stub: callers can wire this up, but implementation will
- * be filled in once we stabilise how we:
- *  - fetch Vault document content,
- *  - call OpenAI (or other) embeddings,
- *  - persist chunks into Supabase.
+ * In GA this is a no-op because RAG is disabled. It remains safe to call.
  */
 export async function indexDocument(
   documentId: string,
@@ -40,25 +44,19 @@ export async function indexDocument(
 
   if (process.env.NODE_ENV !== "production") {
     // eslint-disable-next-line no-console
-    console.debug("[rag] indexDocument (stub)", {
+    console.debug("[rag] indexDocument called (RAG disabled in GA)", {
       documentId,
       options,
       context,
     });
   }
-
-  // TODO: implement pgvector-backed indexing:
-  //  - load document content from Vault
-  //  - chunk content
-  //  - embed chunks
-  //  - upsert into vault_embeddings
 }
 
 /**
  * deleteEmbeddingsForDocument
  *
  * Convenience helper to wipe embeddings for a given document_id.
- * Again, this is a stub in Week 9 – safe to call but does nothing.
+ * In GA this is a no-op because RAG is disabled.
  */
 export async function deleteEmbeddingsForDocument(
   documentId: string,
@@ -70,21 +68,21 @@ export async function deleteEmbeddingsForDocument(
 
   if (process.env.NODE_ENV !== "production") {
     // eslint-disable-next-line no-console
-    console.debug("[rag] deleteEmbeddingsForDocument (stub)", {
+    console.debug("[rag] deleteEmbeddingsForDocument called (RAG disabled in GA)", {
       documentId,
       context,
     });
   }
-
-  // TODO: implement delete from vault_embeddings where document_id = ...
 }
 
 /**
  * searchRag
  *
  * Primary entry for Mono / Builder when they want to pull in relevant chunks
- * for a user query. For Week 9 this returns an empty array but logs usage in
- * non-production so we can see call sites during development.
+ * for a user query.
+ *
+ * In GA this returns an empty array and logs calls in non-production. Callers
+ * should treat an empty result set as "no RAG context available".
  */
 export async function searchRag(
   query: string,
@@ -97,17 +95,12 @@ export async function searchRag(
 
   if (process.env.NODE_ENV !== "production") {
     // eslint-disable-next-line no-console
-    console.debug("[rag] searchRag (stub)", {
+    console.debug("[rag] searchRag called (RAG disabled in GA)", {
       query,
       options,
       context,
     });
   }
-
-  // TODO: implement pgvector-backed similarity search:
-  //  - embed query
-  //  - run vector search against vault_embeddings
-  //  - return ranked RagResult[]
 
   return [];
 }

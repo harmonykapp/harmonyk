@@ -1,13 +1,7 @@
-// Week 7 Day 4: minimal /api/playbooks/undo implementation
-// This defines the SHAPE of undo operations.
-// For now it:
-//  - Validates the run_id
-//  - Looks up the run + steps
-//  - Returns a clear "not yet implemented" response
-//
-// Later we can:
-//  - Inspect playbook_steps.output_json for side-effect IDs (share links, signatures, tags)
-//  - Reverse those side effects (e.g., delete share link, cancel signature envelope)
+// Week 18 Day 6: /api/playbooks/undo is read-only in GA.
+// It validates the run_id, looks up the run + steps, and returns metadata so a
+// human can inspect or manually undo side effects if needed. There is no
+// automated server-side undo pipeline in GA.
 
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
@@ -109,14 +103,15 @@ export async function POST(req: NextRequest) {
     const typedRun = run as PlaybookRunRow;
     const typedSteps = (steps ?? []) as PlaybookStepRow[];
 
-    // 3) For now, we do not perform destructive actions.
-    //    We return a 501 with enough context so a human can see what would be undone.
+    // 3) GA behaviour: do not perform destructive actions automatically.
+    //    Return a 501 with enough context so a human can see what was done and
+    //    decide on any manual remediation.
 
     return NextResponse.json(
       {
         ok: false,
         message:
-          'Undo is not implemented yet for this playbook. This endpoint is a scaffold and will be wired to reverse side effects later in Week 7.',
+          "Undo operations are not supported in Monolyth GA. This endpoint is read-only and returns metadata about the requested playbook run.",
         run: {
           id: typedRun.id,
           playbook_id: typedRun.playbook_id,

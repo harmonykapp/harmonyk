@@ -86,7 +86,13 @@ export default async function BuilderPage({
 
   return (
     <div className="h-full flex flex-col">
-      <BuilderClient templates={templates} clauses={clauses} deckTemplates={deckTemplates} initialDocId={docId} initialTab={validTab} />
+      <BuilderClient
+        templates={templates}
+        clauses={clauses}
+        deckTemplates={deckTemplates}
+        initialDocId={docId}
+        initialTab={validTab}
+      />
     </div>
   );
 }

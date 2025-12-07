@@ -196,8 +196,8 @@ export async function fetchActivityLog(
 }
 
 // ============================================================================
-// Legacy logging functions (kept for backward compatibility)
-// TODO: Migrate these to use the new ActivityEventType system
+// Legacy logging functions (kept for backward compatibility).
+// NOTE: These will be migrated to the ActivityEventType-based system in a future refactor.
 // ============================================================================
 
 import { createServerSupabaseClient } from './supabase-server';
@@ -217,7 +217,19 @@ export type ActivityType =
   | 'mono_query'
   | 'selftest'
   // Week 15 — Accounts Packs v1
-  | 'accounts_pack_failure';
+  | 'accounts_pack_failure'
+  // Week 17 Day 2 — Playbooks execution engine
+  | 'playbook_action_fired'
+  | 'playbook_task_enqueued'
+  | 'playbook_action_ignored'
+  | 'playbooks_load_failed'
+  | 'playbook_run_failed'
+  // Week 17 Day 3 — Contracts playbooks
+  | 'contract_renewal_reminder_created'
+  // Week 17 Day 4 — Decks playbooks
+  | 'deck_outreach_sequence_started'
+  // Week 17 Day 5 — Accounts playbooks
+  | 'investor_update_recommended';
 
 export interface LogActivityParams {
   orgId: string;

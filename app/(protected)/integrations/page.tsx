@@ -26,6 +26,8 @@ type GmailStatusResponse = {
   last_error_time: string | null;
 };
 
+const CONNECTED_SOURCE_LIMIT = 10;
+
 function formatDateTime(iso: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -249,7 +251,7 @@ export default function IntegrationsPage() {
         setGmailConnectStatus("error");
         setGmailConnectMessage(
           data?.error ??
-            `Gmail connect failed with status ${res.status} – see logs for details.`,
+          `Gmail connect failed with status ${res.status} – see logs for details.`,
         );
         return;
       }
@@ -296,8 +298,8 @@ export default function IntegrationsPage() {
         setGmailSyncStatus("error");
         setGmailSyncMessage(
           data?.message ??
-            data?.error ??
-            `Gmail import failed with status ${res.status}: ${text}`,
+          data?.error ??
+          `Gmail import failed with status ${res.status}: ${text}`,
         );
         void refreshGmailStatus();
         return;
@@ -325,15 +327,33 @@ export default function IntegrationsPage() {
   const gmailConnected =
     gmailStatus && gmailStatus.account_status && gmailStatus.account_status !== "disconnected";
 
+  const connectedSources =
+    (driveConnected ? 1 : 0) + (gmailConnected ? 1 : 0);
+
+  const remainingSources = Math.max(
+    0,
+    CONNECTED_SOURCE_LIMIT - connectedSources,
+  );
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 px-4 py-10">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
       <header className="mb-2">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">Integrations</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Integrations</h1>
             <p className="mt-1 text-sm text-neutral-400">
-              Connect Monolyth to your external tools. Drive imports are metadata-first and can
-              be synced on demand.
+              Connect Monolyth to your external tools. Drive imports can be synced on demand.
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              Pro plan: up to {CONNECTED_SOURCE_LIMIT} connected sources.{" "}
+              <span className="font-mono">
+                {connectedSources}/{CONNECTED_SOURCE_LIMIT} used
+              </span>
+              {remainingSources > 0 && (
+                <span className="ml-1">
+                  · {remainingSources} remaining
+                </span>
+              )}
             </p>
           </div>
           <a
@@ -359,10 +379,10 @@ export default function IntegrationsPage() {
           <div className="flex items-center gap-2">
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${loadStatus === "loading"
-                  ? "bg-neutral-800 text-neutral-300"
-                  : driveConnected
-                    ? "bg-emerald-900/60 text-emerald-300"
-                    : "bg-neutral-800 text-neutral-400"
+                ? "bg-neutral-800 text-neutral-300"
+                : driveConnected
+                  ? "bg-emerald-900/60 text-emerald-300"
+                  : "bg-neutral-800 text-neutral-400"
                 }`}
             >
               {loadStatus === "loading"
@@ -490,10 +510,10 @@ export default function IntegrationsPage() {
           <div className="flex items-center gap-2">
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${gmailLoadStatus === "loading"
-                  ? "bg-neutral-800 text-neutral-300"
-                  : gmailConnected
-                    ? "bg-emerald-900/60 text-emerald-300"
-                    : "bg-neutral-800 text-neutral-400"
+                ? "bg-neutral-800 text-neutral-300"
+                : gmailConnected
+                  ? "bg-emerald-900/60 text-emerald-300"
+                  : "bg-neutral-800 text-neutral-400"
                 }`}
             >
               {gmailLoadStatus === "loading"
@@ -599,11 +619,11 @@ export default function IntegrationsPage() {
         </div>
       </section>
 
-      {/* Future: Gmail, Calendar, etc. */}
+      {/* Future connectors */}
       <section className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-4 text-xs text-neutral-500">
-        Additional connectors (Calendar, etc.) will appear here in later weeks.
+        Additional connectors will appear here in later weeks.
       </section>
-    </main>
+    </div>
   );
 }
 

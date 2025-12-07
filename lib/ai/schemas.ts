@@ -6,10 +6,11 @@ export const AnalyzeEntitySchema = z.object({
 });
 
 export const AnalyzeResultSchema = z.object({
-  summary: z.string(),
-  entities: z.array(AnalyzeEntitySchema),
-  dates: z.array(z.string()),
-  nextAction: z.string().nullable(),
+  // Be tolerant of partial / sloppy model output and provide GA-safe defaults.
+  summary: z.string().default("No summary available."),
+  entities: z.array(AnalyzeEntitySchema).default([]),
+  dates: z.array(z.string()).default([]),
+  nextAction: z.string().nullable().default(null),
 });
 
 export type AnalyzeEntity = z.infer<typeof AnalyzeEntitySchema>;

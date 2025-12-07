@@ -1,13 +1,12 @@
 // Mono Memory v1 – helpers
 //
 // IMPORTANT:
-// - This file is deliberately light on DB concerns.
-// - Route handlers / services should load rows from Supabase and then
-//   call these helpers to assemble configs.
-//
-// We can later add DB-backed helpers (eg. getMonoProfilesFromDb) once
-// we settle on the server-side Supabase client patterns.
+// - Preference helpers are pure and DB-agnostic.
+// - Conversation helpers accept an injected Supabase client so routes
+//   can control scoping and auth.
+// - ActivityLog is the primary store for recent Mono messages.
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   MonoBuilderType,
   MonoOrgProfile,
@@ -82,16 +81,12 @@ export async function recordTemplateUsage(
   params: RecordTemplateUsageParams,
 ): Promise<void> {
   if (!params.userId) {
-    // Nothing to do – invalid caller usage.
     return;
   }
 
-  // TODO: implement Supabase insert into mono_template_usage.
-  // For now we keep this as a safe no-op. Light debug logging in non-prod
-  // is acceptable while we build out the rest of Week 9.
   if (process.env.NODE_ENV !== "production") {
     // eslint-disable-next-line no-console
-    console.debug("[mono] recordTemplateUsage (stub)", {
+    console.debug("[mono] recordTemplateUsage", {
       userId: params.userId,
       orgId: params.orgId,
       builderType: params.builderType,
@@ -135,5 +130,83 @@ export function buildMonoPreferenceConfigFromInput(
   });
 
   return buildMonoPreferenceConfigFromProfiles(profiles);
+}
+
+// ---------------------------------------------------------------------------
+// Conversation memory helpers (ActivityLog-backed)
+// ---------------------------------------------------------------------------
+
+export interface MonoMessage {
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
+}
+
+export interface GetRecentMonoMessagesParams {
+  supabase: SupabaseClient;
+  orgId: string;
+  userId: string;
+  limit?: number;
+}
+
+/**
+ * getRecentMonoMessages
+ *
+ * Minimal "memory" layer for Mono backed by activity_log.
+ * We read the last N mono_query events for the user/org and turn them
+ * into chat-style messages that can be passed to OpenAI.
+ */
+export async function getRecentMonoMessages(
+  params: GetRecentMonoMessagesParams,
+): Promise<MonoMessage[]> {
+  const { supabase, orgId, userId, limit = 6 } = params;
+
+  if (!orgId || !userId) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("created_at, context")
+    .eq("org_id", orgId)
+    .eq("user_id", userId)
+    .eq("type", "mono_query")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) {
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.debug("[mono] getRecentMonoMessages failed", {
+        orgId,
+        userId,
+        error,
+      });
+    }
+    return [];
+  }
+
+  type Row = { created_at: string; context: Record<string, unknown> | null };
+  const rows = data as Row[];
+
+  const messages: MonoMessage[] = rows
+    .map((row) => {
+      const ctx = row.context ?? {};
+      const messageValue =
+        typeof ctx.message === "string" ? ctx.message : null;
+      if (!messageValue) {
+        return null;
+      }
+      const msg: MonoMessage = {
+        role: "user",
+        content: messageValue,
+        createdAt: row.created_at,
+      };
+      return msg;
+    })
+    .filter((m): m is MonoMessage => m !== null)
+    .reverse(); // Oldest first for prompt ordering
+
+  return messages;
 }
 
