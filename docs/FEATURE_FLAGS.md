@@ -1,6 +1,6 @@
 # Feature Flags
 
-This document tracks the feature flags used in the Monolyth app as of Week 6.
+This document tracks the feature flags used in the Harmonyk app as of Week 6.
 
 Flags are read from `NEXT_PUBLIC_<FLAG>` env vars and default to safe values for Beta.
 

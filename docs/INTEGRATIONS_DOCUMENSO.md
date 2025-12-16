@@ -4,7 +4,7 @@ Last updated: 2025-11-28 (Week 12 Day 2)
 
 ## Overview
 
-Monolyth integrates with [Documenso](https://documenso.com) to enable sending documents for electronic signature. This integration allows users to send documents from Builder or Vault directly to Documenso for signature collection.
+Harmonyk integrates with [Documenso](https://documenso.com) to enable sending documents for electronic signature. This integration allows users to send documents from Builder or Vault directly to Documenso for signature collection.
 
 ## Architecture
 

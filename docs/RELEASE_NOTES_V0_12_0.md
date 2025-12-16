@@ -7,7 +7,7 @@ Scope: Signature flow fixes, Documenso integration (dev stub), Task Hub v1, and 
 
 ## Overview
 
-Monolyth v0.12.0 introduces **Signatures Fix + Task Hub & Notifications v1**:
+Harmonyk v0.12.0 introduces **Signatures Fix + Task Hub & Notifications v1**:
 
 - Fixed "Send for signature" flow with improved error handling and dev stub support
 - New **Task Hub** (`/tasks`) for managing org-scoped tasks

@@ -1,4 +1,4 @@
-# Week 6 Summary – Monolyth Beta
+# Week 6 Summary – Harmonyk Beta
 
 This document summarizes what changed in Week 6, the current stability of the Beta build, known limitations, and the focus for Week 7.
 
@@ -60,7 +60,7 @@ This document summarizes what changed in Week 6, the current stability of the Be
 
 - **Onboarding & first-run UX**
 
-  - Dashboard now shows a "Welcome to Monolyth Beta" card explaining the golden path.
+  - Dashboard now shows a "Welcome to Harmonyk Beta" card explaining the golden path.
 
   - Dashboard includes a short explanation of what each main nav section does.
 

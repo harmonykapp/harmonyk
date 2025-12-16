@@ -68,7 +68,7 @@ Fill this section with **file-level bullets** once tasks are done. Example struc
 
 ### 2.5 Docs & handover
 
-- [ ] Updated top-level **README** with GA-focused information: what Monolyth is, what's in GA, how to run locally.  
+- [ ] Updated top-level **README** with GA-focused information: what Harmonyk is, what's in GA, how to run locally.  
 
 - [ ] Updated **OPS_GA_RUNBOOK.md** with current GA steps and gotchas.  
 

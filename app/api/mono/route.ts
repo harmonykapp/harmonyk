@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     }
 
     const baseSystemPrompt =
-      "You are Mono, Monolyth's AI assistant. Answer the user's questions helpfully and concisely.";
+      "You are Mono, Harmonyk's AI assistant. Answer the user's questions helpfully and concisely.";
 
     // Mono preference config (org/user tone, risk profile, etc.)
     const preferenceConfig = buildMonoPreferenceConfigFromInput();

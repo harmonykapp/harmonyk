@@ -342,7 +342,7 @@ export default function IntegrationsPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Integrations</h1>
             <p className="mt-1 text-sm text-neutral-400">
-              Connect Monolyth to your external tools. Drive imports can be synced on demand.
+              Connect Harmonyk to your external tools. Drive imports can be synced on demand.
             </p>
             <p className="mt-1 text-xs text-neutral-500">
               Pro plan: up to {CONNECTED_SOURCE_LIMIT} connected sources.{" "}
@@ -370,7 +370,7 @@ export default function IntegrationsPage() {
           <div>
             <h2 className="text-sm font-semibold">Google Drive</h2>
             <p className="mt-1 text-xs text-neutral-500">
-              Import Docs, Sheets, Slides, and PDFs into Monolyth&apos;s metadata index
+              Import Docs, Sheets, Slides, and PDFs into Harmonyk&apos;s metadata index
               for analysis and workflows. Each sync pulls a recent slice of your Drive
               within safe limits so you can test connectors without hammering your
               account.
@@ -501,7 +501,7 @@ export default function IntegrationsPage() {
           <div>
             <h2 className="text-sm font-semibold">Gmail</h2>
             <p className="mt-1 text-xs text-neutral-500">
-              Import email + attachment metadata for contract-related threads. Monolyth
+              Import email + attachment metadata for contract-related threads. Harmonyk
               only stores headers and attachment metadata, not email bodies, and each
               sync only fetches a small recent batch of messages to keep things safe and
               predictable during the beta.

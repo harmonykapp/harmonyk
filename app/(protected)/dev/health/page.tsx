@@ -75,7 +75,7 @@ export default function DevHealthPage() {
       <div>
         <h1 className="text-2xl font-semibold">Dev Health / Diagnostics</h1>
         <p className="text-sm text-muted-foreground">
-          Internal diagnostics for the Monolyth Beta build.
+          Internal diagnostics for the Harmonyk Beta build.
         </p>
       </div>
 

@@ -91,7 +91,7 @@ export default function IntegrationsPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
             <p className="text-muted-foreground mt-1">
-              Connect your favorite tools and services to Monolyth
+              Connect your favorite tools and services to Harmonyk
             </p>
           </div>
           <div className="relative w-80">

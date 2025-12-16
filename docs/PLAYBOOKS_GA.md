@@ -1,4 +1,4 @@
-# Playbooks GA — Monolyth
+# Playbooks GA — Harmonyk
 
 Automated, explainable workflows that react to activity events and accounts pack runs.
 Playbooks are org-scoped, safety-focused automations that:

@@ -218,7 +218,7 @@ export default function DashboardPage() {
         <div className="mb-4 rounded-lg border bg-card p-4 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold">Welcome to Monolyth Beta</h2>
+              <h2 className="text-lg font-semibold">Welcome to Harmonyk Beta</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Here&apos;s the golden path we&apos;d like you to test:
               </p>
@@ -258,9 +258,9 @@ export default function DashboardPage() {
           return (
             <Card className="mb-4">
               <CardHeader>
-                <CardTitle>Getting started with Monolyth</CardTitle>
+                <CardTitle>Getting started with Harmonyk</CardTitle>
                 <CardDescription>
-                  Complete these steps to get the most out of Monolyth
+                  Complete these steps to get the most out of Harmonyk
                 </CardDescription>
               </CardHeader>
               <CardContent>

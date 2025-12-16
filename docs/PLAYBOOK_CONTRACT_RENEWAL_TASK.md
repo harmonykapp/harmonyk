@@ -17,7 +17,7 @@ for Week 15, but this doc ensures the Contracts model is ready and unambiguous.
 
 Primary trigger (GA target):
 
-- Event type: `signature_completed` (Documenso → Monolyth)
+- Event type: `signature_completed` (Documenso → Harmonyk)
 
 - Context:
 

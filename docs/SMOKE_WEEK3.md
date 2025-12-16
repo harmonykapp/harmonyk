@@ -1,4 +1,4 @@
-# Monolyth – Week 3 Smoke Test
+# Harmonyk – Week 3 Smoke Test
 
 This checklist is for a quick manual verification of the Week 3 functional draft.
 

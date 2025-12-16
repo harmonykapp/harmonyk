@@ -1,6 +1,6 @@
 # Release Notes – v0.8.0
 
-> Monolyth – Insights & Activity v1
+> Harmonyk – Insights & Activity v1
 
 Target: end of Week 8 on the 18-week roadmap.
 

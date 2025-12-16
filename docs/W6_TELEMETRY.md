@@ -1,6 +1,6 @@
 # Week 6 – Telemetry & Logging
 
-This document summarizes the telemetry and structured logging added in Week 6 for the Monolyth Beta build.
+This document summarizes the telemetry and structured logging added in Week 6 for the Harmonyk Beta build.
 
 ---
 

@@ -91,7 +91,7 @@ export default function SettingsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="company">Company</Label>
-                  <Input id="company" defaultValue="Monolyth Inc" />
+                  <Input id="company" defaultValue="Harmonyk Inc" />
                 </div>
 
                 <Button>Save Changes</Button>

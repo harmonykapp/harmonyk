@@ -53,7 +53,7 @@ const plans = [
       '10 active share links',
       '30 AI analyses per month',
       'Basic search',
-      'Monolyth branding',
+      'Harmonyk branding',
     ],
     current: false,
   },

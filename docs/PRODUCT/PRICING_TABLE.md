@@ -1,4 +1,4 @@
-# Monolyth — GA Plans & Pricing (Google-first) — v2025-11-28 rev C
+# Harmonyk — GA Plans & Pricing (Google-first) — v2025-11-28 rev C
 
 | Area | **Free ($0)** | **Starter ($30/user/mo)** | **Pro ($60/user/mo)** | **Team ($200/mo for 3 seats +$50/addl.)** |
 |---|---|---|---|---|

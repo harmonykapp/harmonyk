@@ -1,6 +1,6 @@
 # Beta User Invite Checklist (First 3–5 Users)
 
-This checklist is for inviting the first small set of Beta users to Monolyth.  
+This checklist is for inviting the first small set of Beta users to Harmonyk.  
 The goal is to keep the experience controlled, predictable, and easy to debug.
 
 ---

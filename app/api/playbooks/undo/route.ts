@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       {
         ok: false,
         message:
-          "Undo operations are not supported in Monolyth GA. This endpoint is read-only and returns metadata about the requested playbook run.",
+          "Undo operations are not supported in Harmonyk GA. This endpoint is read-only and returns metadata about the requested playbook run.",
         run: {
           id: typedRun.id,
           playbook_id: typedRun.playbook_id,

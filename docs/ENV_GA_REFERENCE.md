@@ -1,6 +1,6 @@
 # ENV_GA_REFERENCE
 
-This document describes the environment variables required for running the Monolyth **GA surface**.
+This document describes the environment variables required for running the Harmonyk **GA surface**.
 
 It is a reference for:
 

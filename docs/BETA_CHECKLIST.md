@@ -1,6 +1,6 @@
-# Monolyth Beta – Readiness Checklist
+# Harmonyk Beta – Readiness Checklist
 
-This document summarizes the key checks for the Week 6 Monolyth Beta build.  
+This document summarizes the key checks for the Week 6 Harmonyk Beta build.  
 It is a concise view of what works, what is guarded behind feature flags, and what remains as known issues.
 
 ---

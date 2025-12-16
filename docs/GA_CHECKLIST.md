@@ -1,4 +1,4 @@
-# GA Checklist — Monolyth
+# GA Checklist — Harmonyk
 
 This checklist is used to validate the GA candidate build (up to Week 18). Each item should be marked ✅ / ⚠️ / ❌ as part of the GA cut.
 

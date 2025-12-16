@@ -235,7 +235,7 @@ export default function WorkbenchPage() {
     const sample: Row[] = [
       {
         id: uuid(),
-        title: "NDA — ACME & Monolyth",
+        title: "NDA — ACME & Harmonyk",
         source: "Drive",
         kind: "application/pdf",
         owner: driveConnected ? "you@demo" : "—",

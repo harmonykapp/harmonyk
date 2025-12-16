@@ -2,7 +2,7 @@
 
 ## Objectives
 
-- Give founders a **single place to see whether Monolyth is doing work for them** (Insights).
+- Give founders a **single place to see whether Harmonyk is doing work for them** (Insights).
 
 - Provide a **lightweight Task Hub** for tracking follow-ups across docs, signatures, and deals.
 

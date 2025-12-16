@@ -1,4 +1,4 @@
-# Monolyth – Playbooks v1
+# Harmonyk – Playbooks v1
 
 > Week 7 implementation notes, scope, and runbook
 
@@ -70,7 +70,7 @@ v1 supports:
       "mode": "selection",
       "source": "workbench",
       "selected_unified_ids": ["..."],
-      "selected_titles": ["NDA — ACME & Monolyth"]
+      "selected_titles": ["NDA — ACME & Harmonyk"]
     }
     ```
 

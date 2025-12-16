@@ -277,7 +277,7 @@ export async function POST(req: NextRequest) {
           {
             role: "system",
             content:
-              "You analyze documents for Monolyth. Always respond with strict JSON matching the requested schema. Never include commentary.",
+              "You analyze documents for Harmonyk. Always respond with strict JSON matching the requested schema. Never include commentary.",
           },
           {
             role: "user",

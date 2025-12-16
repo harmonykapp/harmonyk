@@ -1,6 +1,6 @@
 # PG-W1 — AppShell Contract & Layout Notes
 
-Monolyth — Post-GA 26-Week Build  
+Harmonyk — Post-GA 26-Week Build  
 Week: **PG-W1 – Responsive App Shell + Infra Enablers**
 
 This document defines the **single AppShell contract** for all protected routes and captures the current audit of layout / header / mobile issues before refactors.

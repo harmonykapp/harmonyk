@@ -1,4 +1,4 @@
-# Monolyth — Post-GA Product Specifications (prioritized)
+# Harmonyk — Post-GA Product Specifications (prioritized)
 
 | Area | What ships post-GA (prioritized) | Notes |
 |---|---|---|

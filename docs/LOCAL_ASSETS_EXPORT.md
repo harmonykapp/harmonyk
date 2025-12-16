@@ -1,6 +1,6 @@
-# LOCAL_ASSETS_EXPORT.md — Monolyth
+# LOCAL_ASSETS_EXPORT.md — Harmonyk
 
-This file documents **local / external assets** that back the Monolyth product (legal templates, wireframes, feedback docs) and how they map into the repo and product features.
+This file documents **local / external assets** that back the Harmonyk product (legal templates, wireframes, feedback docs) and how they map into the repo and product features.
 
 Use this as the source of truth when:
 
@@ -19,7 +19,7 @@ Back the **≈45-template Contracts library** for the Contracts Builder.
 
 - Google Drive path (author's machine):
 
-  - `G:\My Drive\Monolyth\Product Dev\Assets\LEGAL TEMPLATES`
+  - `G:\My Drive\Harmonyk\Product Dev\Assets\LEGAL TEMPLATES`
 
 - Local zip snapshot used in development:
 
@@ -101,7 +101,7 @@ Back the **≈20 clause docs** used by ClauseGraph v1 and Mono for Contracts.
 ## 3. Beta Feedback Docs
 
 **File:**  
-`Monolyth Beta Test Feedback for Builder page.pdf`
+`Harmonyk Beta Test Feedback for Builder page.pdf`
 
 **Location:**  
 Originally uploaded via ChatGPT project; should be stored under a project docs folder, e.g.:
@@ -146,7 +146,7 @@ At GA, Figma (or similar) will be the live design source. These PDFs are histori
 
 ## 5. Token / External Whitepapers (Non-GA)
 
-These are **not** part of Monolyth GA, but exist in the project for reference:
+These are **not** part of Harmonyk GA, but exist in the project for reference:
 
 - `DBIT_Payments_3.pdf`
 - `Cryptyk_Technology_White_Paper.pdf`
@@ -161,7 +161,7 @@ Suggested path:
 **Usage:**
 
 - Historical context on Web3/token work.
-- Not used in GA scope for Monolyth.
+- Not used in GA scope for Harmonyk.
 - Should not influence GA roadmap or messaging.
 
 ---
@@ -173,7 +173,7 @@ When setting up a new machine or refreshing assets:
 1. **Clone repo** as usual.
 2. **Sync Google Drive folders**:
 
-   - `Monolyth/Product Dev/Assets/LEGAL TEMPLATES`
+   - `Harmonyk/Product Dev/Assets/LEGAL TEMPLATES`
    - Any `/Design` or `/Wireframes` folders used by the team.
 
 3. Ensure:

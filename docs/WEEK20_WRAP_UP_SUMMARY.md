@@ -9,7 +9,7 @@
 
 - Ship **founder-facing surfaces** that answer:
 
-  - *"What did Monolyth do for me?"* (Insights)
+  - *"What did Harmonyk do for me?"* (Insights)
 
   - *"Who did I share this with?"* (Share Hub, Contacts)
 

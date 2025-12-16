@@ -1,6 +1,6 @@
-# OPS_GA_RUNBOOK — Monolyth GA v1
+# OPS_GA_RUNBOOK — Harmonyk GA v1
 
-This runbook describes the **operational steps** for running a GA-like Monolyth instance.
+This runbook describes the **operational steps** for running a GA-like Harmonyk instance.
 
 It is intended for:
 

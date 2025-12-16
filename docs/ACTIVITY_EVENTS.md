@@ -34,7 +34,7 @@ Payload (example):
 
 ### `connector_account_disconnected`
 
-Emitted when a connector account is explicitly disconnected from Monolyth.
+Emitted when a connector account is explicitly disconnected from Harmonyk.
 
 ```json
 
@@ -112,7 +112,7 @@ Emitted when a sync/import job fails for a connector account.
 
 # Activity Events Catalog (Week 8)
 
-Monolyth's `activity_log` table is the telemetry backbone for:
+Harmonyk's `activity_log` table is the telemetry backbone for:
 
 - The `/activity` page (raw timeline + filters)
 

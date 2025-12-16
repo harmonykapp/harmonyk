@@ -7,11 +7,11 @@ Scope: Activity page with filters, Insights page with metrics, Activity API v1.
 
 ## Overview
 
-Monolyth v0.11.0 introduces **Activity & Insights v1**:
+Harmonyk v0.11.0 introduces **Activity & Insights v1**:
 
 - New **/activity** page as a single place to answer "what just happened?" across docs, Mono, connectors, and signatures
 
-- New **/insights** page showing 3–5 simple metrics that prove Monolyth is doing work for you
+- New **/insights** page showing 3–5 simple metrics that prove Harmonyk is doing work for you
 
 - New **Activity API v1** (`GET /api/activity`) with flexible filtering and cursor-based pagination
 
@@ -27,7 +27,7 @@ This is a **v1 release** designed to be small, reliable, and useful for a single
 
 ### 1. Activity page (`/activity`)
 
-A single place to answer "what just happened?" across all Monolyth activity.
+A single place to answer "what just happened?" across all Harmonyk activity.
 
 **Filters:**
 
@@ -58,7 +58,7 @@ A single place to answer "what just happened?" across all Monolyth activity.
 
 ### 2. Insights page (`/insights`)
 
-Simple metrics that prove Monolyth is doing work for you (and that connectors are alive).
+Simple metrics that prove Harmonyk is doing work for you (and that connectors are alive).
 
 **Metric tiles (last 7 days):**
 

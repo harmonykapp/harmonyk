@@ -2,7 +2,7 @@
 
 This document describes the **data model for the Accounts Builder scanner layer**:
 
-- How Monolyth tracks _financial documents_ detected from connectors.
+- How Harmonyk tracks _financial documents_ detected from connectors.
 
 - How it stores _normalized expense facts_ for reporting.
 
@@ -138,7 +138,7 @@ This is primarily used for metadata on Accounts documents saved to Vault and for
 
 > Normalized expense facts derived from `financial_documents`.
 
-For v1, Monolyth keeps a **single "main" expense row per financial document** (e.g. total from an invoice or receipt). Post-GA we can extend this to per-line-item splits.
+For v1, Harmonyk keeps a **single "main" expense row per financial document** (e.g. total from an invoice or receipt). Post-GA we can extend this to per-line-item splits.
 
 **Columns**
 

@@ -7,7 +7,7 @@ _v2025-12-08 rev B — GA scope frozen (20 weeks) + Guided UX & Viral Loops_
 
 **Harmonyk — All your docs. One brain.**
 
-> Naming note (Dec 2025): The product was renamed from **Monolyth** to **Harmonyk**. The AI assistant was renamed from **Mono** to **Maestro**. Some internal identifiers and older docs may still use the former names.
+> Naming note (Dec 2025): The product was renamed from **Harmonyk** to **Harmonyk**. The AI assistant was renamed from **Mono** to **Maestro**. Some internal identifiers and older docs may still use the former names.
 
 ---
 
@@ -21,7 +21,7 @@ They:
 - Track deals and investors in spreadsheets and Slack threads.
 - Use generic e-sign tools with no context of their actual business.
 
-Monolyth is the **document-first operating system** that gives them:
+Harmonyk is the **document-first operating system** that gives them:
 
 > One place to draft the critical documents, keep them organized, and drive the follow-through — with one AI operator (**Maestro**) that knows their files and preferences.
 
@@ -432,7 +432,7 @@ Mono uses the **same state** to show 3–5 quick-start suggestions:
 
 ## Growth & Virality (High-ROI, Low-Complexity)
 
-Monolyth grows through documents and relationships, not gimmicks.
+Harmonyk grows through documents and relationships, not gimmicks.
 
 ### 1. Free Collaborator Roles
 
@@ -440,13 +440,13 @@ Monolyth grows through documents and relationships, not gimmicks.
   - Can view, comment, and suggest edits on docs.
   - Cannot manage billing, org settings, or Playbooks.
 - Collaborators see a subtle upsell:
-  - “Start your own workspace” when they begin using Monolyth to manage their own deals/docs.
+  - “Start your own workspace” when they begin using Harmonyk to manage their own deals/docs.
 
 This creates **internal virality** inside teams and across their advisors and lawyers.
 
 ### 2. “Keep a Copy in Your Vault” for Signers
 
-- After a recipient views/signs a Monolyth link, the Smart Share page offers:
+- After a recipient views/signs a Harmonyk link, the Smart Share page offers:
 
   > “Keep a copy of this contract in your own free Vault.”
 
@@ -464,7 +464,7 @@ This is the primary **counterparty → new workspace** loop.
 
 - Clicking:
   - Creates a new Free workspace pre-loaded with that template.
-  - Anchors Monolyth as the place where “good templates live” across the ecosystem.
+  - Anchors Harmonyk as the place where “good templates live” across the ecosystem.
 
 ### Guardrails
 
@@ -488,7 +488,7 @@ We keep the existing four-tier ladder; we will tune **limits**, not labels, as w
   - No deep automation, limited Insights.
 
 - **Starter (~$30/user)**  
-  - For solo/very small teams starting to run deals seriously through Monolyth.
+  - For solo/very small teams starting to run deals seriously through Harmonyk.
   - More generous AI usage.
   - Some Playbooks.
   - Basic Insights.

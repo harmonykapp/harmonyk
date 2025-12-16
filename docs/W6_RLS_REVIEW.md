@@ -1,6 +1,6 @@
 # Week 6 – RLS Review
 
-This document summarizes the current Supabase Row-Level Security (RLS) policies for the main Monolyth document tables.  
+This document summarizes the current Supabase Row-Level Security (RLS) policies for the main Harmonyk document tables.  
 Purpose: confirm that a logged-in user can only see their own/org data, and note any gaps to address in later weeks.
 
 ---

@@ -173,7 +173,7 @@ export default function InsightsClientV1({ data, error }: Props) {
               Highlights
             </div>
             <div className="text-xs text-muted-foreground">
-              High-signal cards showing how Monolyth is moving your accounts,
+              High-signal cards showing how Harmonyk is moving your accounts,
               contracts, and decks.
             </div>
           </div>

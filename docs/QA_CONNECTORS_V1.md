@@ -118,7 +118,7 @@ Goal: confirm that Drive failures are surfaced but do not crash the app.
 
 Option A (recommended, manual revoke):
 
-1. In your Google Account → Security → Third-party access, remove the Monolyth app.
+1. In your Google Account → Security → Third-party access, remove the Harmonyk app.
 
 2. Back in **/integrations**, click **Sync now** in the Drive card.
 

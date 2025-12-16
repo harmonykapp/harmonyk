@@ -1,4 +1,4 @@
-# Monolyth – Core UI Spec
+# Harmonyk – Core UI Spec
 
 This document is the visual/UX source of truth for the core app screens.  
 Code must follow this document whenever there is a conflict.
@@ -14,7 +14,7 @@ We support two themes: **light** and **dark**. Both use the same brand purple an
 - Text primary: `#020617` (slate-950)
 - Text secondary: `#4B5563` (slate-600)
 - Border: `#E5E7EB`
-- Primary accent: `#AA80FF` (lavender purple - matches Monolyth logo)
+- Primary accent: `#AA80FF` (lavender purple - matches Harmonyk logo)
 - Accent soft: `#AA80FF`
 - Link: use primary accent
 
@@ -25,7 +25,7 @@ We support two themes: **light** and **dark**. Both use the same brand purple an
 - Text primary: `#E5E7EB`
 - Text secondary: `#9CA3AF`
 - Border: `#1F2933`
-- Primary accent: `#AA80FF` (lavender purple - matches Monolyth logo)
+- Primary accent: `#AA80FF` (lavender purple - matches Harmonyk logo)
 - Accent soft: `#AA80FF`
 - Link: use primary accent
 

@@ -1,4 +1,4 @@
-# Monolyth Beta – Onboarding & Golden Path
+# Harmonyk Beta – Onboarding & Golden Path
 
 This document describes the intended first-run experience for Beta users and the core "golden path" we want them to test.
 
@@ -8,7 +8,7 @@ This document describes the intended first-run experience for Beta users and the
 
 When a new user logs in for the first time:
 
-- The **Dashboard** shows a "Welcome to Monolyth Beta" card.
+- The **Dashboard** shows a "Welcome to Harmonyk Beta" card.
 
 - The card explains the golden path in 5 steps:
 

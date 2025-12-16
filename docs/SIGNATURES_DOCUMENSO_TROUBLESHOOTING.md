@@ -67,7 +67,7 @@ The Builder then logs this as:
 
 ## Important: Google Drive is *not* required for Documenso
 
-Monolyth currently treats Google Drive as a **connector**:
+Harmonyk currently treats Google Drive as a **connector**:
 
 - It is used to **ingest** existing user documents into Vault (via the Drive connector).
 

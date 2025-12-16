@@ -1,4 +1,4 @@
-# Monolyth — GA (20-week, frozen) — Full Product Spec — v2025-11-28 rev C
+# Harmonyk — GA (20-week, frozen) — Full Product Spec — v2025-11-28 rev C
 
 | Area | What ships at GA | Notes / Guardrails |
 |---|---|---|

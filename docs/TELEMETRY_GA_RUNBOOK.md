@@ -1,6 +1,6 @@
 # TELEMETRY_GA_RUNBOOK
 
-This runbook defines how Monolyth should behave for **telemetry and error surfacing at GA**.
+This runbook defines how Harmonyk should behave for **telemetry and error surfacing at GA**.
 
 It is written so you can sanity-check behaviour with a GA-like environment and a PostHog /
 

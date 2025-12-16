@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
         {
           role: "system",
           content:
-            "You are Monolyth's AI deck generation assistant. Generate concise, presentation-ready slide content in JSON format. Return only valid JSON.",
+            "You are Harmonyk's AI deck generation assistant. Generate concise, presentation-ready slide content in JSON format. Return only valid JSON.",
         },
         {
           role: "user",

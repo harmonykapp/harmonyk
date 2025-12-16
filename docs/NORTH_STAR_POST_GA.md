@@ -1,4 +1,4 @@
-# NORTH_STAR_POST_GA.md — Monolyth (post-GA vision, read-only during GA)
+# NORTH_STAR_POST_GA.md — Harmonyk (post-GA vision, read-only during GA)
 
 ## One-liner
 

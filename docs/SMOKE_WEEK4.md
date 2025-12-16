@@ -1,4 +1,4 @@
-# Week 4 Smoke Test – Mono / Monolyth
+# Week 4 Smoke Test – Mono / Harmonyk
 
 This document captures the **end of Week 4** reality check. It is meant to be run
 locally and on Vercel using the real Supabase project and OpenAI key.

@@ -47,7 +47,7 @@ const mockDocuments = [
     id: '2',
     name: 'Employee Handbook 2024',
     type: 'Policy Document',
-    source: 'Monolyth',
+    source: 'Harmonyk',
     status: 'Draft',
     lastActivity: '5 hours ago',
     owner: 'Mike Johnson',
@@ -83,7 +83,7 @@ const mockDocuments = [
     id: '6',
     name: 'Data Processing Agreement',
     type: 'Contract',
-    source: 'Monolyth',
+    source: 'Harmonyk',
     status: 'In Review',
     lastActivity: '4 days ago',
     owner: 'Lisa Wong',
@@ -135,7 +135,7 @@ export default function WorkbenchPage() {
                 <SelectContent>
                   <SelectItem value="all">All Sources</SelectItem>
                   <SelectItem value="google">Google Drive</SelectItem>
-                  <SelectItem value="monolyth">Monolyth</SelectItem>
+                  <SelectItem value="monolyth">Harmonyk</SelectItem>
                   <SelectItem value="gmail">Gmail</SelectItem>
                 </SelectContent>
               </Select>

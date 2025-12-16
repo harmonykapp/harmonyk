@@ -54,7 +54,7 @@ const isDemoEnvironment = process.env.NODE_ENV !== "production";
 const DEMO_SIGNATURE_ENVELOPES: SignatureEnvelopeSummary[] = [
   {
     id: "env-001",
-    docTitle: "NDA — ACME & Monolyth",
+    docTitle: "NDA — ACME & Harmonyk",
     signerName: "Alice Rivera",
     signerEmail: "alice@example.com",
     sentAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),

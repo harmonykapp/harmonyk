@@ -1,12 +1,12 @@
-# Monolyth Beta – Invite Blurb
+# Harmonyk Beta – Invite Blurb
 
-Below is a short blurb you can reuse in emails, DMs, or posts when inviting people into the Monolyth Beta.
+Below is a short blurb you can reuse in emails, DMs, or posts when inviting people into the Harmonyk Beta.
 
 ---
 
 Hi [Name],
 
-I'm running a private Beta for **Monolyth**, a document-first workspace that connects all your docs and gives you one AI operator to work across them.
+I'm running a private Beta for **Harmonyk**, a document-first workspace that connects all your docs and gives you one AI operator to work across them.
 
 For this Beta, the goal is to test a simple "golden path":
 

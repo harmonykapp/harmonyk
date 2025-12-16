@@ -83,7 +83,7 @@ export function Sidebar({ navOverride }: { navOverride?: NavItemOverride[] }) {
         <Link href="/dashboard" className="flex items-center group" suppressHydrationWarning>
           <Image
             src="/Monologo_horizontal-transp copy.png"
-            alt="Monolyth"
+            alt="Harmonyk"
             width={160}
             height={40}
             className="h-10 w-auto dark:hidden"
@@ -92,7 +92,7 @@ export function Sidebar({ navOverride }: { navOverride?: NavItemOverride[] }) {
           />
           <Image
             src="/Monologo_horizontal-dark-transp.png"
-            alt="Monolyth"
+            alt="Harmonyk"
             width={160}
             height={40}
             className="h-10 w-auto hidden dark:block"

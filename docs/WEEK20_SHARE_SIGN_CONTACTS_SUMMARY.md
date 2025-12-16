@@ -164,7 +164,7 @@
 
 - Backed by a real **contacts source of truth**:
 
-  - Google Contacts sync and/or Monolyth contacts table.
+  - Google Contacts sync and/or Harmonyk contacts table.
 
   - Allow users to add/edit contacts and associate them with share links and signatures.
 

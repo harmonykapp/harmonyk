@@ -39,7 +39,7 @@ function buildMessages(prompt: string, options: GenOptions = {}): ChatMessage[] 
   const triage = options.triage ?? "generic";
 
   const systemParts = [
-    "You are Monolyth's AI drafting assistant.",
+    "You are Harmonyk's AI drafting assistant.",
     "Produce clean, professional Markdown suitable for direct rendering as HTML.",
     TRIAGE_DESCRIPTIONS[triage],
     tone === "formal"

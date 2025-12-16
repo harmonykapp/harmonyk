@@ -55,7 +55,7 @@ const isDemoEnvironment = process.env.NODE_ENV !== "production";
 const DEMO_INSIGHTS: InsightRow[] = [
   {
     id: "ins-001",
-    title: "NDA — ACME & Monolyth",
+    title: "NDA — ACME & Harmonyk",
     kind: "contract",
     counterparty: "ACME Corp",
     status: "out_for_signature",

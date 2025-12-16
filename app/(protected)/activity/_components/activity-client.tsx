@@ -359,7 +359,7 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
           <div className="px-4 py-8 text-center">
             <div className="max-w-md mx-auto space-y-3">
               <p className="text-sm text-muted-foreground mb-2">
-                Activity shows a log of what you and Monolyth are doing with your docs.
+                Activity shows a log of what you and Harmonyk are doing with your docs.
               </p>
               {filters.groups.length > 0 || filters.search ? (
                 <p className="text-xs text-muted-foreground">

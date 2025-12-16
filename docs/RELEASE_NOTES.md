@@ -1,4 +1,4 @@
-# Monolyth – Release Notes
+# Harmonyk – Release Notes
 
 This file tracks notable changes across tagged versions.
 

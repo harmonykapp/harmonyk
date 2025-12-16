@@ -7,7 +7,7 @@ Scope: Google Drive + Gmail metadata-first connectors, /integrations UI, Activit
 
 ## Overview
 
-Monolyth v0.10.0 introduces **Connectors v1**:
+Harmonyk v0.10.0 introduces **Connectors v1**:
 
 - First-class **Google Drive** connector
 

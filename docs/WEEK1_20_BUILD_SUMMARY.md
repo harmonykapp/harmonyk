@@ -1,10 +1,10 @@
-# Week 1–20 Build Summary — Monolyth GA
+# Week 1–20 Build Summary — Harmonyk GA
 
-This document summarizes the 20-week GA build for Monolyth: what each week focused on, the key outcomes, and the final status.
+This document summarizes the 20-week GA build for Harmonyk: what each week focused on, the key outcomes, and the final status.
 
 | Week | Focus | Key Outcomes | Status |
 | --- | --- | --- | --- |
-| **1** | Repo, Auth & Org foundations | Monolyth repo scaffold; Supabase auth with magic links; `org` / `member` tables; protected layout and navigation. | ✅ Done |
+| **1** | Repo, Auth & Org foundations | Harmonyk repo scaffold; Supabase auth with magic links; `org` / `member` tables; protected layout and navigation. | ✅ Done |
 | **2** | Vault v0 & Builder shell | Vault doc/version schema v0; Vault list/detail views; Builder shell; basic ActivityLog for doc CRUD wired. | ✅ Done |
 | **3** | Generate → Save → Share v0 | First AI "Generate v1" path; save versions into Vault; basic share-link model + UI; ActivityLog events for generate/save/share. | ✅ Done |
 | **4** | Wiring & Telemetry v1 | Telemetry wrapper; event schema; `/insights` scaffold; error handling + toasts; initial observability docs. | ✅ Done |
@@ -26,4 +26,6 @@ This document summarizes the 20-week GA build for Monolyth: what each week focus
 | **20** | Share Hub, Signatures Center, Contacts, Tasks & Calendar | Share Hub overview + Links + Signatures + Contacts shells with demo wiring; Task Hub (`/tasks`) with internal tasks + reminders; `/calendar` week view for tasks; Week 20 docs + QA checklists for Insights/Tasks/Calendar and Share/Sign/Contacts. | ✅ Done |
 
 > Note: For RAG and advanced telemetry, Week 19 delivers **scaffolding and dev-only endpoints**. User-facing RAG-powered features remain explicitly post-GA and are controlled via feature flags.
+
+
 

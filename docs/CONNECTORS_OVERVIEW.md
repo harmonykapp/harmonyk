@@ -1,6 +1,6 @@
 # Connectors Overview (v1)
 
-This document describes the initial connector model for Monolyth, focused on:
+This document describes the initial connector model for Harmonyk, focused on:
 
 - **Google Drive** (v1)
 

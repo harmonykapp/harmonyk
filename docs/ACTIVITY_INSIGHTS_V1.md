@@ -17,7 +17,7 @@ Make **Activity** and **Insights** actually useful for a single founder / small 
 For v1 we want:
 
 1. **/activity** to be a *single place* to answer "what just happened?" across docs, Mono, connectors, signatures.
-2. **/insights** to show 3–5 simple metrics that prove Monolyth is doing work for you (and that connectors are alive).
+2. **/insights** to show 3–5 simple metrics that prove Harmonyk is doing work for you (and that connectors are alive).
 
 Keep this small and reliable. No fancy charts or dashboards yet.
 

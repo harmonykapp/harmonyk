@@ -141,7 +141,7 @@ Database:
 
 2. **Expected:**
    - Page title: "Insights"
-   - Subtitle: "Simple metrics that prove Monolyth is doing work for you (and that connectors are alive)."
+   - Subtitle: "Simple metrics that prove Harmonyk is doing work for you (and that connectors are alive)."
    - 4-5 metric tiles showing:
      - Docs created (7d)
      - Mono questions (7d)
