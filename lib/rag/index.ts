@@ -5,10 +5,10 @@
 // backed embeddings in Supabase.
 
 import type {
-  RagIndexOptions,
-  RagQueryOptions,
-  RagResult,
-  RagSearchContext,
+    RagIndexOptions,
+    RagQueryOptions,
+    RagResult,
+    RagSearchContext,
 } from "./types";
 
 const DEFAULT_RAG_BACKEND: RagSearchContext = {
@@ -78,7 +78,7 @@ export async function deleteEmbeddingsForDocument(
 /**
  * searchRag
  *
- * Primary entry for Mono / Builder when they want to pull in relevant chunks
+ * Primary entry for Maestro / Builder when they want to pull in relevant chunks
  * for a user query.
  *
  * In GA this returns an empty array and logs calls in non-production. Callers

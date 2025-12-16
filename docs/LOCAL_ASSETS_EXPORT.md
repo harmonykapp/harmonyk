@@ -76,7 +76,7 @@ Back the **≈20 clause docs** used by ClauseGraph v1 and Maestro for Contracts.
 **Local source:**
 
 - Clause docs extracted from `LEGAL_TEMPLATES.zip` and curated into:
-  - `Monolyth_Clause_XXX_*.docx` (various clause categories)
+  - `Harmonyk_Clause_XXX_*.docx` (various clause categories)
 
 **Repo usage:**
 

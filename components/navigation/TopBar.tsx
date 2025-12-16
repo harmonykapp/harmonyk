@@ -48,7 +48,7 @@ export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
         setUser({ name, email, initials });
       } else {
         // Fallback for demo/unauthenticated state
-        setUser({ name: 'Guest User', email: 'guest@monolyth.app', initials: 'GU' });
+        setUser({ name: 'Guest User', email: 'guest@harmonyk.ai', initials: 'GU' });
       }
     };
     loadUser();
@@ -116,7 +116,7 @@ export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{user?.name || 'User'}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email || 'user@monolyth.app'}
+                      {user?.email || 'user@harmonyk.ai'}
                     </p>
                   </div>
                 </DropdownMenuLabel>

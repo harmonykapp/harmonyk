@@ -1,8 +1,8 @@
-// Mono Memory v1 – prompt helpers
+// Maestro Memory v1 – prompt helpers
 //
 // This file is the glue between:
 //  - MonoPreferenceConfig (tone, risk profile, jurisdiction, locale)
-//  - The actual system prompt we hand to OpenAI for Builder / Mono.
+//  - The actual system prompt we hand to OpenAI for Builder / Maestro.
 //
 // Usage pattern (example for Contracts Builder):
 //
@@ -51,7 +51,7 @@ export function buildMonoPreferenceInstruction(
 }
 
 /**
- * Wrap an existing base system prompt with Mono preferences so that
+ * Wrap an existing base system prompt with Maestro preferences so that
  * Contracts Builder (and later, Deck Builder / Accounts) can be
  * 'memory-aware' without every call site re-implementing the same text.
  */

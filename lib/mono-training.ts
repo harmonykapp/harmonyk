@@ -55,7 +55,7 @@ export async function getMonoContext(
       source: "internal",
       tags: ["saas", "contract", "playbook"],
       summary:
-        "Internal Monolyth guidance for typical SaaS subscription contracts and negotiation patterns.",
+        "Internal Harmonyk guidance for typical SaaS subscription contracts and negotiation patterns.",
     },
     {
       id: "internal-fundraising-deck",

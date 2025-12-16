@@ -7,7 +7,7 @@ _v2025-12-08 rev B — GA scope frozen (20 weeks) + Guided UX & Viral Loops_
 
 **Harmonyk — All your docs. One brain.**
 
-> Naming note (Dec 2025): The product was renamed from **Harmonyk** to **Harmonyk**. The AI assistant was renamed from **Mono** to **Maestro**. Some internal identifiers and older docs may still use the former names.
+> Naming note (Dec 2025): The product was renamed from **Harmonyk** to **Harmonyk**. The AI assistant was renamed from **Maestro** to **Maestro**. Some internal identifiers and older docs may still use the former names.
 
 ---
 
@@ -48,7 +48,7 @@ Harmonyk is the **document-first operating system** that gives them:
    Embeddings + semantic search apply to **Vaulted** docs; external items are keyword-indexed references until explicitly copied.
 
 4. **Human-in-the-loop.**  
-   Mono proposes; users approve. No silent edits, permission changes, or automations.
+   Maestro proposes; users approve. No silent edits, permission changes, or automations.
 
 5. **Explainability + Undo.**  
    Every AI/automation shows "Why this?" and supports undo/rollback.
@@ -60,7 +60,7 @@ Harmonyk is the **document-first operating system** that gives them:
    Contracts Builder (legal) is the **hero** at GA; it gets the deepest UX and library investment.
 
 8. **Guided, not generic.**  
-   A **User Progress Narrator** and Mono quick-start prompts guide users from first login through mature usage. No blank states.
+   A **User Progress Narrator** and Maestro quick-start prompts guide users from first login through mature usage. No blank states.
 
 9. **Virality rides on real work.**  
    Growth comes from contracts, templates, collaborators, and share/sign flows — not from gimmicky referral codes or forced sign-ups.
@@ -94,7 +94,7 @@ Harmonyk is the **document-first operating system** that gives them:
 
   3. **Commercial & Dealmaking** — MOUs/LOIs, reseller/distribution/franchise/licensing/supply/manufacturing/referral, commercial MSAs, NCND, etc.
 
-- **Single canonical template per contract type** for ease-of-use; alternates tracked via `canonical_type`, `is_canonical`, `alt_group`. Mono and ClauseGraph can still see/use alternates for RAG and AI suggestions.
+- **Single canonical template per contract type** for ease-of-use; alternates tracked via `canonical_type`, `is_canonical`, `alt_group`. Maestro and ClauseGraph can still see/use alternates for RAG and AI suggestions.
 
 - Templates can be **searchable/tagged across multiple categories** (e.g., NDA shown under Operational & HR and Commercial).
 
@@ -123,7 +123,7 @@ Harmonyk is the **document-first operating system** that gives them:
   - Hero shortcuts: Start NDA, MSA, SOW, Contractor, Employment, SaaS.
   - Template cards show category, description, risk level, jurisdiction baseline, "Recommended".
 
-  - **AI Brief**: user writes a plain-English brief; Mono proposes template + clauses; user can override and edit via ClauseGraph.
+  - **AI Brief**: user writes a plain-English brief; Maestro proposes template + clauses; user can override and edit via ClauseGraph.
 
 #### Status Pipeline
 
@@ -134,7 +134,7 @@ Harmonyk is the **document-first operating system** that gives them:
 - Clause-aware diff (W16): added/removed/changed clauses; text diff inside changed clauses; fallback to text diff if no clause IDs.
 - Exposed in Builder ("Compare to prior version") and Vault ("View diff").
 
-#### Mono for Contracts
+#### Maestro for Contracts
 
 - **Explain clause** (with "Why this?" references).
 - **Suggest standard terms** with risk commentary.
@@ -146,7 +146,7 @@ Harmonyk is the **document-first operating system** that gives them:
 
 - Status: **GA feature (v1)** focused on founder-facing decks.
 
-- Scope: Fundraising and Investor Update decks with configurable outlines, company/round metadata, and Mono-generated section content.
+- Scope: Fundraising and Investor Update decks with configurable outlines, company/round metadata, and Maestro-generated section content.
 
 - Storage: saved as `kind = "deck"` documents in Vault, with metadata block (`MONO_DECK_METADATA`) at the top of the content.
 
@@ -195,7 +195,7 @@ Dashboard · Workbench · Builder · Vault · Playbooks · Share · Integrations
 
 ---
 
-## Guided Experience — User Progress Narrator & Mono
+## Guided Experience — User Progress Narrator & Maestro
 
 ### User Progress State Engine
 
@@ -253,9 +253,9 @@ Examples:
 
 The hero is **always** wired to real flows: Integrations, Vault import, classification, Builder, Playbooks, Workbench, Insights.
 
-### Mono Quick-Start Prompts
+### Maestro Quick-Start Prompts
 
-Mono uses the **same state** to show 3–5 quick-start suggestions:
+Maestro uses the **same state** to show 3–5 quick-start suggestions:
 
 - Early:
   - “Connect Google Drive and pull in my contracts.”
@@ -270,7 +270,7 @@ Mono uses the **same state** to show 3–5 quick-start suggestions:
   - “Which documents are blocking signatures this week?”
   - “Show me my highest-value at-risk deals and why.”
 
-**Rule:** Narrator and Mono must agree on the “next step” for a given user.
+**Rule:** Narrator and Maestro must agree on the “next step” for a given user.
 
 ---
 
@@ -293,9 +293,9 @@ Mono uses the **same state** to show 3–5 quick-start suggestions:
   - Today Focus Wheel.
   - SLA & deadlines bar.
   - Signature & review swimlane.
-  - Mono Suggestions queue.
+  - Maestro Suggestions queue.
 
-- Mono is page-aware:
+- Maestro is page-aware:
   - “What should I focus on today?”
   - “What’s blocking signatures?”
   - “Where are my at-risk deals?”
@@ -404,7 +404,7 @@ Mono uses the **same state** to show 3–5 quick-start suggestions:
 - **OpenAI** for LLM.
 - Google APIs for Slides/PDF exports.
 
-- Mono Memory:
+- Maestro Memory:
   - Per-org tone, risk tolerance, jurisdiction/locale preferences.
   - No cross-tenant training on customer docs.
 
@@ -417,7 +417,7 @@ Mono uses the **same state** to show 3–5 quick-start suggestions:
 - Embeddings over Vaulted docs + explicitly imported Google docs.
 - Grounds contract advice, deck narratives, and financial checks.
 - Status:
-  - Week 19–20 implement **Mono RAG v1/v2** as post-GA feature, behind flags.
+  - Week 19–20 implement **Maestro RAG v1/v2** as post-GA feature, behind flags.
   - GA uses metadata + structured prompts; RAG is not exposed by default to tenants.
 
 ---
@@ -530,7 +530,7 @@ Plan differentiation should primarily be:
 
 **Done:**  
 
-W1–W6 base, scopes, Vault v1, Workbench shell, Contracts spine, Documenso POC, Share v1, Activity/Insights v0, Mono v1, Beta hardening.  
+W1–W6 base, scopes, Vault v1, Workbench shell, Contracts spine, Documenso POC, Share v1, Activity/Insights v0, Maestro v1, Beta hardening.  
 
 W7 Share & Signatures v1; W8 Activity & Insights v1; W9 Connectors v1 (Drive/Gmail); W10 ActivityLog tests & stability; W11 Activity & Insights v1.5.  
 

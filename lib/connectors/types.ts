@@ -1,4 +1,4 @@
-// Canonical connector types for Monolyth
+// Canonical connector types for Harmonyk
 // Mirrors docs/CONNECTORS_OVERVIEW.md and the 202511250900_connectors_v1.sql migration.
 //
 // All connector-related code (Drive, Gmail, future providers) should import

@@ -48,7 +48,7 @@ It is a reference for:
 |--------------------------------|----------------------------------------|---------------|------------------------------------------------------------|
 | GOOGLE_CLIENT_ID               | `1234567890-abc.apps.googleusercontent.com` | Yes      | OAuth client ID for Workspace / user auth                  |
 | GOOGLE_CLIENT_SECRET           | `GOCSPX-...`                           | Yes           | OAuth client secret                                        |
-| GOOGLE_REDIRECT_URI            | `https://app.monolyth.dev/api/google/callback` | Yes    | Must match console configuration                           |
+| GOOGLE_REDIRECT_URI            | `https://app.harmonyk.ai/api/google/callback` | Yes    | Must match console configuration                           |
 
 > GA note: Connectors are **Google-first** only (Drive + Gmail). Other providers remain "Coming Soon".
 

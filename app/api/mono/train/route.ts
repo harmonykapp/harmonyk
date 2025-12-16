@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
-  queueTrainingJobForDoc,
-  getTrainingJobsForOrg,
-  type MonoTrainingJobRow,
+    getTrainingJobsForOrg,
+    queueTrainingJobForDoc,
+    type MonoTrainingJobRow,
 } from "@/lib/mono/training";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 interface PostBody {
   orgId?: string;
@@ -34,7 +34,7 @@ function serverError(message: string) {
 /**
  * POST /api/mono/train
  *
- * Queue a new Mono training job for a Vault document.
+ * Queue a new Maestro training job for a Vault document.
  *
  * NOTE:
  * - For now we accept orgId in the request body. Once this is wired into the

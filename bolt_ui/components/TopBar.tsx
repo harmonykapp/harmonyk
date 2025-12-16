@@ -71,7 +71,7 @@ export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">Adam Weigold</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  adam@monolyth.app
+                  adam@harmonyk.ai
                 </p>
               </div>
             </DropdownMenuLabel>

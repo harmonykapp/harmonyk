@@ -93,7 +93,7 @@ create table if not exists public.deck_sections (
   -- Order of the section in the deck (sequential starting from 1)
   order_idx integer not null,
 
-  -- Optional prompt for Mono to guide content generation for this section
+  -- Optional prompt for Maestro to guide content generation for this section
   default_prompt text,
 
   -- Whether this section is required for the template

@@ -86,7 +86,7 @@ export default function SettingsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="adam@monolyth.app" />
+                  <Input id="email" type="email" defaultValue="adam@harmonyk.ai" />
                 </div>
 
                 <div className="space-y-2">
@@ -273,9 +273,9 @@ export default function SettingsPage() {
 
                 <div className="space-y-3">
                   {[
-                    { name: 'Adam Weigold', email: 'adam@monolyth.app', role: 'Owner' },
-                    { name: 'Sarah Chen', email: 'sarah@monolyth.app', role: 'Admin' },
-                    { name: 'Mike Johnson', email: 'mike@monolyth.app', role: 'Member' },
+                    { name: 'Adam Weigold', email: 'adam@harmonyk.ai', role: 'Owner' },
+                    { name: 'Sarah Chen', email: 'sarah@harmonyk.ai', role: 'Admin' },
+                    { name: 'Mike Johnson', email: 'mike@harmonyk.ai', role: 'Member' },
                   ].map((member, i) => (
                     <div
                       key={i}

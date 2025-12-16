@@ -1,4 +1,4 @@
--- Mono RAG training library schema
+-- Maestro RAG training library schema
 -- Week 19 (post-GA / experimental)
 -- Tables:
 --   mono_training_sets   - per-org training sets

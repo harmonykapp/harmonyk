@@ -55,3 +55,7 @@ supabase/.env
 supabase/.secrets
 supabase/.temp
 supabase/.branches
+
+
+Untitled-*
+*.tmp

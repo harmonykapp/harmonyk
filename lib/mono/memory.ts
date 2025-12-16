@@ -1,27 +1,27 @@
-// Mono Memory v1 – helpers
+// Maestro Memory v1 – helpers
 //
 // IMPORTANT:
 // - Preference helpers are pure and DB-agnostic.
 // - Conversation helpers accept an injected Supabase client so routes
 //   can control scoping and auth.
-// - ActivityLog is the primary store for recent Mono messages.
+// - ActivityLog is the primary store for recent Maestro messages.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
-  MonoBuilderType,
-  MonoOrgProfile,
-  MonoPreferenceConfig,
-  MonoProfiles,
-  MonoTemplateUsage,
-  MonoUserProfile,
+    MonoBuilderType,
+    MonoOrgProfile,
+    MonoPreferenceConfig,
+    MonoProfiles,
+    MonoTemplateUsage,
+    MonoUserProfile,
 } from "./types";
 import {
-  DEFAULT_MONO_JURISDICTION,
-  DEFAULT_MONO_LOCALE,
-  DEFAULT_MONO_RISK_PROFILE,
-  DEFAULT_MONO_TONE,
-  buildMonoPreferenceConfigFromProfiles,
-  createMonoProfiles,
+    DEFAULT_MONO_JURISDICTION,
+    DEFAULT_MONO_LOCALE,
+    DEFAULT_MONO_RISK_PROFILE,
+    DEFAULT_MONO_TONE,
+    buildMonoPreferenceConfigFromProfiles,
+    createMonoProfiles,
 } from "./types";
 
 // Shape passed into getMonoProfiles – typically DB rows mapped into TS types.
@@ -152,7 +152,7 @@ export interface GetRecentMonoMessagesParams {
 /**
  * getRecentMonoMessages
  *
- * Minimal "memory" layer for Mono backed by activity_log.
+ * Minimal "memory" layer for Maestro backed by activity_log.
  * We read the last N mono_query events for the user/org and turn them
  * into chat-style messages that can be passed to OpenAI.
  */

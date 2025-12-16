@@ -1,7 +1,7 @@
-# Cursor Rules — Monolyth
+# Cursor Rules — Harmonyk
 
 ## Scope
-- Monolyth is a Next.js 16 + TypeScript app (App Router).
+- Harmonyk is a Next.js 16 + TypeScript app (App Router).
 - No Web3/tokenomics. No new npm deps unless explicitly asked.
 - Keep code compiling, lint-clean, and production-buildable.
 

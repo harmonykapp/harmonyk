@@ -1,4 +1,4 @@
-// Canonical ActivityLog event types for Monolyth.
+// Canonical ActivityLog event types for Harmonyk.
 // Week 8: used by Activity + Insights.
 //
 // IMPORTANT:
@@ -22,7 +22,7 @@ export const ACTIVITY_EVENT_TYPES = [
   "playbook_run_completed",
   "playbook_run_failed",
 
-  // Mono / AI
+  // Maestro / AI
   "mono_query",
 
   // Connectors
@@ -55,8 +55,8 @@ export const ACTIVITY_EVENT_LABELS: Record<ActivityEventType, string> = {
   playbook_run_completed: "Playbook runs completed",
   playbook_run_failed: "Playbook runs failed",
 
-  // Mono / AI
-  mono_query: "Mono queries",
+  // Maestro / AI
+  mono_query: "Maestro queries",
 
   // Connectors
   connector_sync_started: "Connector syncs started",

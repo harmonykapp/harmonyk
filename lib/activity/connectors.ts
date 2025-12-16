@@ -8,7 +8,7 @@ type ActivityContext = Record<string, any>;
  * Writes a row to the activity_log table using the same shape as existing
  * doc_* events:
  *
- *   org_id     – first org in the system (current Monolyth org)
+ *   org_id     – first org in the system (current Harmonyk org)
  *   user_id    – null (system / background job)
  *   type       – connector_* event name
  *   context    – JSON payload for Insights / debugging

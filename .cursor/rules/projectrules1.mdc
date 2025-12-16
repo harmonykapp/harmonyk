@@ -1,4 +1,4 @@
-# Monolyth — Cursor Rules (Internal)
+# Harmonyk — Cursor Rules (Internal)
 
 - Treat `docs/NORTH_STAR.md` as the SSOT. Obey GA scope & non-goals.
 - Do not introduce pricing or any blockchain/Web3/tokenomics.

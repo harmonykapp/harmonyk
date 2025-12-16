@@ -3,11 +3,11 @@
 // Computes metrics for the Insights page from activity_log.
 // Uses direct SQL queries for efficiency.
 
-import { cookies } from "next/headers";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getAccountsInsightsForOrg, type AccountsInsights } from "@/lib/insights/accounts";
 import { getContractsInsightsForOrg, type ContractsInsights } from "@/lib/insights/contracts";
 import { getDecksInsightsForOrg, type DecksInsights } from "@/lib/insights/decks";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { cookies } from "next/headers";
 
 export interface InsightsMetrics {
   docsCreated7d: number;
@@ -270,7 +270,7 @@ export async function computeInsightsMetrics(): Promise<InsightsData> {
   ] = await Promise.all([
     // Docs created: count doc_generated, doc_created, doc_saved_to_vault (first occurrence per doc)
     countUniqueByTypePattern("doc_%", "document_id"),
-    // Mono questions: count mono_* events
+    // Maestro questions: count mono_* events
     countByTypePattern("mono_%"),
     // Connector syncs: count connector_sync_completed
     countByTypePattern("connector_sync_completed%"),

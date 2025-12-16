@@ -1,5 +1,5 @@
 -- Week 4 core schema snapshot
--- Monolyth – Supabase core tables + RLS
+-- Harmonyk – Supabase core tables + RLS
 -- NOTE: Run this once in Supabase SQL editor, then keep it as a snapshot.
 
 -- Extension (usually already enabled in Supabase, but harmless if re-run)

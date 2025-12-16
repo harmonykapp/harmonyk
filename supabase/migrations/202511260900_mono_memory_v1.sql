@@ -1,11 +1,11 @@
--- Mono Memory v1 schema
+-- Maestro Memory v1 schema
 -- Week 9 – org/user profiles + template usage logging
 
 begin;
 
 -- 1) Enums -------------------------------------------------------------------
 
--- mono_tone: how Mono should speak/write
+-- mono_tone: how Maestro should speak/write
 do $$
 begin
   if not exists (

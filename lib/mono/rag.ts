@@ -40,7 +40,7 @@ export interface GetRagContextForMonoParams {
 }
 
 /**
- * Compute a RAG context for Mono.
+ * Compute a RAG context for Maestro.
  *
  * This is a conservative stub implementation:
  * - It validates the budget.

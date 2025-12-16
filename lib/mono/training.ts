@@ -42,7 +42,7 @@ export interface GetTrainingJobsForOrgParams {
 }
 
 /**
- * Queue a new Mono training job for a given Vault document.
+ * Queue a new Maestro training job for a given Vault document.
  *
  * This does not perform any heavy work itself — it only inserts a row into
  * mono_training_jobs with status = "pending". A separate worker or server-side
@@ -65,19 +65,19 @@ export async function queueTrainingJobForDoc(
     .single();
 
   if (error) {
-    throw new Error(`Failed to queue Mono training job: ${error.message}`);
+    throw new Error(`Failed to queue Maestro training job: ${error.message}`);
   }
 
   // We expect Supabase to return the inserted row; if it does not, something is off.
   if (!data) {
-    throw new Error("Failed to queue Mono training job: insert returned no data");
+    throw new Error("Failed to queue Maestro training job: insert returned no data");
   }
 
   return data as MonoTrainingJobRow;
 }
 
 /**
- * Fetch recent Mono training jobs for an org, newest first.
+ * Fetch recent Maestro training jobs for an org, newest first.
  */
 export async function getTrainingJobsForOrg(
   params: GetTrainingJobsForOrgParams,
@@ -92,7 +92,7 @@ export async function getTrainingJobsForOrg(
     .limit(limit);
 
   if (error) {
-    throw new Error(`Failed to load Mono training jobs: ${error.message}`);
+    throw new Error(`Failed to load Maestro training jobs: ${error.message}`);
   }
 
   if (!data) {

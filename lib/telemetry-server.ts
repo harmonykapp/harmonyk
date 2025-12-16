@@ -1,5 +1,5 @@
 // lib/telemetry-server.ts
-// Minimal structured server-side logging for Monolyth.
+// Minimal structured server-side logging for Harmonyk.
 // No external deps; safe for local dev and Beta.
 
 export type TelemetryEventBase = {

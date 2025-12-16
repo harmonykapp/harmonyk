@@ -1,5 +1,5 @@
 -- supabase_schema_week1.sql
--- Week-1 schema snapshot for Monolyth (dev; RLS OFF)
+-- Week-1 schema snapshot for Harmonyk (dev; RLS OFF)
 -- Create required extension(s)
 create extension if not exists pgcrypto;
 

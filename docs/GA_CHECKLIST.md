@@ -206,44 +206,44 @@ The following modules are considered in-scope and GA-ready (with known caveats d
 
 Use a code search for markers like `"STUB"`, `"stub"`, `"TODO"`, `"DEV ONLY"`, `"TEMP"`, and list any items that must be removed or converted before GA.
 
-- [ ] \dev\monolyth\monolyth\app\api\ai\analyze\route.ts - stub
-- [ ] \dev\monolyth\monolyth\app\api\connectors\drive\disconnect\route.ts - stub
-- [ ] \dev\monolyth\monolyth\app\api\drive\recent\route.ts - stub
-- [ ] \dev\monolyth\monolyth\app\api\mono\route.ts - stub
-- [ ] \dev\monolyth\monolyth\app\api\playbooks\run\route.ts - stub
-- [ ] \dev\monolyth\monolyth\app\api\sign\documenso\route.ts - stub
-- [ ] \dev\monolyth\monolyth\components\builder\builder-client.tsx - stub
-- [ ] \dev\monolyth\monolyth\components\builder\contracts-builder-v1.tsx - stub
-- [ ] \dev\monolyth\monolyth\docs\AI_MONO_MEMORY_AND_RAG_V1.md - stub
-- [ ] \dev\monolyth\monolyth\lib\insights\contracts.ts - stub 
-- [ ] \dev\monolyth\monolyth\lib\mono\memory.ts - stub
-- [ ] \dev\monolyth\monolyth\lib\playbooks\engine.ts - stub
-- [ ] \dev\monolyth\monolyth\lib\rag\index.ts - stub
-- [ ] \dev\monolyth\monolyth\lib\telemetry\builder.ts - stub
-- [ ] \dev\monolyth\monolyth\supabase_schema_week1.sql - todo
-- [ ] \dev\monolyth\monolyth\app\(protected)\share\page.tsx - todo
-- [ ] \dev\monolyth\monolyth\app\api\connectors\drive\callback\route.ts - todo
-- [ ] \dev\monolyth\monolyth\app\api\mono\route.ts - todo
-- [ ] \dev\monolyth\monolyth\app\api\playbooks\route.ts - todo
-- [ ] \dev\monolyth\monolyth\app\api\playbooks\run\route.ts - todo
-- [ ] \dev\monolyth\monolyth\bolt_ui\app\tasks\page.tsx - todo
-- [ ] \dev\monolyth\monolyth\components\builder\builder-client.tsx - todo
-- [ ] \dev\monolyth\monolyth\components\builder\contracts-builder-v1.tsx - todo
-- [ ] \dev\monolyth\monolyth\lib\activity-log.ts - todo
-- [ ] \dev\monolyth\monolyth\lib\mono\memory.ts - todo
-- [ ] \dev\monolyth\monolyth\lib\playbooks\events.ts - todo
-- [ ] \dev\monolyth\monolyth\lib\playbooks\types.ts - todo
-- [ ] \dev\monolyth\monolyth\lib\playbooks\templates\accounts.ts - todo
-- [ ] \dev\monolyth\monolyth\lib\playbooks\templates\contracts.ts - todo
-- [ ] \dev\monolyth\monolyth\lib\playbooks\templates\decks.ts - todo
-- [ ] \dev\monolyth\monolyth\lib\rag\index.ts - todo
-- [ ] \dev\monolyth\monolyth\supabase\migrations\2025-11-24_playbooks.sql - todo
-- [ ] \dev\monolyth\monolyth\supabase\migrations\202512010900_playbooks_v1.sql - todo
-- [ ] \dev\monolyth\monolyth\app\(protected)\dev\activity-log\page.tsx - dev only
-- [ ] \dev\monolyth\monolyth\app\api\dev\envelopes\route.ts - dev only
-- [ ] \dev\monolyth\monolyth\app\api\dev\seed-vault-document\route.ts - dev only 
-- [ ] \dev\monolyth\monolyth\app\api\dev\vault-save-selftest\route.ts - dev only
-- [ ] \dev\monolyth\monolyth\.gitignore - temp 
+- [ ] \dev\harmonyk\harmonyk\app\api\ai\analyze\route.ts - stub
+- [ ] \dev\harmonyk\harmonyk\app\api\connectors\drive\disconnect\route.ts - stub
+- [ ] \dev\harmonyk\harmonyk\app\api\drive\recent\route.ts - stub
+- [ ] \dev\harmonyk\harmonyk\app\api\mono\route.ts - stub
+- [ ] \dev\harmonyk\harmonyk\app\api\playbooks\run\route.ts - stub
+- [ ] \dev\harmonyk\harmonyk\app\api\sign\documenso\route.ts - stub
+- [ ] \dev\harmonyk\harmonyk\components\builder\builder-client.tsx - stub
+- [ ] \dev\harmonyk\harmonyk\components\builder\contracts-builder-v1.tsx - stub
+- [ ] \dev\harmonyk\harmonyk\docs\AI_MONO_MEMORY_AND_RAG_V1.md - stub
+- [ ] \dev\harmonyk\harmonyk\lib\insights\contracts.ts - stub 
+- [ ] \dev\harmonyk\harmonyk\lib\mono\memory.ts - stub
+- [ ] \dev\harmonyk\harmonyk\lib\playbooks\engine.ts - stub
+- [ ] \dev\harmonyk\harmonyk\lib\rag\index.ts - stub
+- [ ] \dev\harmonyk\harmonyk\lib\telemetry\builder.ts - stub
+- [ ] \dev\harmonyk\harmonyk\supabase_schema_week1.sql - todo
+- [ ] \dev\harmonyk\harmonyk\app\(protected)\share\page.tsx - todo
+- [ ] \dev\harmonyk\harmonyk\app\api\connectors\drive\callback\route.ts - todo
+- [ ] \dev\harmonyk\harmonyk\app\api\mono\route.ts - todo
+- [ ] \dev\harmonyk\harmonyk\app\api\playbooks\route.ts - todo
+- [ ] \dev\harmonyk\harmonyk\app\api\playbooks\run\route.ts - todo
+- [ ] \dev\harmonyk\harmonyk\bolt_ui\app\tasks\page.tsx - todo
+- [ ] \dev\harmonyk\harmonyk\components\builder\builder-client.tsx - todo
+- [ ] \dev\harmonyk\harmonyk\components\builder\contracts-builder-v1.tsx - todo
+- [ ] \dev\harmonyk\harmonyk\lib\activity-log.ts - todo
+- [ ] \dev\harmonyk\harmonyk\lib\mono\memory.ts - todo
+- [ ] \dev\harmonyk\harmonyk\lib\playbooks\events.ts - todo
+- [ ] \dev\harmonyk\harmonyk\lib\playbooks\types.ts - todo
+- [ ] \dev\harmonyk\harmonyk\lib\playbooks\templates\accounts.ts - todo
+- [ ] \dev\harmonyk\harmonyk\lib\playbooks\templates\contracts.ts - todo
+- [ ] \dev\harmonyk\harmonyk\lib\playbooks\templates\decks.ts - todo
+- [ ] \dev\harmonyk\harmonyk\lib\rag\index.ts - todo
+- [ ] \dev\harmonyk\harmonyk\supabase\migrations\2025-11-24_playbooks.sql - todo
+- [ ] \dev\harmonyk\harmonyk\supabase\migrations\202512010900_playbooks_v1.sql - todo
+- [ ] \dev\harmonyk\harmonyk\app\(protected)\dev\activity-log\page.tsx - dev only
+- [ ] \dev\harmonyk\harmonyk\app\api\dev\envelopes\route.ts - dev only
+- [ ] \dev\harmonyk\harmonyk\app\api\dev\seed-vault-document\route.ts - dev only 
+- [ ] \dev\harmonyk\harmonyk\app\api\dev\vault-save-selftest\route.ts - dev only
+- [ ] \dev\harmonyk\harmonyk\.gitignore - temp 
 
 ---
 

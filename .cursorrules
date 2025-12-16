@@ -1,4 +1,4 @@
-# Monolyth — Cursor Rules (public-safe)
+# Harmonyk — Cursor Rules (public-safe)
 
 - Stack: Next.js 16 (App Router), TypeScript, React 19, ESLint 9, Prettier 3.
 - Do not add dependencies or change eslint/prettier config without explicit instruction.

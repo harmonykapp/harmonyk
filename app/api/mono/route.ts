@@ -1,11 +1,11 @@
+import type { MonoContext } from "@/components/mono/mono-pane";
+import { logMonoQuery } from "@/lib/activity-log";
+import { getRouteAuthContext } from "@/lib/auth/route-auth";
+import { buildMonoPreferenceConfigFromInput, getRecentMonoMessages } from "@/lib/mono/memory";
+import { searchRag } from "@/lib/rag";
+import { logServerError, logServerEvent } from "@/lib/telemetry-server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { getRouteAuthContext } from "@/lib/auth/route-auth";
-import { logMonoQuery } from "@/lib/activity-log";
-import { searchRag } from "@/lib/rag";
-import { buildMonoPreferenceConfigFromInput, getRecentMonoMessages } from "@/lib/mono/memory";
-import { logServerEvent, logServerError } from "@/lib/telemetry-server";
-import type { MonoContext } from "@/components/mono/mono-pane";
 
 export async function POST(req: NextRequest) {
   const startedAt = performance.now();
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Mono is not configured yet in this build.",
+          error: "Maestro is not configured yet in this build.",
           details: null,
         },
         { status: 503 }
@@ -96,9 +96,9 @@ export async function POST(req: NextRequest) {
     }
 
     const baseSystemPrompt =
-      "You are Mono, Harmonyk's AI assistant. Answer the user's questions helpfully and concisely.";
+      "You are Maestro, Harmonyk's AI assistant. Answer the user's questions helpfully and concisely.";
 
-    // Mono preference config (org/user tone, risk profile, etc.)
+    // Maestro preference config (org/user tone, risk profile, etc.)
     const preferenceConfig = buildMonoPreferenceConfigFromInput();
     const preferenceInstructionLines = [
       "Apply these conversational preferences where helpful:",
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
 
       systemSections.push(
         "",
-        "Recent Mono conversation snippets (for continuity):",
+        "Recent Maestro conversation snippets (for continuity):",
         historyPreview,
       );
     }
@@ -265,7 +265,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         ok: false,
-        error: `Mono failed: ${errorMessage}`,
+        error: `Maestro failed: ${errorMessage}`,
         details: null,
       },
       { status: 500 }

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getTrainingJobsForOrg, type MonoTrainingJobRow } from "@/lib/mono/training";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 function badRequest(message: string) {
   return NextResponse.json(
@@ -24,7 +24,7 @@ function serverError(message: string) {
 /**
  * GET /api/mono/train/status
  *
- * List recent Mono training jobs for an org.
+ * List recent Maestro training jobs for an org.
  *
  * Query parameters:
  * - orgId (required): org to scope jobs to.

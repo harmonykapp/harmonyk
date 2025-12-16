@@ -1,4 +1,4 @@
-# Monolyth
+# Harmonyk
 
 ## Product SSOT (Specs & Pricing)
 
@@ -121,7 +121,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
   - Full wiring of Analyze/Builder to ActivityLog is explicitly scheduled as a
     **Week 5 task** to avoid blocking progress.
 
-This means Monolyth now has:
+This means Harmonyk now has:
 
 - A functional Workbench with AI analysis.
 - A functional Contracts Builder V1 UX using real Templates and Clauses.

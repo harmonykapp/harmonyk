@@ -133,7 +133,7 @@ export default function WorkbenchPage() {
                 <SelectContent>
                   <SelectItem value="all">All Sources</SelectItem>
                   <SelectItem value="google">Google Drive</SelectItem>
-                  <SelectItem value="monolyth">Harmonyk</SelectItem>
+                  <SelectItem value="harmonyk">Harmonyk</SelectItem>
                   <SelectItem value="gmail">Gmail</SelectItem>
                 </SelectContent>
               </Select>

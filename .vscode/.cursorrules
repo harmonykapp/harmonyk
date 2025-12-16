@@ -1,4 +1,4 @@
-# Monolyth repo rules
+# Harmonyk repo rules
 - Do not create duplicate routes.
 - API routes live under app/api/**.
 - Public viewer is app/share/[id] (singular).

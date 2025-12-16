@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { isRagEnabled } from "@/lib/feature-flags";
 
 /**
- * Middleware guard for Mono RAG dev endpoints.
+ * Middleware guard for Maestro RAG dev endpoints.
  *
  * GA posture:
  * - All /api/mono/* routes that are RAG-related should be blocked unless
@@ -14,13 +14,13 @@ import { isRagEnabled } from "@/lib/feature-flags";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Block Mono RAG-related API routes unless RAG is explicitly enabled.
+  // Block Maestro RAG-related API routes unless RAG is explicitly enabled.
   if (pathname.startsWith("/api/mono/")) {
     if (!isRagEnabled()) {
       return NextResponse.json(
         {
           error:
-            "Mono RAG is disabled for this environment. This endpoint is dev-only until promoted post-GA.",
+            "Maestro RAG is disabled for this environment. This endpoint is dev-only until promoted post-GA.",
         },
         { status: 403 },
       );
@@ -32,7 +32,7 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   /**
-   * Only intercept Mono API routes (e.g. /api/mono/train, /api/mono/context).
+   * Only intercept Maestro API routes (e.g. /api/mono/train, /api/mono/context).
    */
   matcher: ["/api/mono/:path*"],
 };

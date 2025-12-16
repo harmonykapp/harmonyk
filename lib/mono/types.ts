@@ -1,4 +1,4 @@
-// Mono Memory v1 – types
+// Maestro Memory v1 – types
 // These mirror the Week 9 schema in 202511260900_mono_memory_v1.sql.
 
 // --- Enums / unions ---------------------------------------------------------
@@ -7,7 +7,7 @@ export type MonoTone = "formal" | "neutral" | "friendly" | "punchy" | "technical
 
 export type MonoRiskProfile = "conservative" | "balanced" | "aggressive";
 
-// Where Mono is being used – aligns with mono_template_usage.builder_type
+// Where Maestro is being used – aligns with mono_template_usage.builder_type
 export type MonoBuilderType = "contract" | "deck" | "accounting";
 
 export const DEFAULT_MONO_TONE: MonoTone = "neutral";

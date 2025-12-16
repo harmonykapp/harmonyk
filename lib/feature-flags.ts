@@ -1,6 +1,6 @@
 export type FeatureFlags = {
   /**
-   * Enables Mono RAG endpoints and any RAG-specific UI surfaces.
+   * Enables Maestro RAG endpoints and any RAG-specific UI surfaces.
    * GA v1 should run with this effectively false in production.
    */
   monoRagEnabled: boolean;

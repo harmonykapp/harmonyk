@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 import {
-  getMonoContext,
-  type MonoContextRequest,
+    getMonoContext,
+    type MonoContextRequest,
 } from "@/lib/mono-training";
 
 type MonoContextRequestBody = {
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Failed to get Mono context";
+      error instanceof Error ? error.message : "Failed to get Maestro context";
 
     // Safe server-side log for now; can be wired into structured telemetry later.
     // eslint-disable-next-line no-console
