@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { Send } from 'lucide-react';
+import { useState } from 'react';
 
 interface Message {
   id: string;
@@ -17,7 +17,7 @@ const mockMessages: Message[] = [
   {
     id: '1',
     role: 'assistant',
-    content: 'Hi! I\'m Mono, your AI assistant. I can help you organize documents, analyze content, and automate workflows. What would you like to do?',
+    content: 'Hi! I\'m Maestro, your AI assistant. I can help you organize documents, analyze content, and automate workflows. What would you like to do?',
     timestamp: new Date(),
   },
 ];
@@ -85,7 +85,7 @@ export function MonoChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Ask Mono anything..."
+          placeholder="Ask Maestro anything..."
           className="flex-1"
         />
         <Button onClick={handleSend} size="icon">

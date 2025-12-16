@@ -1,25 +1,21 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  FileText,
-  Clock,
-  FileSignature,
-  CheckCircle2,
-  TrendingUp,
-  AlertCircle,
-  Calendar,
-  Users,
-  ArrowRight,
-  Sparkles,
-  X,
-} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2 as CheckCircle,
+  FileSignature,
+  FileText,
+  Sparkles,
+  TrendingUp,
+  X
+} from 'lucide-react';
 import Link from "next/link";
-import { CheckCircle2 as CheckCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 const summaryCards = [
   {
@@ -227,7 +223,7 @@ export default function DashboardPage() {
                 <li>Use <strong>Builder</strong> to generate a Version 1 draft.</li>
                 <li><strong>Save to Vault</strong> so it becomes a tracked asset.</li>
                 <li>Open <strong>Activity</strong> to see what happened.</li>
-                <li>Ask <strong>Mono</strong> questions about your docs.</li>
+                <li>Ask <strong>Maestro</strong> questions about your docs.</li>
               </ol>
               <p className="mt-3 text-xs text-muted-foreground">
                 Feedback focus for this Beta: clarity of the golden path, missing steps,
@@ -250,11 +246,11 @@ export default function DashboardPage() {
       {/* Getting Started Card */}
       {onboardingStatus && (
         (() => {
-          const isOnboarded = onboardingStatus.hasDraftedContract && 
-                              onboardingStatus.hasDraftedDeck && 
-                              onboardingStatus.hasVaultDoc;
+          const isOnboarded = onboardingStatus.hasDraftedContract &&
+            onboardingStatus.hasDraftedDeck &&
+            onboardingStatus.hasVaultDoc;
           if (isOnboarded) return null;
-          
+
           return (
             <Card className="mb-4">
               <CardHeader>
@@ -283,7 +279,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     {onboardingStatus.hasDraftedContract ? (
                       <CheckCircle className="h-5 w-5 text-green-600" />
@@ -302,7 +298,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     {onboardingStatus.hasDraftedDeck ? (
                       <CheckCircle className="h-5 w-5 text-green-600" />
@@ -321,7 +317,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     {onboardingStatus.hasVaultDoc ? (
                       <CheckCircle className="h-5 w-5 text-green-600" />
@@ -340,7 +336,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     {onboardingStatus.hasRunAccountsPack ? (
                       <CheckCircle className="h-5 w-5 text-green-600" />
@@ -382,7 +378,7 @@ export default function DashboardPage() {
             <strong>Activity</strong> – timeline of what&apos;s happened to your docs.
           </li>
           <li>
-            <strong>Mono</strong> – ask questions and run deeper analysis across docs.
+            <strong>Maestro</strong> – ask questions and run deeper analysis across docs.
           </li>
         </ul>
       </div>
@@ -444,7 +440,7 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle>AI Insights</CardTitle>
-              <CardDescription>Recommendations from Mono</CardDescription>
+              <CardDescription>Recommendations from Maestro</CardDescription>
             </div>
             <Sparkles className="h-5 w-5 text-mono" />
           </CardHeader>
@@ -453,13 +449,12 @@ export default function DashboardPage() {
               <div key={insight.title} className="space-y-2">
                 <div className="flex items-start gap-3">
                   <div
-                    className={`h-2 w-2 rounded-full mt-2 flex-shrink-0 ${
-                      insight.priority === 'high'
+                    className={`h-2 w-2 rounded-full mt-2 flex-shrink-0 ${insight.priority === 'high'
                         ? 'bg-red-500'
                         : insight.priority === 'medium'
-                        ? 'bg-orange-500'
-                        : 'bg-blue-500'
-                    }`}
+                          ? 'bg-orange-500'
+                          : 'bg-blue-500'
+                      }`}
                   />
                   <div className="flex-1 space-y-1 min-w-0">
                     <p className="font-medium leading-none">{insight.title}</p>

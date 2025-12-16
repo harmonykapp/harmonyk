@@ -8,7 +8,7 @@
 
 ## Overview
 
-Week 13 delivered the **Decks Builder v1**, a Mono-powered document builder for creating investor-facing presentations. The builder supports two deck types (Fundraising and Investor Update), includes outline-first editing, AI-powered content generation, and full integration with Vault and export.
+Week 13 delivered the **Decks Builder v1**, a Maestro-powered document builder for creating investor-facing presentations. The builder supports two deck types (Fundraising and Investor Update), includes outline-first editing, AI-powered content generation, and full integration with Vault and export.
 
 ---
 
@@ -27,7 +27,7 @@ Week 13 delivered the **Decks Builder v1**, a Mono-powered document builder for 
   - Minimum enabled sections enforcement (`MIN_ENABLED_SECTIONS = 5`)
 
 - ✅ **AI Integration**
-  - Mono-powered deck generation via `/api/ai/generate-deck`
+  - Maestro-powered deck generation via `/api/ai/generate-deck`
   - Single-pass generation for all enabled sections
   - Prompt engineering for deck type, company info, and outline context
 
@@ -190,7 +190,7 @@ Decks Builder v1 is **locked and stable**. Week 14 can assume:
 
 - Added Company & Round Info form
 - Implemented `/api/ai/generate-deck` endpoint
-- Wired "Generate Deck with Mono" button
+- Wired "Generate Deck with Maestro" button
 - Built Review Draft area with editable textareas
 - Added telemetry for generation
 

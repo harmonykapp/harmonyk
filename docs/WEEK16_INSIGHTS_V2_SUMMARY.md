@@ -220,7 +220,7 @@ Smoke-tested scenarios (using seeded data where needed):
 
 - Consider adding currency display to Accounts tiles and cards once multi-currency handling is defined.
 
-- When RAG (Weeks 19–20) lands, consider additional Insights cards for Mono Q&A usage over Vaulted docs.
+- When RAG (Weeks 19–20) lands, consider additional Insights cards for Maestro Q&A usage over Vaulted docs.
 
 Tag for this week: `v0.16.0-insights-v2`.
 

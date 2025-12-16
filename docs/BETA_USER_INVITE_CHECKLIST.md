@@ -7,7 +7,7 @@ The goal is to keep the experience controlled, predictable, and easy to debug.
 
 ## 1. Pre-invite checks
 
-- [ ] Run through the golden path yourself (Dashboard → Workbench → Builder → Vault → Activity → Mono) and confirm no P0 issues.
+- [ ] Run through the golden path yourself (Dashboard → Workbench → Builder → Vault → Activity → Maestro) and confirm no P0 issues.
 
 - [ ] Verify `/dev/health` shows:
 
@@ -81,7 +81,7 @@ For each Beta user:
 
 - [ ] Include a very short "ask":
 
-  - Run the golden path once (Analyze → Builder → Vault → Activity → Mono).
+  - Run the golden path once (Analyze → Builder → Vault → Activity → Maestro).
 
   - Send you 3–5 bullets on:
 

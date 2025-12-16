@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { MessageCircle } from "lucide-react";
+import { useState } from "react";
 
 export function MonoLite() {
   const [open, setOpen] = useState(false);
@@ -11,7 +11,7 @@ export function MonoLite() {
       <div className="relative">
         {open && (
           <div className="absolute bottom-14 right-0 w-72 rounded-xl border bg-background shadow-lg p-3 text-sm">
-            <div className="font-medium mb-1">Mono (lite)</div>
+            <div className="font-medium mb-1">Maestro (lite)</div>
             <p className="text-muted-foreground">
               AI helper coming soon. For now this is a placeholder on every main page.
             </p>
@@ -21,7 +21,7 @@ export function MonoLite() {
           type="button"
           onClick={() => setOpen((prev) => !prev)}
           className="inline-flex h-12 w-12 items-center justify-center rounded-full border bg-background shadow-md"
-          aria-label="Open Mono AI assistant"
+          aria-label="Open Maestro AI assistant"
         >
           <MessageCircle className="h-5 w-5" />
         </button>

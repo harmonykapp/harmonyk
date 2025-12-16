@@ -8,7 +8,7 @@
 
 - Document-first (contracts, decks, investor snapshots).  
 
-- Mono is assistant, not autonomous (proposes; you approve).  
+- Maestro is assistant, not autonomous (proposes; you approve).  
 
 - Metadata-first ingestion; Vault-only semantics for RAG/search.  
 
@@ -50,7 +50,7 @@
 
 - New actions: Slack/Teams webhooks, CRM notes, scheduled email sequences.  
 
-- Still human-in-the-loop: Mono drafts changes; user accepts.
+- Still human-in-the-loop: Maestro drafts changes; user accepts.
 
 ## UX notes
 

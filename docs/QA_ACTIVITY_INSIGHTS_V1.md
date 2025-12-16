@@ -34,11 +34,11 @@ Database:
 
 2. **Expected:**
    - Page title: "Activity"
-   - Subtitle: "A single place to answer 'what just happened?' across docs, Mono, connectors, and signatures."
+   - Subtitle: "A single place to answer 'what just happened?' across docs, Maestro, connectors, and signatures."
    - "View insights" link in header
    - Filter section with:
      - Time range buttons (Last 24 hours, Last 7 days, Last 30 days)
-     - Event group chips (Docs, Mono, Connectors, Signatures, System)
+     - Event group chips (Docs, Maestro, Connectors, Signatures, System)
      - Search input
    - Activity table with columns: When, Event, Source, Context
    - Events display in reverse chronological order (newest first)
@@ -57,7 +57,7 @@ Database:
 
 1. Click "Docs" chip → verify only `doc_*` and `share_*` events show
 
-2. Click "Mono" chip → verify only `mono_*` events show
+2. Click "Maestro" chip → verify only `mono_*` events show
 
 3. Click "Connectors" chip → verify:
    - Only `connector_*` events show
@@ -144,7 +144,7 @@ Database:
    - Subtitle: "Simple metrics that prove Harmonyk is doing work for you (and that connectors are alive)."
    - 4-5 metric tiles showing:
      - Docs created (7d)
-     - Mono questions (7d)
+     - Maestro questions (7d)
      - Connector syncs (7d) [with provider breakdown if available]
      - Signatures completed (7d)
      - Active docs (7d) [only if > 0]
@@ -166,7 +166,7 @@ Database:
 
 1. Verify table shows 7 rows (one per day)
 
-2. Verify columns: Day, Docs, Mono, Syncs, Signatures
+2. Verify columns: Day, Docs, Maestro, Syncs, Signatures
 
 3. Verify dates are formatted correctly (e.g., "Nov 27")
 
@@ -218,14 +218,14 @@ Database:
    - Other tiles show 0
    - Trends table shows connector syncs only
 
-### 3.3 Only Mono/doc events
+### 3.3 Only Maestro/doc events
 
 **Setup:** Ensure only `mono_*` and `doc_*` events exist
 
-1. Visit /activity → **Expected:** Only Mono and Docs events show
+1. Visit /activity → **Expected:** Only Maestro and Docs events show
 
 2. Visit /insights → **Expected:**
-   - Docs created and Mono questions tiles show counts
+   - Docs created and Maestro questions tiles show counts
    - Connector syncs and Signatures tiles show 0
    - Trends table shows appropriate counts
 

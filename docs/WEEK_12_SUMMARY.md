@@ -96,7 +96,7 @@ Week 12 focused on two main areas:
 - ✅ Implemented Task Hub page with:
   - Task table with columns: status checkbox, title, source, status badge, due date, related doc
   - Statistics cards: Open, Completed, Total, Overdue counts
-  - Filters: Status (Open/Done/All) and Source (Activity/Mono/Manual/All)
+  - Filters: Status (Open/Done/All) and Source (Activity/Maestro/Manual/All)
   - Empty states: "No tasks yet", "No completed tasks yet", "All done"
   - Responsive design with horizontal scroll on narrow screens
 - ✅ Basic interactions:

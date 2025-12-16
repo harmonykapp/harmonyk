@@ -421,11 +421,11 @@ These are mirrored in `lib/activity-events.ts`. Don't invent one-off strings in 
     }
     ```
 
-### 2.4 Mono / AI queries
+### 2.4 Maestro / AI queries
 
 - `mono_query`
 
-  - **When:** The Mono assistant is invoked with a user query (Workbench / Playbooks / Anywhere).
+  - **When:** The Maestro assistant is invoked with a user query (Workbench / Playbooks / Anywhere).
 
   - **Source:** `workbench` (or page-specific)
 
@@ -618,7 +618,7 @@ The API aggregates counts for the last 7/30 days using ActivityLog:
 
 - Playbook runs + time saved
 
-- Mono queries
+- Maestro queries
 
 - A basic "docs in Vault" total (subject to refinement once Vault schema is final)
 
@@ -660,7 +660,7 @@ Body:
 ```
 
 Exports a CSV of high-level Insights metrics (docs generated, saved to Vault,
-share links, signatures, playbook runs, Mono queries, time saved, docs in Vault).
+share links, signatures, playbook runs, Maestro queries, time saved, docs in Vault).
 
 ---
 
@@ -668,9 +668,9 @@ share links, signatures, playbook runs, Mono queries, time saved, docs in Vault)
 
 - `docs/ACTIVITY_INSIGHTS_V1.md` defines how we group these events into:
 
-  - Activity filters (Docs, Mono, Connectors, Signatures, System), and
+  - Activity filters (Docs, Maestro, Connectors, Signatures, System), and
 
-  - Insights v1 metrics (docs created, Mono questions, connector syncs, signatures completed, etc.).
+  - Insights v1 metrics (docs created, Maestro questions, connector syncs, signatures completed, etc.).
 
 Use both docs together when adding new events or changing how Activity & Insights behave.
 

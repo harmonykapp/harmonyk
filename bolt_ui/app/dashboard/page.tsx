@@ -1,18 +1,14 @@
 import { AppShell } from '@/components/AppShell';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  FileText,
-  Clock,
-  FileSignature,
-  CheckCircle2,
-  TrendingUp,
   AlertCircle,
-  Calendar,
-  Users,
   ArrowRight,
+  FileSignature,
+  FileText,
   Sparkles,
+  TrendingUp
 } from 'lucide-react';
 
 const summaryCards = [
@@ -159,7 +155,7 @@ export default function DashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle>AI Insights</CardTitle>
-                <CardDescription>Recommendations from Mono</CardDescription>
+                <CardDescription>Recommendations from Maestro</CardDescription>
               </div>
               <Sparkles className="h-5 w-5 text-mono" />
             </CardHeader>
@@ -168,13 +164,12 @@ export default function DashboardPage() {
                 <div key={insight.title} className="space-y-2">
                   <div className="flex items-start gap-3">
                     <div
-                      className={`h-2 w-2 rounded-full mt-2 flex-shrink-0 ${
-                        insight.priority === 'high'
+                      className={`h-2 w-2 rounded-full mt-2 flex-shrink-0 ${insight.priority === 'high'
                           ? 'bg-red-500'
                           : insight.priority === 'medium'
-                          ? 'bg-orange-500'
-                          : 'bg-blue-500'
-                      }`}
+                            ? 'bg-orange-500'
+                            : 'bg-blue-500'
+                        }`}
                     />
                     <div className="flex-1 space-y-1 min-w-0">
                       <p className="font-medium leading-none">{insight.title}</p>

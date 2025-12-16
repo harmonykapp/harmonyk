@@ -163,7 +163,7 @@ public.deck_sections (
 
 - `default_prompt`
 
-  - Optional prompt template for Mono to guide content generation for this section.
+  - Optional prompt template for Maestro to guide content generation for this section.
 
   - Helps the AI understand what content should go in each section.
 
@@ -191,7 +191,7 @@ public.deck_sections (
 
   4. Users can then customize content, reorder sections, or remove optional sections as needed.
 
-- Mono uses `default_prompt` values to guide AI-assisted content generation for each section.
+- Maestro uses `default_prompt` values to guide AI-assisted content generation for each section.
 
 ---
 

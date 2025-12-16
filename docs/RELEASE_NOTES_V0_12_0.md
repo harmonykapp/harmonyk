@@ -31,7 +31,7 @@ A dedicated page for managing tasks across your workspace.
   - Create tasks manually (title, optional due date)
   - Mark tasks as done
   - Update task due dates
-  - Filter by status (Open/Done/All) and source (Activity/Mono/Manual)
+  - Filter by status (Open/Done/All) and source (Activity/Maestro/Manual)
 
 - **Task display:**
   - Table view with columns: status, title, source, due date, related document
@@ -42,7 +42,7 @@ A dedicated page for managing tasks across your workspace.
 - **Task sources:**
   - `manual` – Tasks created directly by users
   - `activity` – Tasks created from activity events (future)
-  - `mono` – Tasks created by Mono AI (future)
+  - `mono` – Tasks created by Maestro AI (future)
 
 - **Responsive design:**
   - Mobile-friendly layout (375px width)

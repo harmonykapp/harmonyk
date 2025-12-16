@@ -1133,7 +1133,7 @@ export default function WorkbenchPage() {
                   disabled={analyzing && sel?.id === selectedRow.id}
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Analyze with Mono
+                  Analyze with Maestro
                 </Button>
                 <Button
                   className="w-full justify-start"

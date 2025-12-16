@@ -71,7 +71,7 @@ Back the **≈45-template Contracts library** for the Contracts Builder.
 ## 2. Clause Library (Contracts Builder GA)
 
 **Purpose:**  
-Back the **≈20 clause docs** used by ClauseGraph v1 and Mono for Contracts.
+Back the **≈20 clause docs** used by ClauseGraph v1 and Maestro for Contracts.
 
 **Local source:**
 

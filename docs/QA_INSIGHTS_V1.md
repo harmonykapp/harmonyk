@@ -148,7 +148,7 @@ For each of these for 7d and 30d:
 - [ ] Signatures sent
 - [ ] Signatures completed
 - [ ] Playbook runs
-- [ ] Mono queries
+- [ ] Maestro queries
 - [ ] Time saved (seconds → hours)
 
 ### 6.3 Docs in Vault total

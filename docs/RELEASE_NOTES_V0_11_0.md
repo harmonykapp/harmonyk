@@ -9,7 +9,7 @@ Scope: Activity page with filters, Insights page with metrics, Activity API v1.
 
 Harmonyk v0.11.0 introduces **Activity & Insights v1**:
 
-- New **/activity** page as a single place to answer "what just happened?" across docs, Mono, connectors, and signatures
+- New **/activity** page as a single place to answer "what just happened?" across docs, Maestro, connectors, and signatures
 
 - New **/insights** page showing 3–5 simple metrics that prove Harmonyk is doing work for you
 
@@ -35,7 +35,7 @@ A single place to answer "what just happened?" across all Harmonyk activity.
 
 - **Event groups (chips):**
   - Docs – all `doc_*` and `share_*` events
-  - Mono – all `mono_*` events
+  - Maestro – all `mono_*` events
   - Connectors – all `connector_*` events
   - Signatures – all `signature_*` events
   - System – all `system_*` and `playbook_*` events
@@ -63,7 +63,7 @@ Simple metrics that prove Harmonyk is doing work for you (and that connectors ar
 **Metric tiles (last 7 days):**
 
 1. **Docs created** – Count of unique documents created
-2. **Mono questions** – Count of Mono queries/actions
+2. **Maestro questions** – Count of Maestro queries/actions
 3. **Connector syncs** – Count of connector sync completions (with provider breakdown)
 4. **Signatures completed** – Count of completed signature events
 5. **Active docs** (optional) – Count of unique documents with activity
@@ -71,7 +71,7 @@ Simple metrics that prove Harmonyk is doing work for you (and that connectors ar
 **Recent trends table:**
 
 - Daily breakdown for the last 7 days
-- Columns: Day, Docs created, Mono questions, Connector syncs, Signatures completed
+- Columns: Day, Docs created, Maestro questions, Connector syncs, Signatures completed
 - Simple text table (no charts in v1)
 
 **Features:**

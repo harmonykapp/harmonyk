@@ -15,8 +15,8 @@ It tracks:
 
 | ID        | Item                                                                                       | Status       | Notes                                                                                      |
 |-----------|--------------------------------------------------------------------------------------------|--------------|--------------------------------------------------------------------------------------------|
-| BETA-001  | Golden path: Dashboard → Workbench → Builder → Vault → Activity → Mono runs end-to-end    | DONE         | Golden path runs with Mono stub response; no auth errors; UI guarded by feature flags.    |
-| BETA-002  | Error handling & auth: toasts instead of silent failures on golden-path pages             | DONE         | Workbench, Builder, Vault, Activity, Mono all use centralized toast-based error handling. |
+| BETA-001  | Golden path: Dashboard → Workbench → Builder → Vault → Activity → Maestro runs end-to-end    | DONE         | Golden path runs with Maestro stub response; no auth errors; UI guarded by feature flags.    |
+| BETA-002  | Error handling & auth: toasts instead of silent failures on golden-path pages             | DONE         | Workbench, Builder, Vault, Activity, Maestro all use centralized toast-based error handling. |
 | BETA-003  | RLS & auth review for unified_item / document / activity_log                              | DONE         | RLS policies documented in W6_RLS_REVIEW; no obvious multi-tenant leaks for Beta.         |
 | BETA-004  | Feature flags contain half-built surfaces (Playbooks, Share, connectors, Vault actions)   | DONE         | Feature flags default to OFF; broken/experimental actions hidden or marked "Coming soon". |
 | BETA-005  | Telemetry & health: minimal server telemetry + /dev/health diagnostics                    | DONE         | Telemetry helper wired into key API routes; /dev/health and /api/health working.          |
@@ -50,14 +50,14 @@ Add new rows here if more lint/build issues appear later in Week 6.
 
 Golden path definition:
 
-> Dashboard → Workbench (Analyze doc) → Builder (Generate V1 + edits) → Save to Vault → Vault → Activity → Mono
+> Dashboard → Workbench (Analyze doc) → Builder (Generate V1 + edits) → Save to Vault → Vault → Activity → Maestro
 
 Log any bug or nasty UX/jank discovered when walking this flow.
 
 | ID      | Route / Screen | Repro Steps                                      | Expected                                          | Actual                                           | Severity (P0/P1/P2) | Status |
 |---------|----------------|--------------------------------------------------|---------------------------------------------------|--------------------------------------------------|---------------------|--------|
 | GP-001  | /vault         | From Vault, select a doc card and look for a way to open/read it | Clearly visible "Open"/"View" action that opens the document in a reader or detail view | UX is confusing; "Open in Builder" just jumps to `/builder` with no link to the selected doc, and it's not obvious that "View" is the only way to open/read the document | P2                  | TODO   |
-| GP-002  | /mono          | From Vault, select a doc, click "Ask Mono", then ask "what is this document for?" | Mono should answer based on the selected document context | Mono chat replies with `Error: Authentication required` and does not answer | P0                  | DONE   | Verified fixed in Week 6 Day 6 after Beta hardening. |
+| GP-002  | /mono          | From Vault, select a doc, click "Ask Maestro", then ask "what is this document for?" | Maestro should answer based on the selected document context | Maestro chat replies with `Error: Authentication required` and does not answer | P0                  | DONE   | Verified fixed in Week 6 Day 6 after Beta hardening. |
 | GP-003  | /vault         | In Vault, click the 3-dot menu on a document card | Show a menu of actions (open, share, archive, etc.) | 3-dot menu appears but clicking it does nothing; no menu or feedback | P2                  | TODO   |
 
 > Example (commented out):
@@ -95,4 +95,4 @@ Use this section for ad-hoc notes and decisions made during Week 6.
   - theme-toggle TS issues
   - route-auth TS issues
 - Week 6 Day 1: `npm run lint` is clean at the start of Week 6.
-- Week 6 Day 1: Golden path smoke test shows: Vault open UX confusion ("Open in Builder" not wired to the selected doc) and dead 3-dot menu (GP-001, GP-003), plus Mono step blocked by auth error (GP-002). All logged for Week 6 follow-up.
+- Week 6 Day 1: Golden path smoke test shows: Vault open UX confusion ("Open in Builder" not wired to the selected doc) and dead 3-dot menu (GP-001, GP-003), plus Maestro step blocked by auth error (GP-002). All logged for Week 6 follow-up.

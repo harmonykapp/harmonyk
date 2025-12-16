@@ -47,7 +47,7 @@ Manual smoke tests revealed several pre-existing issues in the Builder and Vault
 - Buttons are UI stubs without implementation.
 
 **Fix Required:**
-- Implement handlers that call Mono/AI endpoints for each action.
+- Implement handlers that call Maestro/AI endpoints for each action.
 - Each action should:
   1. Send current document content to AI
   2. Return suggestions/edits
@@ -133,7 +133,7 @@ Manual smoke tests revealed several pre-existing issues in the Builder and Vault
 ### Future Enhancements (Low Priority)
 
 4. **Quick Actions Buttons (Issue B)**
-   - Nice-to-have Mono features
+   - Nice-to-have Maestro features
    - Can be implemented incrementally
 
 ---

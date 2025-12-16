@@ -286,7 +286,7 @@ export default function InsightsClientV1({ data, error }: Props) {
           )}
         </div>
 
-        {/* Mono Questions */}
+        {/* Maestro Questions */}
         <div
           className="rounded-lg border border-border/60 bg-background/60 p-4 cursor-pointer hover:bg-background/80 transition flex flex-col min-h-[100px]"
           onClick={() => {
@@ -296,7 +296,7 @@ export default function InsightsClientV1({ data, error }: Props) {
         >
           <div className="text-2xl font-semibold">{metrics.monoQuestions7d}</div>
           <div className="mt-1 text-xs text-muted-foreground">
-            Mono questions (7d)
+            Maestro questions (7d)
           </div>
         </div>
 
@@ -638,7 +638,7 @@ export default function InsightsClientV1({ data, error }: Props) {
               <tr>
                 <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Day</th>
                 <th className="px-3 py-2 text-right font-medium whitespace-nowrap">Docs</th>
-                <th className="px-3 py-2 text-right font-medium whitespace-nowrap">Mono</th>
+                <th className="px-3 py-2 text-right font-medium whitespace-nowrap">Maestro</th>
                 <th className="px-3 py-2 text-right font-medium whitespace-nowrap">Syncs</th>
                 <th className="px-3 py-2 text-right font-medium whitespace-nowrap">Signatures</th>
               </tr>

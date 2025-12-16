@@ -70,7 +70,7 @@ The following backend routes now call `logServerEvent` / `logServerError`:
 
   - Captures which unified item / document is being saved.
 
-- **Mono Chat**
+- **Maestro Chat**
 
   - Event: `mono_chat`
 

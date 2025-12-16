@@ -20,7 +20,7 @@ When a new user logs in for the first time:
 
   4. Open **Activity** to see what happened.
 
-  5. Ask **Mono** questions about your docs.
+  5. Ask **Maestro** questions about your docs.
 
 The card can be dismissed. Dismissal is stored in localStorage (per user/browser) so returning users are not spammed.
 
@@ -34,7 +34,7 @@ The Dashboard also includes a short explanation of what each main nav item does:
 
 - **Activity** – a timeline of what has happened to your docs.
 
-- **Mono** – an AI operator for asking questions and running deeper analysis.
+- **Maestro** – an AI operator for asking questions and running deeper analysis.
 
 ---
 
@@ -68,7 +68,7 @@ We want Beta users to walk through this flow at least once:
 
 4. **Review Activity** to confirm events are logged and visible.
 
-5. **Use Mono** to ask simple questions about the doc.
+5. **Use Maestro** to ask simple questions about the doc.
 
 Feedback we want:
 

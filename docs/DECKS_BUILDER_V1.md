@@ -7,7 +7,7 @@
 
 ## Overview
 
-Decks Builder v1 is a Mono-powered document builder for creating investor-facing presentations. It supports two deck types:
+Decks Builder v1 is a Maestro-powered document builder for creating investor-facing presentations. It supports two deck types:
 
 - **Fundraising Deck (Seed/Pre-Seed)** — For pitching investors during seed and pre-seed fundraising rounds
 - **Investor Update Deck** — For regular updates to existing investors (monthly, quarterly, etc.)
@@ -16,7 +16,7 @@ The builder follows an **outline-first** approach:
 1. User selects a deck template
 2. Customizes the outline (sections, titles, order)
 3. Enters company information
-4. Mono generates slide content in one pass
+4. Maestro generates slide content in one pass
 5. User reviews, edits, saves to Vault, and exports
 
 ---
@@ -54,7 +54,7 @@ Canonical sections that define the outline structure:
 - `section_key` — Stable snake_case identifier (e.g., `'problem'`, `'solution'`)
 - `title` — Human-readable title (e.g., "Problem", "Executive Summary")
 - `order_idx` — Sequential ordering (starting from 1)
-- `default_prompt` — Optional prompt template for Mono to guide generation
+- `default_prompt` — Optional prompt template for Maestro to guide generation
 - `is_required` — Boolean flag (affects UI validation)
 
 ### Deck Document Metadata
@@ -125,9 +125,9 @@ Form fields:
 - `roundSize` (optional) — Round size (e.g., "$500k", "$2M")
 - `keyMetrics` (optional) — Key metrics/numbers to include
 
-### 4. Generate with Mono
+### 4. Generate with Maestro
 
-- Button: **"Generate Deck with Mono"**
+- Button: **"Generate Deck with Maestro"**
 - Enabled only when:
   - Template is selected
   - Sections are loaded

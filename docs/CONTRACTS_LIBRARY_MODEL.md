@@ -116,7 +116,7 @@ public.contract_templates (
 
     - All `nda_mutual` variants might share `alt_group = 'nda_mutual_standard'`.
 
-    - Allows ClauseGraph and Mono to swap variants intelligently.
+    - Allows ClauseGraph and Maestro to swap variants intelligently.
 
 - `tags`
 
@@ -140,7 +140,7 @@ public.contract_templates (
 
     - Highlight simple vs complex templates in UI.
 
-    - Influence Mono's guidance and warnings.
+    - Influence Maestro's guidance and warnings.
 
 - `jurisdiction`
 
@@ -148,7 +148,7 @@ public.contract_templates (
 
   - Examples: `"US-general"`, `"US-DE"`, `"EU"`, `"AU"`.
 
-  - Mono may adjust or recommend variants depending on org preferences and deal context.
+  - Maestro may adjust or recommend variants depending on org preferences and deal context.
 
 ---
 

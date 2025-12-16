@@ -1,9 +1,7 @@
 'use client';
 
-import { Search, Moon, Sun, Sparkles } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Moon, Search, Sparkles, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 interface TopBarProps {
   onMonoToggle: () => void;
@@ -43,7 +43,7 @@ export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
           className="gap-2"
         >
           <Sparkles className="h-4 w-4" />
-          <span className="hidden sm:inline">Ask Mono</span>
+          <span className="hidden sm:inline">Ask Maestro</span>
         </Button>
 
         <Button

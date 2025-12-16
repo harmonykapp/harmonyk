@@ -38,7 +38,7 @@ This document lists the actual features implemented at the end of Week 5, and ex
   - `analyze_completed` (from Workbench Analyze)
   - `doc_generated` (from Builder)
   - `doc_saved_to_vault` (from Save to Vault)
-  - `mono_query` (from Mono pane queries)
+  - `mono_query` (from Maestro pane queries)
 - Activity page with:
   - Type filter (all, analyze_completed, doc_generated, doc_saved_to_vault)
   - Date range filter (24h, 7d, 30d)
@@ -50,17 +50,17 @@ This document lists the actual features implemented at the end of Week 5, and ex
 - Mock data (4 example playbooks)
 - Empty state with CTAs
 - Table view with status badges
-- Mono entry point
+- Maestro entry point
 
 ### Share
 - UI shell with typed view models
 - Mock data (4 example share links)
 - Empty state with CTA
 - Table view with permissions, protection, stats
-- Mono entry point
+- Maestro entry point
 
-### Mono (AI Operator)
-- Mono pane mounted on all core pages (Dashboard, Workbench, Builder, Vault, Playbooks, Share, Activity)
+### Maestro (AI Operator)
+- Maestro pane mounted on all core pages (Dashboard, Workbench, Builder, Vault, Playbooks, Share, Activity)
 - Context-aware (route, selectedDocumentId, selectedUnifiedItemId, filters)
 - `/api/mono` backend route with:
   - Authentication via `getRouteAuthContext`
@@ -71,7 +71,7 @@ This document lists the actual features implemented at the end of Week 5, and ex
 ### UI Shell
 - Sidebar navigation with active route highlighting
 - TopBar with search, theme toggle, user menu
-- Mono pane (slide-in from right)
+- Maestro pane (slide-in from right)
 - Consistent spacing and layout (`p-8 max-w-[1600px] mx-auto`)
 - Dark/light theme support
 - Responsive design
@@ -115,7 +115,7 @@ This document lists the actual features implemented at the end of Week 5, and ex
 - Risky docs/workflows detection
 - **Status**: Not started
 
-### Advanced Mono Features
+### Advanced Maestro Features
 - Real OpenAI integration (currently stubbed)
 - Cross-page context awareness
 - Autonomous workflow suggestions
@@ -125,7 +125,7 @@ This document lists the actual features implemented at the end of Week 5, and ex
 
 - ✅ Core golden path works: Workbench → Analyze → Builder → Save to Vault
 - ✅ ActivityLog tracks key events
-- ✅ Mono pane accessible on all pages
+- ✅ Maestro pane accessible on all pages
 - ⏳ Share link creation/management (UI ready, backend pending)
 - ⏳ Signatures integration (UI ready, Documenso pending)
 - ⏳ Playbooks engine (UI ready, engine pending)
@@ -136,7 +136,7 @@ This document lists the actual features implemented at the end of Week 5, and ex
 ## Known Limitations
 
 1. **Save-to-Vault owner/org mapping**: Assumptions about owner_id/org_id that may need hardening for multi-org scenarios.
-2. **Mono replies**: Mostly stubbed responses, not yet "smart" across all flows.
+2. **Maestro replies**: Mostly stubbed responses, not yet "smart" across all flows.
 3. **Playbooks/Share data**: Using typed mock data, not yet backed by Supabase.
 4. **Error states**: Some error handling could be more robust.
 5. **Onboarding**: No first-run experience or guided setup yet.

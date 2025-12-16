@@ -28,7 +28,7 @@ Guidance:
 - Include headings and numbered clauses where appropriate.
 - Insert placeholders like [ADDRESS], [AMOUNT], [DATE] when info is missing.`;
 
-    // Get Mono preferences and build Mono-aware system prompt
+    // Get Maestro preferences and build Maestro-aware system prompt
     const profiles = await getMonoProfiles();
     const prefs = buildMonoPreferenceConfig(profiles);
     const systemPrompt = buildMonoAwareSystemPrompt(baseSystemPrompt, prefs);
@@ -76,6 +76,7 @@ ${prompt}`,
     .select("id")
     .single();
   if (e1) return { error: e1.message };
+  if (!doc) return { error: "Failed to create document" };
 
   const contentUrl = `/generated/${fileName}`;
   const { error: e2 } = await supa
@@ -83,7 +84,7 @@ ${prompt}`,
     .insert({ doc_id: doc.id, number: 1, content_url: contentUrl });
   if (e2) return { error: e2.message };
 
-  // Log Mono template usage (fire-and-forget)
+  // Log Maestro template usage (fire-and-forget)
   try {
     const builderType: MonoBuilderType = "contract";
     await recordTemplateUsage({

@@ -1,7 +1,7 @@
-# Week 5 Summary — New UI + Mono + Nav
+# Week 5 Summary — New UI + Maestro + Nav
 
 **Date**: End of Week 5  
-**Focus**: UI shell migration, Mono integration, ActivityLog expansion, core golden path completion
+**Focus**: UI shell migration, Maestro integration, ActivityLog expansion, core golden path completion
 
 ---
 
@@ -9,8 +9,8 @@
 
 ### New Bolt-Inspired UI Shell
 - **Sidebar**: Fixed left navigation with active route highlighting using `usePathname()`
-- **TopBar**: Search, theme toggle, user menu, Mono toggle button
-- **Mono Pane**: Slide-in assistant panel (400px width) accessible on all core pages
+- **TopBar**: Search, theme toggle, user menu, Maestro toggle button
+- **Maestro Pane**: Slide-in assistant panel (400px width) accessible on all core pages
 - **Layout consistency**: All pages use `p-8 max-w-[1600px] mx-auto space-y-8` pattern
 - **Dark/light theme**: Custom theme provider (replaced `next-themes` for React 19 compatibility)
 
@@ -36,7 +36,7 @@
   - `analyze_completed` (from Workbench Analyze)
   - `doc_generated` (from Builder)
   - `doc_saved_to_vault` (from Save to Vault)
-  - `mono_query` (from Mono pane)
+  - `mono_query` (from Maestro pane)
 - **Centralized helpers**: `lib/activity-log.ts` with `logActivity`, `logAnalyzeCompleted`, `logDocGenerated`, `logDocSavedToVault`, `logMonoQuery`
 - **Activity page**: Real Supabase queries, type/date filters, summary cards, clickable document links
 
@@ -61,7 +61,7 @@
   - Empty state with CTA
   - Table view with stats
 
-### Mono Pane Integration
+### Maestro Pane Integration
 - **Component**: `components/mono/mono-pane.tsx` with `MonoContext` type
 - **Backend**: `/api/mono` route with:
   - Authentication via `getRouteAuthContext`
@@ -86,9 +86,9 @@
 - **Impact**: Low (works for single-org use cases)
 - **Fix needed**: More robust org/owner resolution logic
 
-### Mono Replies Still Stubbed
+### Maestro Replies Still Stubbed
 - **Issue**: `/api/mono` returns placeholder responses, not yet "smart" across all flows
-- **Impact**: Medium (Mono pane is accessible but not yet useful)
+- **Impact**: Medium (Maestro pane is accessible but not yet useful)
 - **Fix needed**: Integrate OpenAI client (same pattern as Analyze)
 
 ### Playbooks/Share Not Backed by Supabase
@@ -112,7 +112,7 @@
 
 ### Beta Hardening
 - **More robust error states**: Better error messages, recovery paths, retry logic
-- **Feature flags**: For risky paths (e.g., experimental Mono features)
+- **Feature flags**: For risky paths (e.g., experimental Maestro features)
 - **Onboarding docs**: User guides, API docs, troubleshooting
 - **First 3–5 real beta users**: Real-world testing and feedback
 
@@ -123,7 +123,7 @@
 - **External connector hardening**: Google Drive read/write, Gmail, other integrations
 - **Signatures integration**: Documenso webhook handling, envelope management
 - **Insights dashboards**: Time saved metrics, bottlenecks, risky docs/workflows
-- **Advanced Mono features**: Real OpenAI integration, cross-page context, workflow suggestions
+- **Advanced Maestro features**: Real OpenAI integration, cross-page context, workflow suggestions
 
 ---
 
@@ -139,7 +139,7 @@
 ## Next Steps (Week 6)
 
 1. **Beta readiness**: Harden error states, add feature flags, prepare onboarding
-2. **Mono AI integration**: Connect `/api/mono` to OpenAI (same pattern as Analyze)
+2. **Maestro AI integration**: Connect `/api/mono` to OpenAI (same pattern as Analyze)
 3. **Signatures**: Complete Documenso integration
 4. **Beta user onboarding**: First 3–5 users, gather feedback
 5. **Documentation**: User guides, API docs, troubleshooting

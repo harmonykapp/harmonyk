@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { handleApiError } from '@/lib/handle-api-error';
 import { getBrowserSupabaseClient } from '@/lib/supabase-browser';
+import { cn } from '@/lib/utils';
+import { Loader2, Send } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 export type MonoContext = {
   route: string;
@@ -35,7 +35,7 @@ export function MonoPane({ context }: MonoPaneProps) {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hi! I\'m Mono, your AI assistant. I can help you organize documents, analyze content, and automate workflows. What would you like to do?',
+      content: 'Hi! I\'m Maestro, your AI assistant. I can help you organize documents, analyze content, and automate workflows. What would you like to do?',
       timestamp: new Date(),
     },
   ]);
@@ -85,7 +85,7 @@ export function MonoPane({ context }: MonoPaneProps) {
       const status = response.status;
       let data: any;
       let errorMessage = '';
-      
+
       try {
         const text = await response.text();
         data = text ? JSON.parse(text) : { ok: false, error: 'Empty response' };
@@ -94,16 +94,16 @@ export function MonoPane({ context }: MonoPaneProps) {
       }
 
       const isError = !response.ok || data?.ok === false;
-      
+
       if (isError) {
         // Extract error message with fallbacks
         errorMessage = data?.error || data?.message || data?.reason || `Request failed with status ${status}`;
-        
+
         // Ensure we always have a non-empty error message
         if (!errorMessage || errorMessage.trim() === '') {
           errorMessage = `Request failed with status ${status}`;
         }
-        
+
         const result = handleApiError({
           status,
           errorMessage,
@@ -120,8 +120,8 @@ export function MonoPane({ context }: MonoPaneProps) {
         const friendlyMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: errorMessage.includes("not configured") 
-            ? "I couldn't process that request. Mono might not be fully configured yet."
+          content: errorMessage.includes("not configured")
+            ? "I couldn't process that request. Maestro might not be fully configured yet."
             : "I couldn't process that request. Please try again.",
           timestamp: new Date(),
         };
@@ -140,9 +140,9 @@ export function MonoPane({ context }: MonoPaneProps) {
     } catch (error) {
       console.error("[mono] Unexpected error", error);
       const errorMessage = error instanceof Error ? error.message : 'Unexpected error';
-      
+
       const status = errorMessage.includes("401") ? 401 : errorMessage.includes("403") ? 403 : 500;
-      
+
       const result = handleApiError({
         status,
         errorMessage,
@@ -216,7 +216,7 @@ export function MonoPane({ context }: MonoPaneProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder="Ask Mono anything..."
+            placeholder="Ask Maestro anything..."
             className="flex-1"
             disabled={loading}
           />

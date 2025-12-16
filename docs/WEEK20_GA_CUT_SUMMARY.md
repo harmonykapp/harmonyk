@@ -30,7 +30,7 @@ Fill this section with **file-level bullets** once tasks are done. Example struc
 
 - [ ] Updated **GA_CHECKLIST.md** to match what's truly in GA vs post-GA.
 
-- [ ] Reviewed feature flags and set final GA defaults (e.g. Vault experimental, Mono RAG dev stubs).
+- [ ] Reviewed feature flags and set final GA defaults (e.g. Vault experimental, Maestro RAG dev stubs).
 
 ### 2.2 Env & config sanity
 
@@ -52,7 +52,7 @@ Fill this section with **file-level bullets** once tasks are done. Example struc
 
   - Vault: open doc, basic actions  
 
-  - Workbench / Mono queries  
+  - Workbench / Maestro queries  
 
   - Accounts packs  
 
@@ -82,7 +82,7 @@ Describe any **intentional decisions** you made about scope:
 
 - Features explicitly included in GA (core "doc-first" workflows).
 
-- Features kept **behind flags** as experimental (e.g. Mono RAG preview, deep Playbooks flows).
+- Features kept **behind flags** as experimental (e.g. Maestro RAG preview, deep Playbooks flows).
 
 - Features explicitly pushed **post-GA**.
 
@@ -96,17 +96,17 @@ Suggested structure:
 
   - Vault + Share + Insights minimal loop.  
 
-  - Workbench + Mono basic operator behaviour.  
+  - Workbench + Maestro basic operator behaviour.  
 
 - **Behind flags / internal-only:**  
 
-  - Mono RAG dev-only preview and training stubs.  
+  - Maestro RAG dev-only preview and training stubs.  
 
   - Any experimental Playbooks or Accounts visualizations beyond GA scope.  
 
 - **Post-GA (backlog):**  
 
-  - Richer RAG / Mono memory experience.  
+  - Richer RAG / Maestro memory experience.  
 
   - Multi-connector expansion (Notion, Slack, etc.).  
 
@@ -154,7 +154,7 @@ Categories you might use:
 
 - **Technical debt:**  
 
-  - e.g. "Mono RAG uses dev stubs; no real retrieval layer yet."  
+  - e.g. "Maestro RAG uses dev stubs; no real retrieval layer yet."  
 
 - **Operational risk:**  
 

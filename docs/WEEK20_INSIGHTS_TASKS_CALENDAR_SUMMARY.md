@@ -210,7 +210,7 @@ See `docs/INSIGHTS_TASKS_CALENDAR_QA_CHECKLIST.md` for manual testing steps.
 
 ## Next Steps (Post-GA)
 
-- Wire Insights into richer, org-level analytics (e.g. pipeline health, Mono automation coverage).
+- Wire Insights into richer, org-level analytics (e.g. pipeline health, Maestro automation coverage).
 
 - Extend Tasks with:
 

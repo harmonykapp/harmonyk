@@ -4,17 +4,17 @@
 //
 // This component:
 // - Uses the new GET /api/activity endpoint
-// - Supports event group filters (Docs, Mono, Connectors, Signatures, System)
+// - Supports event group filters (Docs, Maestro, Connectors, Signatures, System)
 // - Supports time range presets (24h, 7d, 30d)
 // - Supports provider filter when Connectors is selected
 // - Implements cursor-based pagination
 
-import type { ActivityEventGroup } from "@/lib/activity-queries";
 import type { ActivityLogRow } from "@/lib/activity-log";
+import type { ActivityEventGroup } from "@/lib/activity-queries";
 import { phCapture } from "@/lib/posthog-client";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition, useRef } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 type Props = {
   workspaceId?: string;
@@ -40,20 +40,21 @@ const DEFAULT_LIMIT = 50;
 function getTimeRangeBounds(preset: TimeRangePreset): { from: string; to: string } {
   const now = new Date();
   const to = now.toISOString();
-  let from: Date;
+  let from = new Date(now); // Initialize with fallback value
 
   switch (preset) {
     case "24h":
-      from = new Date(now);
       from.setHours(from.getHours() - 24);
       break;
     case "7d":
-      from = new Date(now);
       from.setDate(from.getDate() - 7);
       break;
     case "30d":
-      from = new Date(now);
       from.setDate(from.getDate() - 30);
+      break;
+    default:
+      // Fallback to 7d if unexpected preset value
+      from.setDate(from.getDate() - 7);
       break;
   }
 
@@ -86,6 +87,9 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Memoize groups join to prevent unnecessary reruns
+  const groupsKey = useMemo(() => filters.groups.join(","), [filters.groups]);
 
   async function fetchActivity(cursor?: string, append = false) {
     setLoading(true);
@@ -156,26 +160,28 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
       const prev = prevFiltersRef.current;
       const changed =
         prev.timeRange !== filters.timeRange ||
-        prev.groups.join(",") !== filters.groups.join(",") ||
-        prev.provider !== filters.provider;
+        groupsKey !== (prev.groups.join(",") || "") ||
+        prev.provider !== filters.provider ||
+        prev.search !== filters.search;
 
       if (changed) {
         phCapture("activity_filters_changed", {
           timeRange: filters.timeRange,
           groups: filters.groups,
           provider: filters.provider,
+          search: filters.search,
         });
       }
     }
     prevFiltersRef.current = { ...filters };
-  }, [filters.timeRange, filters.groups.join(","), filters.provider]);
+  }, [filters.timeRange, groupsKey, filters.provider, filters.search]);
 
   // Initial load and refetch when filters change
   useEffect(() => {
     startTransition(() => {
       fetchActivity();
     });
-  }, [filters.timeRange, filters.groups.join(","), filters.provider, filters.search]);
+  }, [filters.timeRange, groupsKey, filters.provider, filters.search]);
 
   const handleLoadMore = () => {
     if (nextCursor && !loading) {
@@ -204,7 +210,7 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
   const setSearch = (search: string) => {
     const trimmed = search.trim();
     setFilters((prev) => ({ ...prev, search: trimmed || undefined }));
-    
+
     // Track search submission
     if (trimmed.length > 0) {
       phCapture("activity_search_submitted", {
@@ -223,7 +229,7 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
 
   const eventGroups: { id: ActivityEventGroup; label: string }[] = [
     { id: "docs", label: "Docs" },
-    { id: "mono", label: "Mono" },
+    { id: "mono", label: "Maestro" },
     { id: "connectors", label: "Connectors" },
     { id: "signatures", label: "Signatures" },
     { id: "system", label: "System" },
@@ -397,7 +403,7 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
                       context.document_title ??
                       context.document_name ??
                       "";
-                    
+
                     // Humanize event type for display
                     const humanizedType = eventType
                       .replace(/_/g, " ")
@@ -405,7 +411,7 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
 
                     // Determine relevant links based on event data
                     const hasDocumentId = row.document_id != null;
-                    const isSignatureEvent = 
+                    const isSignatureEvent =
                       (row.source ?? "").toLowerCase().includes("signature") ||
                       eventType.toLowerCase().includes("signature") ||
                       eventType.toLowerCase().includes("envelope");

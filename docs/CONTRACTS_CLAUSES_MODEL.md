@@ -18,7 +18,7 @@ It covers:
 
   - Supports ClauseGraph v1 (structured side panel).
 
-  - Allows Mono to explain and suggest clauses.
+  - Allows Maestro to explain and suggest clauses.
 
   - Can scale as we add more variants and jurisdictions.
 

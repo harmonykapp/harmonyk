@@ -1,15 +1,15 @@
-# Mono Memory + RAG Foundations (GA)
+# Maestro Memory + RAG Foundations (GA)
 
-This doc describes the GA foundations for Mono's "brain":
+This doc describes the GA foundations for Maestro's "brain":
 
-- **Mono Memory v1** – user/org profiles, template usage logging, and recent conversation traces.
+- **Maestro Memory v1** – user/org profiles, template usage logging, and recent conversation traces.
 - **RAG foundations** – schema and helpers for embeddings that will be enabled post-GA.
 
 The goal is to define stable interfaces that the rest of the app can call, while keeping GA behaviour simple and predictable.
 
 ---
 
-## 1. Mono Memory v1
+## 1. Maestro Memory v1
 
 ### 1.1 Data model
 
@@ -45,7 +45,7 @@ Helpers:
 
 ### 1.4 Conversation traces (ActivityLog-backed)
 
-There is no dedicated "chat history" table at GA. Instead, Mono uses the existing `activity_log` table as a lightweight memory source:
+There is no dedicated "chat history" table at GA. Instead, Maestro uses the existing `activity_log` table as a lightweight memory source:
 
 - `logMonoQuery()` writes a `mono_query` event with:
   - `org_id`, `user_id`,
@@ -57,7 +57,7 @@ There is no dedicated "chat history" table at GA. Instead, Mono uses the existin
   - Queries the last N `mono_query` events for the given user/org.
   - Returns an ordered array of `{ role: "user", content, createdAt }` for prompt construction.
 
-The GA Mono endpoint (`/api/mono`) uses this helper to:
+The GA Maestro endpoint (`/api/mono`) uses this helper to:
 
 - Pull the last few messages for continuity.
 - Feed them into the OpenAI chat call as prior user turns.
@@ -67,7 +67,7 @@ The GA Mono endpoint (`/api/mono`) uses this helper to:
 Defined in `lib/mono/prompt.ts`:
 
 - `buildMonoPreferenceInstruction(config)` – formats org/user preferences into a clear instruction block for the model.
-- `buildMonoAwareSystemPrompt(baseSystemPrompt, config)` – wraps the existing base system prompt with the Mono preferences block.
+- `buildMonoAwareSystemPrompt(baseSystemPrompt, config)` – wraps the existing base system prompt with the Maestro preferences block.
 - `formatMonoPreferenceConfigForDebug(config)` – small helper to log applied preferences in development.
 
 Contracts Builder now:
@@ -119,7 +119,7 @@ Defined in `lib/rag/types.ts` and `lib/rag/index.ts`:
   - Embed chunks,
   - Upsert into `vault_embeddings`.
 - `deleteEmbeddingsForDocument(documentId, context)` – stub; will later delete all rows for a document.
-- `searchRag(query, options, context)` – stub; interface for Mono/Builder to fetch relevant chunks.
+- `searchRag(query, options, context)` – stub; interface for Maestro/Builder to fetch relevant chunks.
 
 In GA:
 
@@ -134,9 +134,9 @@ This keeps call sites future-proof without accidentally implying that RAG is liv
 ## 3. Current usage and limitations
 
 - Contracts Builder:
-  - Uses Mono Memory v1 to shape its system prompt.
+  - Uses Maestro Memory v1 to shape its system prompt.
   - Logs template usage after generation.
-- Mono (chat via `/api/mono`):
+- Maestro (chat via `/api/mono`):
   - Uses preference config for tone / jurisdiction / locale.
   - Reads recent `mono_query` events via `getRecentMonoMessages()` and feeds them into the chat call.
   - Attempts a `searchRag()` call when a document id is provided, but GA behaviour is effectively "no RAG context" because RAG is disabled.
@@ -154,5 +154,5 @@ Next steps (future weeks):
 
 - Implement document indexing jobs over Vault and connector imports.
 - Add UI for editing org/user preference profiles.
-- Expand Mono and Builder calls to rely on real RAG results once embeddings are populated and `getRagStatus().enabled` is true.
+- Expand Maestro and Builder calls to rely on real RAG results once embeddings are populated and `getRagStatus().enabled` is true.
 

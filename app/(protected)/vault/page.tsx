@@ -711,7 +711,7 @@ export default function VaultPage() {
       const text = await response.text();
 
       if (!response.ok) {
-        let errorMessage = "Failed to load Mono training status";
+        let errorMessage = "Failed to load Maestro training status";
         try {
           const parsed = text ? (JSON.parse(text) as { error?: string }) : undefined;
           if (parsed?.error) {
@@ -787,10 +787,10 @@ export default function VaultPage() {
         },
       }));
     } catch (error) {
-      console.error("[vault] Error fetching Mono training status", error);
+      console.error("[vault] Error fetching Maestro training status", error);
       toast({
         title: "Training status unavailable",
-        description: "Could not load Mono training status for this document.",
+        description: "Could not load Maestro training status for this document.",
         variant: "destructive",
       });
     }
@@ -855,7 +855,7 @@ export default function VaultPage() {
 
       toast({
         title: "Training queued",
-        description: "Mono will train on this document in the background.",
+        description: "Maestro will train on this document in the background.",
       });
 
       await refreshTrainingStatusForDoc(doc);
@@ -929,10 +929,10 @@ export default function VaultPage() {
         const errorMessage =
           payload.error ||
           text ||
-          `Failed to load Mono context (HTTP ${response.status})`;
+          `Failed to load Maestro context (HTTP ${response.status})`;
 
         toast({
-          title: "Could not load Mono context",
+          title: "Could not load Maestro context",
           description: errorMessage,
           variant: "destructive",
         });
@@ -964,7 +964,7 @@ export default function VaultPage() {
       console.groupEnd();
 
       toast({
-        title: "Mono context preview loaded",
+        title: "Maestro context preview loaded",
         description:
           docs.length > 0
             ? `Fetched ${docs.length} training docs. Open the console for details.`
@@ -975,7 +975,7 @@ export default function VaultPage() {
         error instanceof Error ? error.message : "Unknown error loading context";
 
       toast({
-        title: "Mono context unavailable",
+        title: "Maestro context unavailable",
         description: errorMessage,
         variant: "destructive",
       });
@@ -1346,7 +1346,7 @@ export default function VaultPage() {
                         <div className="space-y-2 mb-1">
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-xs font-medium text-muted-foreground">
-                              Mono training
+                              Maestro training
                             </span>
                             {(() => {
                               const state =
@@ -1398,7 +1398,7 @@ export default function VaultPage() {
                               ) : (
                                 <>
                                   <Brain className="h-4 w-4 mr-2" />
-                                  Train Mono on this doc
+                                  Train Maestro on this doc
                                 </>
                               )}
                             </Button>
@@ -1420,7 +1420,7 @@ export default function VaultPage() {
                             )}
                           <p className="text-[11px] text-muted-foreground">
                             Experimental: queues a background job to add this document to
-                            Mono&apos;s training set.
+                            Maestro&apos;s training set.
                           </p>
                         </div>
                       )}
@@ -1432,7 +1432,7 @@ export default function VaultPage() {
                           disabled={actionsDisabled || !selectedDocument.org_id}
                         >
                           <Brain className="h-4 w-4 mr-2" />
-                          Preview Mono context (dev)
+                          Preview Maestro context (dev)
                         </Button>
                       )}
                       {vaultExperimental && (

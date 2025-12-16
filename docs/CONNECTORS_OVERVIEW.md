@@ -8,7 +8,7 @@ This document describes the initial connector model for Harmonyk, focused on:
 
 The design is **metadata-first**: we ingest and normalise external metadata into
 
-connector tables and/or Vault, then let Insights, Playbooks, and Mono build on
+connector tables and/or Vault, then let Insights, Playbooks, and Maestro build on
 
 top of that.
 

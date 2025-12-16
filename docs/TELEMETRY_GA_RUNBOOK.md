@@ -24,7 +24,7 @@ For GA we care most about the following user flows:
 
 6. **Share a doc** (Share Hub link)
 
-7. **Workbench query** (analyze a doc or ask Mono about a doc)
+7. **Workbench query** (analyze a doc or ask Maestro about a doc)
 
 8. **Run a Playbook** (dry-run is fine)
 

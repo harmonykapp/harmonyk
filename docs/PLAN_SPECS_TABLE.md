@@ -23,7 +23,7 @@ This document tracks the status of each navigation item and module at Week 5, an
 ## Module Details
 
 ### Dashboard
-- **Week 5**: Summary cards (Docs in Motion, Pending Signatures, Recent Imports, Action Required), recent activity list, active deals, Mono entry point
+- **Week 5**: Summary cards (Docs in Motion, Pending Signatures, Recent Imports, Action Required), recent activity list, active deals, Maestro entry point
 - **GA**: Personalized widgets, AI-powered insights, quick action shortcuts, customizable layout
 
 ### Workbench

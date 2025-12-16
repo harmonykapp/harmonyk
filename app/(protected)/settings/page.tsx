@@ -1,13 +1,13 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Bell, Shield, CreditCard, Users, Plug, Sparkles, Download, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bell, Check, CreditCard, Download, Plug, Shield, Sparkles, User, Users } from "lucide-react";
 
 type BillingPlanId = "free" | "starter" | "pro" | "teams";
 
@@ -139,7 +139,7 @@ export default function SettingsPage() {
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4 text-mono" />
-          <span>Ask Mono about settings</span>
+          <span>Ask Maestro about settings</span>
         </div>
       </div>
 
@@ -269,7 +269,7 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Mono Insights</Label>
+                  <Label>Maestro Insights</Label>
                   <p className="text-sm text-muted-foreground">
                     Receive AI-generated insights and recommendations
                   </p>
@@ -418,11 +418,10 @@ export default function SettingsPage() {
                 {BILLING_PLANS.map((plan) => (
                   <div
                     key={plan.id}
-                    className={`relative p-6 border-2 rounded-lg ${
-                      plan.current
+                    className={`relative p-6 border-2 rounded-lg ${plan.current
                         ? "border-primary bg-primary/5"
                         : "border-border"
-                    }`}
+                      }`}
                   >
                     {plan.current && (
                       <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground">

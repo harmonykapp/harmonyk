@@ -252,7 +252,7 @@ Inside the AI-Assisted Generation card:
 
     - Let users highlight key clauses they care about.
 
-    - Feed clause bodies to Mono for more tailored drafts.
+    - Feed clause bodies to Maestro for more tailored drafts.
 
 ---
 

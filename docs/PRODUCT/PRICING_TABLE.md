@@ -9,7 +9,7 @@
 | **Contracts Builder** | Core hero templates; draft→sign; basic clause explain | Full **≈45** library; **clause editor**; **compare/diff** | + advanced compare insights; renewal Playbook | + org template library & governance norms |
 | **Decks Builder** | 1 flow/run (Fundraising **or** Investor Update), export PDF | Both flows; Slides/PDF export | + outline/tone presets; RAG alignment | + team branding presets & shared comps |
 | **Accounts Builder (rev)** | **Investor Snapshot**, manual/CSV; basic charts | + **SaaS Pack** with metric dictionary; saved baselines; validation | + **Cash Runway Planner** & **KPI Notebook** with scenarios; anomaly flags | + multi-workspace rollups; advanced scenario sets |
-| **Mono (AI)** | Explain/summarize selected doc (limited prompts) | + rewrite clauses/sections; improve deck copy | + compare drafts; align decks to latest metrics via RAG | + workspace memory tuning session |
+| **Maestro (AI)** | Explain/summarize selected doc (limited prompts) | + rewrite clauses/sections; improve deck copy | + compare drafts; align decks to latest metrics via RAG | + workspace memory tuning session |
 | **Playbooks (built-ins)** | Enable up to **2**; no edits | Up to **4**; tweak timing | Up to **6**; add email variants; **Runway Alert** | Up to **8**; org defaults & SLA windows |
 | **Tasks (internal)** | Max **20** open; email reminders off | Max **200** open; per-task email reminder | Max **1,000** open; reminder schedules | Max **5,000** open; team task boards |
 | **Share links** | **10** active; password/expiry | **50**; + watermark | **200**; link analytics | **1,000**; org branding |

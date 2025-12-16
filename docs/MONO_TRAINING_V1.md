@@ -1,6 +1,6 @@
-# Mono Training Library v1 — Dev Notes
+# Maestro Training Library v1 — Dev Notes
 
-This document describes the Week 19 "Mono Training Library + RAG plumbing" implementation as it stands now. It's intended as an internal dev reference so we don't have to reverse-engineer the flow later when we wire full RAG and job workers.
+This document describes the Week 19 "Maestro Training Library + RAG plumbing" implementation as it stands now. It's intended as an internal dev reference so we don't have to reverse-engineer the flow later when we wire full RAG and job workers.
 
 ---
 
@@ -99,7 +99,7 @@ Namespace: `app/api/mono/training/*`
    - Uses `queueTrainingJobForDoc` under the hood.
    - Returns the queued job and a simple status message.
 
-Auth / org derivation is intentionally naive for now (explicit `orgId`), to be hardened once we thread org context cleanly through Mono and the API layer.
+Auth / org derivation is intentionally naive for now (explicit `orgId`), to be hardened once we thread org context cleanly through Maestro and the API layer.
 
 ---
 
@@ -120,7 +120,7 @@ File: `app/(protected)/vault/page.tsx`
   - Calls `POST /api/mono/training/train-for-doc`.
   - Updates `trainingStatusByDocId` and shows basic loading / error feedback.
 
-- Adds a "Train Mono" action in the Actions panel for the selected document, gated behind the existing feature flag used for experimental Vault actions.
+- Adds a "Train Maestro" action in the Actions panel for the selected document, gated behind the existing feature flag used for experimental Vault actions.
 
 ### Builder
 
@@ -137,7 +137,7 @@ File: `components/builder/builder-client.tsx`
   - Calls `POST /api/mono/training/train-for-doc` for that document.
   - Surfaces status and error messages inline near the actions.
 
-- Adds a "Train Mono" button in the Builder actions row, gated behind the same feature flag.
+- Adds a "Train Maestro" button in the Builder actions row, gated behind the same feature flag.
 
 ---
 
@@ -162,7 +162,7 @@ File: `components/builder/builder-client.tsx`
    - Next step is to:
 
      - Query embeddings for the current org + relevant training sets.
-     - Surface top-K chunks as context into Mono's system prompt / tools.
+     - Surface top-K chunks as context into Maestro's system prompt / tools.
 
 4. **Org / auth threading**
 

@@ -240,7 +240,7 @@ export default function InsightsClient({
                         metrics={metrics.playbookRuns}
                     />
                     <InsightsMetricCard
-                        title="Mono queries"
+                        title="Maestro queries"
                         metrics={metrics.monoQueries}
                     />
                     <InsightsTimeSavedCard metrics={metrics.timeSavedSeconds} />

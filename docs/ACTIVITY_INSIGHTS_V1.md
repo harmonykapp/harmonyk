@@ -12,11 +12,11 @@ Make **Activity** and **Insights** actually useful for a single founder / small 
 
 - Generated or uploaded a few docs.
 
-- Asked Mono a handful of questions.
+- Asked Maestro a handful of questions.
 
 For v1 we want:
 
-1. **/activity** to be a *single place* to answer "what just happened?" across docs, Mono, connectors, signatures.
+1. **/activity** to be a *single place* to answer "what just happened?" across docs, Maestro, connectors, signatures.
 2. **/insights** to show 3–5 simple metrics that prove Harmonyk is doing work for you (and that connectors are alive).
 
 Keep this small and reliable. No fancy charts or dashboards yet.
@@ -29,7 +29,7 @@ The actual schema lives in the database and earlier docs, but conceptually we ha
 
   - e.g. generation, saving to Vault, sharing links, versioning.
 
-- `mono_*` events – questions / actions via Mono:
+- `mono_*` events – questions / actions via Maestro:
 
   - e.g. "ask about doc", follow-up questions, maybe suggestions.
 
@@ -83,7 +83,7 @@ We want these filter dimensions in v1:
 
    - `Docs` – all `doc_*` and `share_*` events.
 
-   - `Mono` – all `mono_*` events.
+   - `Maestro` – all `mono_*` events.
 
    - `Connectors` – all `connector_*` events.
 
@@ -149,7 +149,7 @@ We want **3–5 tiles** that show clearly useful counts:
 
    - De-dupe by `doc_id` within the window if needed.
 
-2. **Mono questions asked (7d)**  
+2. **Maestro questions asked (7d)**  
 
    - Count `mono_*` events representing a user question / query.
 
@@ -175,7 +175,7 @@ For v1, keep this very simple:
 
 - A small table like:
 
-  | Day        | Docs created | Mono questions | Connector syncs | Signatures completed |
+  | Day        | Docs created | Maestro questions | Connector syncs | Signatures completed |
   |----------- |------------- |----------------|-----------------|----------------------|
   | 2025-11-21 | 3           | 5              | 2               | 1                    |
   | …          | …           | …              | …               | …                    |

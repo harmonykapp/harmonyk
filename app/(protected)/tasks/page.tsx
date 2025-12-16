@@ -346,7 +346,7 @@ export default function TasksPage() {
 
   const sourceLabels: Record<Task["source"], string> = {
     activity: "Activity",
-    mono: "Mono",
+    mono: "Maestro",
     manual: "Manual",
   };
 
@@ -540,7 +540,7 @@ export default function TasksPage() {
                 <SelectContent>
                   <SelectItem value="all">All Sources</SelectItem>
                   <SelectItem value="activity">Activity</SelectItem>
-                  <SelectItem value="mono">Mono</SelectItem>
+                  <SelectItem value="mono">Maestro</SelectItem>
                   <SelectItem value="manual">Manual</SelectItem>
                 </SelectContent>
               </Select>

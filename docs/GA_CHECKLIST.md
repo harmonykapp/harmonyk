@@ -14,14 +14,14 @@ The following modules are considered in-scope and GA-ready (with known caveats d
 - **Vault** – Vaulted docs list/detail, versioning, filters, document preview.
 - **Share Hub** – Share links list, status, basic share management.
 - **Insights** – Core tiles (opens, shares, signatures, pack runs, stuck deals) driven by Activity / telemetry.
-- **Workbench / Mono** – GA queries over Vaulted docs with metadata-first ingestion and Vault-only semantics.
+- **Workbench / Maestro** – GA queries over Vaulted docs with metadata-first ingestion and Vault-only semantics.
 - **Playbooks** – Playbooks engine v1, run UI, dry-run/safety in place for GA workflows.
 - **Connectors (Google)** – Google Drive + Gmail connectors, metadata-first ingestion per GA scope.
 - **Activity Log** – Centralized audit of key actions across modules.
 
 ### Not GA (post-GA / flagged)
 
-- **Mono RAG v1 (Training Library + RAG context endpoints)**  
+- **Maestro RAG v1 (Training Library + RAG context endpoints)**  
   Implemented as dev-only scaffolding and **behind feature flags**.  
   - Off by default for all GA tenants.  
   - Can be enabled for internal/dev orgs only.  
@@ -34,7 +34,7 @@ The following modules are considered in-scope and GA-ready (with known caveats d
   - **Off by default** for GA v1 tenants.
   - Only enabled for internal/dev orgs when explicitly configured via env.
 
-- Mono RAG v1 is treated as **post-GA**:
+- Maestro RAG v1 is treated as **post-GA**:
   - GA happy paths must not depend on RAG being available.
   - Any RAG-related UI/endpoints are fully guard-railed behind flags.
 

@@ -1,8 +1,6 @@
 'use client';
 
-import { useState } from 'react';
 import { AppShell } from '@/components/AppShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,17 +19,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Search,
-  Filter,
-  FileText,
-  ExternalLink,
-  Download,
-  Share2,
-  Eye,
-  Sparkles,
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Download,
+  Eye,
+  FileText,
+  Filter,
+  Search,
+  Share2,
+  Sparkles
+} from 'lucide-react';
+import { useState } from 'react';
 
 const mockDocuments = [
   {
@@ -294,7 +292,7 @@ export default function WorkbenchPage() {
                   </Button>
                   <Button className="w-full justify-start" variant="outline">
                     <Sparkles className="h-4 w-4 mr-2" />
-                    Analyze with Mono
+                    Analyze with Maestro
                   </Button>
                   <Button className="w-full justify-start" variant="outline">
                     <Share2 className="h-4 w-4 mr-2" />

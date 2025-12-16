@@ -9,8 +9,8 @@ It is a concise view of what works, what is guarded behind feature flags, and wh
 
 | Item                                                                                  | Status      | Notes                                                                                      |
 |---------------------------------------------------------------------------------------|------------|--------------------------------------------------------------------------------------------|
-| Dashboard → Workbench → Builder → Vault → Activity → Mono runs without hard crashes  | ✅ DONE     | Mono currently returns a stub response, but auth and error handling are stable.           |
-| Golden path actions show clear error toasts (no silent failures)                     | ✅ DONE     | Workbench, Builder, Vault, Activity, Mono all use centralized toast-based error handling. |
+| Dashboard → Workbench → Builder → Vault → Activity → Maestro runs without hard crashes  | ✅ DONE     | Maestro currently returns a stub response, but auth and error handling are stable.           |
+| Golden path actions show clear error toasts (no silent failures)                     | ✅ DONE     | Workbench, Builder, Vault, Activity, Maestro all use centralized toast-based error handling. |
 | ActivityLog entries created for key actions (analyze, generate, save, mono query)    | ✅ DONE     | Activity page loads without errors and shows recent events.                               |
 
 ---
@@ -51,7 +51,7 @@ It is a concise view of what works, what is guarded behind feature flags, and wh
 | Item                                              | Status      | Notes                                                                                      |
 |---------------------------------------------------|------------|--------------------------------------------------------------------------------------------|
 | Dashboard welcome card explaining golden path     | ✅ DONE     | First-run card appears and can be dismissed; dismissal persisted via localStorage.         |
-| Dashboard explains what each main nav item does   | ✅ DONE     | Short copy for Workbench, Builder, Vault, Activity, Mono on the Dashboard.                 |
+| Dashboard explains what each main nav item does   | ✅ DONE     | Short copy for Workbench, Builder, Vault, Activity, Maestro on the Dashboard.                 |
 | Workbench empty state uses a "Demo NDA (sample)"  | ✅ DONE     | New users are not stuck with a blank page; demo content clearly labeled as sample.         |
 
 ---

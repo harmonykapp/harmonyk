@@ -12,7 +12,7 @@ Target: end of Week 8 on the 18-week roadmap.
 
 - **/activity** page upgraded to support:
   - Date-range presets + custom ranges.
-  - Event-type chips (generate, analyze, save_to_vault, shares, signatures, playbooks, Mono, connectors).
+  - Event-type chips (generate, analyze, save_to_vault, shares, signatures, playbooks, Maestro, connectors).
   - Error-only filtering.
   - Simple search by file name / document title.
   - CSV export of raw events for debugging and light analysis.
@@ -22,7 +22,7 @@ Target: end of Week 8 on the 18-week roadmap.
   - Share links created.
   - Signatures sent/completed.
   - Playbook runs.
-  - Mono queries.
+  - Maestro queries.
   - Time saved (via Playbooks).
   - Total docs in Vault.
   - CSV export of summary metrics.
@@ -82,5 +82,5 @@ Target: end of Week 8 on the 18-week roadmap.
 - Harden connectors telemetry (Drive/Gmail) once Connectors v1 ships.
 - Add simple charts (spark-lines, trend arrows) to the `/insights` page.
 - Integrate Insights with onboarding ("you saved X hours this week" nudge).
-- Surface key Insights in Mono / Workbench so the AI feels more "situationally aware".
+- Surface key Insights in Maestro / Workbench so the AI feels more "situationally aware".
 

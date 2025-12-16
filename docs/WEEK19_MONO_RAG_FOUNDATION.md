@@ -1,6 +1,6 @@
-# Week 19 — Mono Memory & RAG Foundation (Dev-Only)
+# Week 19 — Maestro Memory & RAG Foundation (Dev-Only)
 
-This document captures the current Mono memory / RAG scaffolding as of Week 19.
+This document captures the current Maestro memory / RAG scaffolding as of Week 19.
 
 Everything here is dev-only and deliberately conservative: no real embeddings, no cross-tenant mixing, no silent training.
 
@@ -23,7 +23,7 @@ We have a minimal training jobs model wired through the /api/mono/train route:
   - chunks/embeds it
   - writes to any vector index
 
-For now, this acts as a dev stub + audit trail when we hit "Train Mono" from the UI.
+For now, this acts as a dev stub + audit trail when we hit "Train Maestro" from the UI.
 
 ---
 
@@ -65,7 +65,7 @@ There is no actual RAG training behind this yet.
 
 #### /api/mono/context (POST)
 
-Dev-only endpoint for context preview, used to simulate what a future RAG layer would return to Mono.
+Dev-only endpoint for context preview, used to simulate what a future RAG layer would return to Maestro.
 
 Request body (JSON):
 
@@ -101,16 +101,16 @@ The payload shape is what future RAG backends should produce, but the contents a
 
 ## 2. Frontend Surfaces
 
-### 2.1. Vault — "Train Mono" & Context Preview (Dev)
+### 2.1. Vault — "Train Maestro" & Context Preview (Dev)
 
 On the Vault page (when `FEATURE_VAULT_EXPERIMENTAL_ACTIONS` is enabled and a document with an `org_id` is selected):
 
-- **Train Mono** button:
+- **Train Maestro** button:
   - Calls `/api/mono/train` with the selected document's `org_id` and `vault_document_id`
-  - Shows a toast: "Mono will train on this document in the background."
+  - Shows a toast: "Maestro will train on this document in the background."
   - Logs structured info to the console via `handleApiError` when things go wrong
 
-- **Preview Mono context (dev)** button:
+- **Preview Maestro context (dev)** button:
   - Calls `/api/mono/context` with:
     - `orgId` = document's `org_id`
     - `query` = document title
@@ -124,7 +124,7 @@ All of this is behind a feature flag and only intended for internal / dev usage.
 
 ---
 
-### 2.2. Builder — "Train Mono" & Context Preview (Dev)
+### 2.2. Builder — "Train Maestro" & Context Preview (Dev)
 
 In Builder (`components/builder/builder-client.tsx`), for Contracts:
 
@@ -132,7 +132,7 @@ In Builder (`components/builder/builder-client.tsx`), for Contracts:
   - Track `savedDocumentId`
   - Enable two dev-only actions when `FEATURE_VAULT_EXPERIMENTAL_ACTIONS` is on:
 
-1. **Preview Mono context (dev)**
+1. **Preview Maestro context (dev)**
 
    - Looks up `org_id` + `title` for `savedDocumentId` from Supabase (`document` table)
    - Derives an effective query:
@@ -141,18 +141,18 @@ In Builder (`components/builder/builder-client.tsx`), for Contracts:
      - Template name, or `"Untitled document"`
    - Calls `/api/mono/context` with `{ orgId, query, maxItems: 5 }`
    - Logs request + docs in a collapsed console group:
-     - `[builder-mono-context] Preview Mono context (dev)`
+     - `[builder-mono-context] Preview Maestro context (dev)`
    - Shows a toast:
      - `Found N matching internal docs…` or
      - `No internal docs matched this query yet.`
 
-2. **Train Mono**
+2. **Train Maestro**
 
    - Uses the same `savedDocumentId` to find `org_id`
    - Calls `/api/mono/train` to queue a job
    - On success:
      - Stores `trainingQueuedForDocId`
-     - Shows a small banner: "Mono training job queued for this document."
+     - Shows a small banner: "Maestro training job queued for this document."
    - On error:
      - Uses `handleApiError` with context `"builder-mono-train"`
      - Surfaces a toast + optional inline error message.
@@ -169,9 +169,9 @@ Important constraints / non-features at this stage:
 - No background worker that reads from `training_jobs`
 - No cross-document or cross-tenant learning
 - No automatic / silent training jobs
-- No Mono chat integration yet (Workbench still uses existing stub flows)
+- No Maestro chat integration yet (Workbench still uses existing stub flows)
 
-This is scaffolding, not a full Mono memory system.
+This is scaffolding, not a full Maestro memory system.
 
 ---
 
@@ -182,8 +182,8 @@ This is scaffolding, not a full Mono memory system.
 - Ensure the feature flag `FEATURE_VAULT_EXPERIMENTAL_ACTIONS` is `true` for your environment.
 
   This currently controls:
-  - Vault: "Train Mono" + "Preview Mono context (dev)"
-  - Builder: "Preview Mono context (dev)" + "Train Mono"
+  - Vault: "Train Maestro" + "Preview Maestro context (dev)"
+  - Builder: "Preview Maestro context (dev)" + "Train Maestro"
 
 ### 4.2. Typical Dev Flow
 
@@ -192,14 +192,14 @@ This is scaffolding, not a full Mono memory system.
    - Generate V1 content
    - Save to Vault
 
-2. **Train Mono** on it (stub)
-   - In Builder or Vault, click "Train Mono"
+2. **Train Maestro** on it (stub)
+   - In Builder or Vault, click "Train Maestro"
    - Confirm:
      - A training job row is created in DB
      - No errors in the console
 
-3. **Preview Mono context (dev)**
-   - In Vault or Builder, click "Preview Mono context (dev)"
+3. **Preview Maestro context (dev)**
+   - In Vault or Builder, click "Preview Maestro context (dev)"
    - Check the browser console:
      - Collapsed group with `request` + stub `docs` array
    - Verify the toast message reflects the number of docs.
@@ -216,7 +216,7 @@ This gives us a full end-to-end dev path:
 These dev features respect the current North Star data/training principles:
 
 - No user documents are used for any global training library.
-- All "Mono training" right now is a no-op stub + job logging.
+- All "Maestro training" right now is a no-op stub + job logging.
 - When we wire real RAG:
   - It will be per-organisation, not cross-tenant.
   - It will be opt-in and transparent, with clear UX and audit trails.
@@ -238,8 +238,8 @@ Planned follow-ups, roughly in this order:
      - Is the only place allowed to talk to a vector store / external RAG service
      - Respects strict `org_id` scoping and data controls
 
-3. **Mono chat integration** (Workbench)
-   - Let Mono pull from:
+3. **Maestro chat integration** (Workbench)
+   - Let Maestro pull from:
      - Vault docs (RAG)
      - Builder outputs
      - Accounts/Decks packs (read-only)
@@ -252,7 +252,7 @@ Planned follow-ups, roughly in this order:
      - Error rates / telemetry
 
 5. **Production hardening**
-   - Rate limits, auth checks, and observability around all Mono endpoints
+   - Rate limits, auth checks, and observability around all Maestro endpoints
    - Feature flags for:
      - `FEATURE_MONO_RAG_INTERNAL`
      - `FEATURE_MONO_RAG_BETA`
@@ -261,7 +261,7 @@ Planned follow-ups, roughly in this order:
 
 ## 7. TL;DR
 
-- Week 19 gives us a safe, end-to-end Mono training + context preview path that is:
+- Week 19 gives us a safe, end-to-end Maestro training + context preview path that is:
   - Fully feature-flagged
   - Dev-only
   - Non-destructive (no real training yet)

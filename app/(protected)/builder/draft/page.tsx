@@ -16,9 +16,9 @@ export default function DraftsPage() {
       {/* Heading + tagline */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-4 border-b">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vault</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Drafts</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Find docs by categories, tags, people, or activity.
+            Your saved document drafts ready for editing and completion.
           </p>
         </div>
       </div>

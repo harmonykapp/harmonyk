@@ -8,9 +8,9 @@ This document summarizes what changed in Week 6, the current stability of the Be
 
 - **Golden path hardened**
 
-  - Dashboard → Workbench → Builder → Vault → Activity → Mono flow tested and stabilized.
+  - Dashboard → Workbench → Builder → Vault → Activity → Maestro flow tested and stabilized.
 
-  - Mono now responds with a stubbed reply without auth errors or raw error messages.
+  - Maestro now responds with a stubbed reply without auth errors or raw error messages.
 
 
 
@@ -18,7 +18,7 @@ This document summarizes what changed in Week 6, the current stability of the Be
 
   - Centralized client-side error handling via a shared helper.
 
-  - All golden-path pages (Workbench, Builder, Vault, Activity, Mono) show clear toasts for API failures and auth issues.
+  - All golden-path pages (Workbench, Builder, Vault, Activity, Maestro) show clear toasts for API failures and auth issues.
 
   - Auth failures render a consistent "Session expired" pattern instead of raw errors.
 
@@ -72,7 +72,7 @@ This document summarizes what changed in Week 6, the current stability of the Be
 
 ## Current Stability (End of Week 6)
 
-- **Golden path:** No known P0 issues; the workflow runs end-to-end with Mono stub behavior.
+- **Golden path:** No known P0 issues; the workflow runs end-to-end with Maestro stub behavior.
 
 - **Error handling:** All major flows surface errors via toasts; no silent failures expected on main routes.
 
@@ -86,7 +86,7 @@ This document summarizes what changed in Week 6, the current stability of the Be
 
 ## Known Limitations (Acceptable for Beta)
 
-- Mono currently returns a **stub response**, not full AI-powered answers.
+- Maestro currently returns a **stub response**, not full AI-powered answers.
 
 - Playbooks engine and advanced Share workflows are **intentionally disabled** via feature flags.
 

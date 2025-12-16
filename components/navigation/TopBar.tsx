@@ -83,7 +83,7 @@ export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
             className="gap-2"
           >
             <Sparkles className="h-4 w-4" />
-            <span className="hidden sm:inline">Ask Mono</span>
+            <span className="hidden sm:inline">Ask Maestro</span>
           </Button>
         </div>
 

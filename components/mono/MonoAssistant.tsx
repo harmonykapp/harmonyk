@@ -1,7 +1,7 @@
 'use client';
 
-import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 import { MonoPane, type MonoContext } from './mono-pane';
 import { MonoQuickActions } from './MonoQuickActions';
 
@@ -23,7 +23,7 @@ export function MonoAssistant({ isOpen, onClose, context }: MonoAssistantProps) 
     <div className="fixed right-0 top-0 bottom-0 w-[400px] border-l bg-card flex flex-col shadow-xl z-40">
       <div className="border-b px-6 py-4 flex items-start justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Mono</h2>
+          <h2 className="text-lg font-semibold text-foreground">Maestro</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Your AI assistant for docs and tasks</p>
         </div>
         <Button

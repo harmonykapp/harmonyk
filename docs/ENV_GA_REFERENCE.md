@@ -27,7 +27,7 @@ It is a reference for:
 
 | Key              | Example    | Required (GA) | Notes                                             |
 |------------------|------------|---------------|---------------------------------------------------|
-| OPENAI_API_KEY   | `sk-...`   | Yes           | Used by Mono, Builder generators, Packs, etc.     |
+| OPENAI_API_KEY   | `sk-...`   | Yes           | Used by Maestro, Builder generators, Packs, etc.     |
 
 ---
 
@@ -72,7 +72,7 @@ These control **non-GA** or experimental surfaces. They must be **false by defau
 
 | Key                           | Example  | Required (GA) | Notes                                                                 |
 |-------------------------------|----------|---------------|-----------------------------------------------------------------------|
-| MONO_RAG_ENABLED              | `false`  | No            | Backend guard for Mono RAG endpoints                                  |
+| MONO_RAG_ENABLED              | `false`  | No            | Backend guard for Maestro RAG endpoints                                  |
 | NEXT_PUBLIC_MONO_RAG_ENABLED  | `false`  | No            | Frontend guard for RAG-related UI                                    |
 | NEXT_PUBLIC_SHOW_LABS         | `false`  | No            | Exposes Labs / experimental navigation / UI                          |
 
