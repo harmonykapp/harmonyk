@@ -7,7 +7,7 @@ _v2025-12-08 rev B — GA scope frozen (20 weeks) + Guided UX & Viral Loops_
 
 **Harmonyk — All your docs. One brain.**
 
-> Naming note (Dec 2025): The product was renamed from **Harmonyk** to **Harmonyk**. The AI assistant was renamed from **Maestro** to **Maestro**. Some internal identifiers and older docs may still use the former names.
+> Naming note (Dec 2025): The product was renamed from **Monolyth** to **Harmonyk**. The AI assistant was renamed from **Mono** to **Maestro**. Some internal identifiers and older docs may still use the former names.
 
 ---
 
