@@ -1,26 +1,48 @@
-// app/layout.tsx
 import { ThemeProvider } from "@/components/theme-provider";
+import { ASSISTANT_NAME, PRODUCT_NAME } from "@/lib/brand";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { PRODUCT_NAME } from "@/lib/brand";
 import AnalyticsInit from "./analytics"; // PostHog init (client-safe)
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: {
     default: PRODUCT_NAME,
-    template: `%s · ${PRODUCT_NAME}`,
+    template: `%s — ${PRODUCT_NAME}`,
   },
+  description: `${PRODUCT_NAME} — all your docs. One brain. Powered by ${ASSISTANT_NAME}.`,
   applicationName: PRODUCT_NAME,
   icons: {
-    // NOTE: browsers still prefer /favicon.ico at the web root.
-    // Keep /public/favicon.ico in sync with /public/brand/favicon.ico.
-    // Currently using /favicon.png until .ico files are available.
-    icon: "/favicon.png",
-    shortcut: "/favicon.png",
-    apple: "/favicon.png",
+    icon: "/brand/favicon.ico",
+    shortcut: "/brand/favicon.ico",
+    apple: "/brand/apple-touch-icon.png",
+  },
+  manifest: "/manifest.webmanifest",
+  openGraph: {
+    title: PRODUCT_NAME,
+    description: `${PRODUCT_NAME} — all your docs. One brain.`,
+    images: [
+      {
+        url: "/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: PRODUCT_NAME,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: PRODUCT_NAME,
+    description: `${PRODUCT_NAME} — all your docs. One brain.`,
+    images: ["/brand/og.png"],
   },
 };
 
