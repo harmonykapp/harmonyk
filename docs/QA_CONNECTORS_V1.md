@@ -11,7 +11,7 @@ Environment:
 
 - App running locally on http://localhost:3000 with `npm run dev`
 
-- Supabase project: **monolythapp** (ref `uibtjqhyklrwvjclbmdy`)
+- Supabase project ref: `uibtjqhyklrwvjclbmdy`
 
 - Migrations applied, tables exist:
 

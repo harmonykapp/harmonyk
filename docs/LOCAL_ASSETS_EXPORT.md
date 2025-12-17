@@ -104,9 +104,7 @@ Back the **≈20 clause docs** used by ClauseGraph v1 and Maestro for Contracts.
 `Harmonyk Beta Test Feedback for Builder page.pdf`
 
 **Location:**  
-Originally uploaded via ChatGPT project; should be stored under a project docs folder, e.g.:
-
-- `docs/beta/Monolyth_Beta_Test_Feedback_Builder.pdf`
+Originally uploaded via ChatGPT project; should be stored under a project docs folder - not stored in the repo.
 
 **Usage:**
 

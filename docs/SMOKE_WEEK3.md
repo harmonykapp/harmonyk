@@ -5,7 +5,7 @@ This checklist is for a quick manual verification of the Week 3 functional draft
 ## 1. Builder
 
 - [ ] Open `/builder`.
-- [ ] Confirm the page uses the Builder layout from `docs/UI_MONOLYTH_CORE.md`.
+- [ ] Confirm the page uses the Builder layout from `docs/UI_HARMONYK_CORE.md`.
 - [ ] Select a template from the template picker (from `data/templates.ts`).
 - [ ] Fill in any required fields.
 - [ ] Click **Generate**.
@@ -35,7 +35,7 @@ This checklist is for a quick manual verification of the Week 3 functional draft
 - [ ] From `/vault` (or Builder’s share action), create a share link for a doc.
 - [ ] Open the share URL `/share/[id]` in the browser.
 - [ ] If no passcode is set:
-  - [ ] Document renders in a centered card as per `docs/UI_MONOLYTH_CORE.md`.
+  - [ ] Document renders in a centered card as per `docs/UI_HARMONYK_CORE.md`.
 - [ ] If a passcode is set (test at least once):
   - [ ] First visit shows a passcode prompt.
   - [ ] Entering the correct passcode reveals the document.

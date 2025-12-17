@@ -1,7 +1,38 @@
 import { type Triage } from "@/lib/ai";
+import { LEGACY_VAULT_STORAGE_KEY, LEGACY_VAULT_UPDATED_EVENT } from "@/lib/legacy-keys";
 
-export const VAULT_STORAGE_KEY = "monolyth-vault";
-export const VAULT_UPDATED_EVENT = "monolyth:vault-updated";
+// Storage keys are user-facing persistence. We migrate from legacy keys to avoid
+// wiping local demo data when rebranding.
+export const VAULT_STORAGE_KEY = "harmonyk-vault";
+export const VAULT_UPDATED_EVENT = "harmonyk:vault-updated";
+
+export function migrateLegacyVaultStorage() {
+  if (typeof window === "undefined") return;
+  try {
+    const hasNew = window.localStorage.getItem(VAULT_STORAGE_KEY);
+    if (hasNew != null) return;
+
+    const legacy = window.localStorage.getItem(LEGACY_VAULT_STORAGE_KEY);
+    if (legacy == null) return;
+
+    window.localStorage.setItem(VAULT_STORAGE_KEY, legacy);
+    // Keep legacy value for now (non-destructive). If you want, you can remove
+    // it later once you're confident migration has happened everywhere.
+  } catch {
+    // ignore
+  }
+}
+
+export function dispatchVaultUpdated() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new Event(VAULT_UPDATED_EVENT));
+    // Compatibility: any old listeners still listening for the legacy event.
+    window.dispatchEvent(new Event(LEGACY_VAULT_UPDATED_EVENT));
+  } catch {
+    // ignore
+  }
+}
 
 export type VaultVersion = {
   id: string;
@@ -26,14 +57,14 @@ function getSafeWindow(): Window | null {
 }
 
 function broadcastUpdate() {
-  const w = getSafeWindow();
-  if (!w) return;
-  w.dispatchEvent(new CustomEvent(VAULT_UPDATED_EVENT));
+  dispatchVaultUpdated();
 }
 
 export function readVaultDocs(): VaultDoc[] {
   const w = getSafeWindow();
   if (!w) return [];
+  // Migrate legacy storage on first read
+  migrateLegacyVaultStorage();
   const raw = w.localStorage.getItem(VAULT_STORAGE_KEY);
   if (!raw) return [];
   try {

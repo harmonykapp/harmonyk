@@ -1,5 +1,6 @@
 "use client";
 
+import { LEGACY_ONBOARDING_SEEN_KEY } from "@/lib/legacy-keys";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -163,8 +164,20 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Check if welcome card should be shown
-    const baseKey = "monolyth_onboarding_seen_v1";
+    const baseKey = "harmonyk_onboarding_seen_v1";
+    const legacyKey = LEGACY_ONBOARDING_SEEN_KEY;
     let storageKey = baseKey;
+
+    // Migrate legacy onboarding key (non-destructive)
+    try {
+      const hasNew = window.localStorage.getItem(baseKey);
+      if (hasNew == null) {
+        const legacy = window.localStorage.getItem(legacyKey);
+        if (legacy != null) window.localStorage.setItem(baseKey, legacy);
+      }
+    } catch {
+      // ignore
+    }
 
     // Use per-user key if we have a user ID
     if (userId) {
@@ -185,7 +198,7 @@ export default function DashboardPage() {
   }, [userId]);
 
   const handleDismissWelcome = () => {
-    const baseKey = "monolyth_onboarding_seen_v1";
+    const baseKey = "harmonyk_onboarding_seen_v1";
     let storageKey = baseKey;
 
     // Use per-user key if we have a user ID

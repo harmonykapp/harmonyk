@@ -1,6 +1,6 @@
 # Maestro Training Library v1 — Dev Notes
 
-This document describes the Week 19 "Maestro Training Library + RAG plumbing" implementation as it stands now. It's intended as an internal dev reference so we don't have to reverse-engineer the flow later when we wire full RAG and job workers.
+This document describes the Week 19 "Maestro Training Library + RAG plumbing" implementation as it stands now. It's an internal dev reference so we don't have to reverse-engineer the flow later when we wire full RAG and job workers.
 
 ---
 
@@ -74,7 +74,7 @@ Key functions:
 
 3. `storeEmbeddingsForChunks(...)`
 
-   - Currently a stub that will later:
+   - Currently a stub. Later it should:
 
      - Chunk the source doc.
      - Call OpenAI embeddings.
@@ -159,7 +159,7 @@ File: `components/builder/builder-client.tsx`
 3. **RAG integration**
 
    - `getRagContextForMono` currently returns stubbed data.
-   - Next step is to:
+   - Next step:
 
      - Query embeddings for the current org + relevant training sets.
      - Surface top-K chunks as context into Maestro's system prompt / tools.

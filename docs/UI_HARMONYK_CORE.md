@@ -43,7 +43,7 @@ We support two themes: **light** and **dark**. Both use the same brand purple an
 - A toggle in the top navigation bar switches between **light** and **dark**.
 - When toggled:
   - We add/remove the `dark` class on `<html>` using Tailwind’s dark mode support.
-  - We persist the choice in `localStorage` under `monolyth-theme`.
+  - We persist the choice in `localStorage` under `harmonyk-theme`.
   - We switch between the light and dark logo assets.
 - Default behavior:
   - On first load, use `localStorage` if present.
