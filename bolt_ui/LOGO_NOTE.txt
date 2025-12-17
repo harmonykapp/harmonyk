@@ -1,1 +1,7 @@
-NOTE: The Monologo_horizontal-transp.png file needs to be manually placed in the public/ folder
+NOTE: Brand assets are expected at:
+
+- public/brand/harmonyk-logo-horizontal.png
+- public/brand/harmonyk-logo-horizontal-dark.png
+- public/brand/harmonyk-mark.png (optional)
+
+For bolt_ui previews, copy the same structure into bolt_ui/public/brand/.

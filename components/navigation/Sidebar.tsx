@@ -82,20 +82,20 @@ export function Sidebar({ navOverride }: { navOverride?: NavItemOverride[] }) {
       <div className="px-6 py-5 border-b" suppressHydrationWarning>
         <Link href="/dashboard" className="flex items-center group" suppressHydrationWarning>
           <Image
-            src="/Monologo_horizontal-transp copy.png"
+            src="/brand/harmonyk-logo-horizontal.png"
             alt="Harmonyk"
             width={160}
-            height={40}
-            className="h-10 w-auto dark:hidden"
+            height={32}
+            className="block dark:hidden"
             priority
             suppressHydrationWarning
           />
           <Image
-            src="/Monologo_horizontal-dark-transp.png"
+            src="/brand/harmonyk-logo-horizontal-dark.png"
             alt="Harmonyk"
             width={160}
-            height={40}
-            className="h-10 w-auto hidden dark:block"
+            height={32}
+            className="hidden dark:block"
             priority
             suppressHydrationWarning
           />

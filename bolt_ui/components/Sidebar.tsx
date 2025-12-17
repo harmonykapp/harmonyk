@@ -57,19 +57,19 @@ export function Sidebar() {
       <div className="px-6 py-5 border-b">
         <Link href="/dashboard" className="flex items-center group">
           <Image
-            src="/Monologo_horizontal-transp copy.png"
+            src="/brand/harmonyk-logo-horizontal.png"
             alt="Harmonyk"
             width={160}
-            height={40}
-            className="h-10 w-auto dark:hidden"
+            height={32}
+            className="block dark:hidden"
             priority
           />
           <Image
-            src="/Monologo_horizontal-dark-transp.png"
+            src="/brand/harmonyk-logo-horizontal-dark.png"
             alt="Harmonyk"
             width={160}
-            height={40}
-            className="h-10 w-auto hidden dark:block"
+            height={32}
+            className="hidden dark:block"
             priority
           />
         </Link>
