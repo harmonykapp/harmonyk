@@ -1,7 +1,8 @@
 {
   "name": "Harmonyk",
   "short_name": "Harmonyk",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0B0B10",
   "theme_color": "#0B0B10",
@@ -9,13 +10,14 @@
     {
       "src": "/brand/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/brand/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
-
