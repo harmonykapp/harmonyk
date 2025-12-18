@@ -11,7 +11,7 @@ import { isRagEnabled } from "@/lib/feature-flags";
  *   MONO_RAG_ENABLED / NEXT_PUBLIC_MONO_RAG_ENABLED is explicitly true.
  * - This ensures GA tenants cannot accidentally hit dev-only RAG scaffolding.
  */
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Block Maestro RAG-related API routes unless RAG is explicitly enabled.
