@@ -21,8 +21,8 @@ export const metadata: Metadata = {
   description: `${PRODUCT_NAME} — all your docs. One brain. Powered by ${ASSISTANT_NAME}.`,
   applicationName: PRODUCT_NAME,
   icons: {
-    icon: "/brand/favicon.ico",
-    shortcut: "/brand/favicon.ico",
+    icon: "/brand/favicon.png",
+    shortcut: "/brand/favicon.png",
     apple: "/brand/apple-touch-icon.png",
   },
   manifest: "/manifest.webmanifest",
