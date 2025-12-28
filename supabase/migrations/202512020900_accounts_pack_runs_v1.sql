@@ -61,16 +61,29 @@ alter table public.accounts_pack_runs enable row level security;
 -- RLS Policy: org members can select
 drop policy if exists accounts_pack_runs_org_members_select on public.accounts_pack_runs;
 
-create policy accounts_pack_runs_org_members_select
-  on public.accounts_pack_runs
-  for select
-  using (
-    exists (
-      select 1 from public.member m
-      where m.org_id = accounts_pack_runs.org_id
-        and m.user_id = auth.uid()
-    )
-  );
+DO $$
+BEGIN
+  IF to_regclass('public.accounts_pack_runs') IS NOT NULL
+     AND to_regclass('public.member') IS NOT NULL THEN
+
+    DROP POLICY IF EXISTS accounts_pack_runs_org_members_select
+      ON public.accounts_pack_runs;
+
+    CREATE POLICY accounts_pack_runs_org_members_select
+      ON public.accounts_pack_runs
+      FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.member m
+          WHERE m.org_id = accounts_pack_runs.org_id
+            AND m.user_id = auth.uid()
+        )
+      );
+
+  END IF;
+END $$;
+
 
 -- RLS Policy: org members can insert
 drop policy if exists accounts_pack_runs_org_members_insert on public.accounts_pack_runs;

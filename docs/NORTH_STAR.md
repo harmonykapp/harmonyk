@@ -1,38 +1,89 @@
-# NORTH_STAR.md — Harmonyk
-_v2025-12-08 rev B — GA scope frozen (20 weeks) + Guided UX & Viral Loops_
+# North Star — Product Definition (Harmonyk + Maestro)
+
+_This file defines the product vision, scope, and guardrails for GA and beyond. Updated 2025-12-20._
+
+## Mission
+Harmonyk is a **document-first operating system** that helps founders create, share, sign, and track business docs — and actually get outcomes — with **Maestro** as the operator.
 
 ---
 
-## Tagline
+## 2026 AI UX Doctrine (Harmonyk + Maestro)
 
-**Harmonyk — All your docs. One brain.**
+> Prompts stay available, but are never required for main workflow.
 
-> Naming note (Dec 2025): The product was renamed from **Monolyth** to **Harmonyk**. The AI assistant was renamed from **Mono** to **Maestro**. Some internal identifiers and older docs may still use the former names.
+1) **Predictive Signals** — widgets surface what changed / what's blocked / what's due / what's risky.  
+2) **Optimized Choices** — one primary action + 2–3 alternative chips + a short **"Why?"**.  
+3) **Execute + Remind** — Maestro prepares → user approves if needed → executes → **reminds** until done.
 
----
-
-## Positioning
-
-Early-stage tech founders (0–20 employees) on **Google Workspace** drowning in scattered contracts, decks, and investor-facing financials.
-
-They:
-
-- Live in **Gmail + Drive** and ad-hoc folders.
-- Track deals and investors in spreadsheets and Slack threads.
-- Use generic e-sign tools with no context of their actual business.
-
-Harmonyk is the **document-first operating system** that gives them:
-
-> One place to draft the critical documents, keep them organized, and drive the follow-through — with one AI operator (**Maestro**) that knows their files and preferences.
+**Maestro operates mainly through UI actions embedded in pages (buttons/chips), not chat.**  
+The UI is personalised to each user's state, workload, and priorities.
 
 ---
 
-## Product Promise
+## Core Product Additions (Post-GA)
 
-1. Draft the important docs (contracts, decks, accounts packs) with AI that respects structure and risk.
-2. Keep them organised in one Vault with sane metadata and history.
-3. Drive the follow-through: shares, signatures, tasks, and automations that actually move deals forward.
-4. Never leave founders staring at an empty dashboard – the product always suggests **“the next obvious step”**.
+### A) User Progress Narrator (Dashboard + Maestro Quick Starts)
+State machine `UserProgressState` drives:
+- **Dashboard hero** ("Welcome {firstName}… next best step")
+- **Maestro quick-start chips** (3–5 context-aware actions)
+
+States:
+`ONBOARD_CONNECTORS`, `ONBOARD_IMPORT`, `ORGANISE_METADATA`, `START_DEAL`, `ENABLE_AUTOMATION`, `MATURE_TODAY_FOCUS`
+
+Each state produces: one primary CTA, optional secondary CTA, and the quick-start actions.
+
+### B) Actionable Widgets Standard
+Every key widget (Dashboard / Workbench / Insights / Playbooks) must support:
+1. Click → **drill-down** (filtered list/detail)  
+2. **Action bar** with a primary action + chips  
+3. **Maestro sidecar** preview with **"Why?"** + Approve/Execute
+
+### C) First-class Reminder Layer
+Maestro not only proposes/executes; it **reminds**.
+- Modes: Off / Manual (approve each) / Autopilot (approve once; within limits)
+- Guardrails: rate limits, stop conditions (e.g., signed/moved stage), mute/pause per doc/counterparty
+
+---
+
+## Scope (GA baseline → Post-GA)
+- GA delivered: Contracts, Decks, Accounts, Vault, Share, Insights, Playbooks foundations; connectors (Google) with metadata-first ingestion; basic telemetry; feature flags.
+- Post-GA additions:
+  - User Progress Narrator + actionable widgets + reminder layer
+  - Action-centric RAG (Action Context Pack) + Maestro sidecar previews
+  - Viral loops (Free Collaborator, Keep a copy, Clone template)
+  - External connectors beyond Google (Dropbox, OneDrive, Slack, etc.)
+  - Billing / plan enforcement
+
+---
+
+## Growth Loops (Low-friction, non-spam)
+1) **Free Collaborator role** — view/comment/suggest only; upsell to create their own workspace.  
+2) **Keep a copy in your Vault** — after viewing/signing, optional CTA to create a free workspace with the doc copied.  
+3) **Clone this template for yourself** — Smart Share page CTA to spin up a workspace pre-loaded with the template.  
+Events: `invite_collaborator`, `claim_signed_doc`, `clone_template`.
+
+Guardrails: never block view/sign; CTAs are optional and clearly separated.
+
+---
+
+## RAG + Templates Strategy (Action-centric)
+Move from prompt Q&A to **action-centric RAG**:
+- Retrieval must support **actions** with: **Evidence** (Vault + citations), **Constraints** (prefs/policy), **Entity context** (docId/envelopeId/shareLinkId/taskId).
+- Define **Action Context Pack**:
+  ```ts
+  { goal, entities, evidence, policy, options, reminder_plan }
+  ```
+  Used by Maestro sidecar previews and audit logs.
+- Indexes aligned to UI: Vault semantic index (content), metadata index (structured), activity/event index (timeline), template/clause library index (generation choices).
+- **Templates carry operational metadata**: required inputs, risk profile, recommended workflow, default reminder cadence, optional/required clauses, tone variants.
+
+---
+
+## PGW Alignment (26-week Post-GA plan snapshot)
+- **PGW1**: Responsive AppShell + UI consistency; layout slots ready for actionable widgets.  
+- **PGW2**: User Progress Narrator + Maestro quick-starts; viral loops; standard drill-down + action bar.  
+- **PGW3–6**: Operator-grade Maestro (action taxonomy, sidecar previews, Reminder v1, Action Context Pack scaffolding).  
+- **PGW7–26**: Scale connectors, deepen Workbench/Insights, harden reliability, expand action-centric RAG/evals.
 
 ---
 

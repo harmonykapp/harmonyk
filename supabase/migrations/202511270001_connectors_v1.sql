@@ -219,11 +219,39 @@ comment on table public.connector_files is
 
   'Normalised metadata for files/items fetched from external connectors.';
 
-comment on column public.connector_files.external_id is
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'connector_files'
+      AND column_name = 'external_id'
+  ) THEN
+    ALTER TABLE public.connector_files
+      ADD COLUMN external_id text;
+  END IF;
 
-  'Provider-specific id (e.g. Google Drive file id, Gmail message/thread id).';
+  COMMENT ON COLUMN public.connector_files.external_id IS
+    'Provider-specific id (e.g. Google Drive file id, Gmail message/thread id).';
+END $$;
 
-comment on column public.connector_files.meta_json is
 
-  'Raw provider metadata (owners, labels, attachment info, etc).';
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'connector_files'
+      AND column_name = 'meta_json'
+  ) THEN
+    ALTER TABLE public.connector_files
+      ADD COLUMN meta_json jsonb;
+  END IF;
+
+  COMMENT ON COLUMN public.connector_files.meta_json IS
+    'Raw provider metadata (owners, labels, attachment info, etc).';
+END $$;
+
 

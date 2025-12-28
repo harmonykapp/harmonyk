@@ -348,89 +348,116 @@ create index if not exists playbook_runs_playbook_created_at_idx
 -- RLS Policies
 -- =============================================================================
 
--- Enable RLS on playbooks
-alter table public.playbooks enable row level security;
+-- Enable RLS on playbooks (if table exists)
+DO $$
+BEGIN
+  IF to_regclass('public.playbooks') IS NOT NULL THEN
+    ALTER TABLE public.playbooks ENABLE ROW LEVEL SECURITY;
+  END IF;
+END $$;
 
--- RLS Policy: org members can select playbooks
-drop policy if exists playbooks_org_members_select on public.playbooks;
+-- Enable RLS on playbook_runs (if table exists)
+DO $$
+BEGIN
+  IF to_regclass('public.playbook_runs') IS NOT NULL THEN
+    ALTER TABLE public.playbook_runs ENABLE ROW LEVEL SECURITY;
+  END IF;
+END $$;
 
-create policy playbooks_org_members_select
-  on public.playbooks
-  for select
-  using (
-    exists (
-      select 1 from public.member m
-      where m.org_id = playbooks.org_id
-        and m.user_id = auth.uid()
-    )
-  );
+-- RLS Policies for playbooks: only create if member table exists
+DO $$
+BEGIN
+  IF to_regclass('public.playbooks') IS NOT NULL
+     AND to_regclass('public.member') IS NOT NULL THEN
 
--- RLS Policy: org members can insert playbooks
-drop policy if exists playbooks_org_members_insert on public.playbooks;
+    -- RLS Policy: org members can select playbooks
+    DROP POLICY IF EXISTS playbooks_org_members_select ON public.playbooks;
+    CREATE POLICY playbooks_org_members_select
+      ON public.playbooks
+      FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.member m
+          WHERE m.org_id = playbooks.org_id
+            AND m.user_id = auth.uid()
+        )
+      );
 
-create policy playbooks_org_members_insert
-  on public.playbooks
-  for insert
-  with check (
-    exists (
-      select 1 from public.member m
-      where m.org_id = playbooks.org_id
-        and m.user_id = auth.uid()
-    )
-  );
+    -- RLS Policy: org members can insert playbooks
+    DROP POLICY IF EXISTS playbooks_org_members_insert ON public.playbooks;
+    CREATE POLICY playbooks_org_members_insert
+      ON public.playbooks
+      FOR INSERT
+      WITH CHECK (
+        EXISTS (
+          SELECT 1
+          FROM public.member m
+          WHERE m.org_id = playbooks.org_id
+            AND m.user_id = auth.uid()
+        )
+      );
 
--- RLS Policy: org members can update playbooks
-drop policy if exists playbooks_org_members_update on public.playbooks;
+    -- RLS Policy: org members can update playbooks
+    DROP POLICY IF EXISTS playbooks_org_members_update ON public.playbooks;
+    CREATE POLICY playbooks_org_members_update
+      ON public.playbooks
+      FOR UPDATE
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.member m
+          WHERE m.org_id = playbooks.org_id
+            AND m.user_id = auth.uid()
+        )
+      )
+      WITH CHECK (
+        EXISTS (
+          SELECT 1
+          FROM public.member m
+          WHERE m.org_id = playbooks.org_id
+            AND m.user_id = auth.uid()
+        )
+      );
 
-create policy playbooks_org_members_update
-  on public.playbooks
-  for update
-  using (
-    exists (
-      select 1 from public.member m
-      where m.org_id = playbooks.org_id
-        and m.user_id = auth.uid()
-    )
-  )
-  with check (
-    exists (
-      select 1 from public.member m
-      where m.org_id = playbooks.org_id
-        and m.user_id = auth.uid()
-    )
-  );
+    -- RLS Policy: org members can delete playbooks
+    DROP POLICY IF EXISTS playbooks_org_members_delete ON public.playbooks;
+    CREATE POLICY playbooks_org_members_delete
+      ON public.playbooks
+      FOR DELETE
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.member m
+          WHERE m.org_id = playbooks.org_id
+            AND m.user_id = auth.uid()
+        )
+      );
 
--- RLS Policy: org members can delete playbooks
-drop policy if exists playbooks_org_members_delete on public.playbooks;
+  END IF;
+END $$;
 
-create policy playbooks_org_members_delete
-  on public.playbooks
-  for delete
-  using (
-    exists (
-      select 1 from public.member m
-      where m.org_id = playbooks.org_id
-        and m.user_id = auth.uid()
-    )
-  );
+-- RLS Policy for playbook_runs: org members can select runs
+DO $$
+BEGIN
+  IF to_regclass('public.playbook_runs') IS NOT NULL
+     AND to_regclass('public.member') IS NOT NULL THEN
 
--- Enable RLS on playbook_runs
-alter table public.playbook_runs enable row level security;
+    DROP POLICY IF EXISTS playbook_runs_org_members_select ON public.playbook_runs;
+    CREATE POLICY playbook_runs_org_members_select
+      ON public.playbook_runs
+      FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.member m
+          WHERE m.org_id = public.playbook_runs.org_id
+            AND m.user_id = auth.uid()
+        )
+      );
 
--- RLS Policy: org members can select playbook_runs
-drop policy if exists playbook_runs_org_members_select on public.playbook_runs;
+    -- Note: playbook_runs insert/update/delete should only be done by server-side code.
+    -- We do NOT create insert/update/delete policies for playbook_runs to enforce this.
 
-create policy playbook_runs_org_members_select
-  on public.playbook_runs
-  for select
-  using (
-    exists (
-      select 1 from public.member m
-      where m.org_id = playbook_runs.org_id
-        and m.user_id = auth.uid()
-    )
-  );
-
--- Note: playbook_runs insert/update/delete should only be done by server-side code
--- We do NOT create insert/update/delete policies for playbook_runs to enforce this.
-
+  END IF;
+END $$;
