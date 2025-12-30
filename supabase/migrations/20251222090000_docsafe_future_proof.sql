@@ -184,28 +184,26 @@ CREATE INDEX IF NOT EXISTS idx_docsafe_event_outbox_type_time
 
 DO $$
 BEGIN
-  -- documents
-  IF to_regclass('public.documents') IS NOT NULL THEN
+  -- document (canonical)
+  IF to_regclass('public.document') IS NOT NULL THEN
     EXECUTE $sql$
-      ALTER TABLE public.documents
+      ALTER TABLE public.document
         ADD COLUMN IF NOT EXISTS storage_backend public.docsafe_storage_backend NOT NULL DEFAULT 'harmonyk_standard',
-        ADD COLUMN IF NOT EXISTS external_object_id text,
-        ADD COLUMN IF NOT EXISTS classification text,
-        ADD COLUMN IF NOT EXISTS retention_policy_id uuid,
-        ADD COLUMN IF NOT EXISTS legal_hold boolean NOT NULL DEFAULT false
+        ADD COLUMN IF NOT EXISTS external_object_id text NULL
     $sql$;
 
     EXECUTE $sql$
       CREATE INDEX IF NOT EXISTS idx_documents_storage_backend
-        ON public.documents (storage_backend)
+        ON public.document (storage_backend)
     $sql$;
     EXECUTE $sql$
       CREATE INDEX IF NOT EXISTS idx_documents_external_object_id
-        ON public.documents (external_object_id)
+        ON public.document (external_object_id)
     $sql$;
+
   END IF;
 
-  -- document_versions (common names: document_versions OR versions)
+  -- versions (legacy names: document_versions OR versions; canonical name: version)
   IF to_regclass('public.document_versions') IS NOT NULL THEN
     EXECUTE $sql$
       ALTER TABLE public.document_versions
@@ -243,6 +241,25 @@ BEGIN
     EXECUTE $sql$
       CREATE INDEX IF NOT EXISTS idx_versions_proof_status
         ON public.versions (proof_status)
+    $sql$;
+  ELSIF to_regclass('public.version') IS NOT NULL THEN
+    EXECUTE $sql$
+      ALTER TABLE public.version
+        ADD COLUMN IF NOT EXISTS content_hash_sha256 text,
+        ADD COLUMN IF NOT EXISTS canonicalization_version text,
+        ADD COLUMN IF NOT EXISTS byte_size bigint,
+        ADD COLUMN IF NOT EXISTS proof_status public.docsafe_proof_status NOT NULL DEFAULT 'none',
+        ADD COLUMN IF NOT EXISTS proof_receipt_id text,
+        ADD COLUMN IF NOT EXISTS proof_root_id text
+    $sql$;
+
+    EXECUTE $sql$
+      CREATE INDEX IF NOT EXISTS idx_version_hash
+        ON public.version (content_hash_sha256)
+    $sql$;
+    EXECUTE $sql$
+      CREATE INDEX IF NOT EXISTS idx_version_proof_status
+        ON public.version (proof_status)
     $sql$;
   END IF;
 

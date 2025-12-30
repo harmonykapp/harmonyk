@@ -1,9 +1,9 @@
 "use client";
 
+import { MonoLite } from "@/components/mono/mono-lite";
+import useScrollEvents from "@/components/share/useScrollEvents";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import useScrollEvents from "@/components/share/useScrollEvents";
-import { MonoLite } from "@/components/mono/mono-lite";
 
 type ShareResponse = {
   title: string;
@@ -35,7 +35,7 @@ export default function ShareClient({ shareId }: Props) {
     setPasscodeError(null);
 
     try {
-      const res = await fetch(`/api/shares/render?id=${shareId}`, {
+      const res = await fetch(`/api/shares/render?id=${encodeURIComponent(shareId)}`, {
         credentials: "include",
         cache: "no-store",
       });

@@ -606,6 +606,11 @@ export default function TasksPage() {
                         <TableCell>
                           <Checkbox
                             checked={task.status === "done"}
+                            aria-label={
+                              task.status === "done"
+                                ? `Mark task "${task.title}" as open`
+                                : `Mark task "${task.title}" as done`
+                            }
                             onCheckedChange={(checked) => {
                               updateTaskStatus(task.id, checked ? "done" : "open");
                             }}
@@ -695,6 +700,11 @@ export default function TasksPage() {
                                 }
                               }}
                               title="Change due date"
+                              aria-label={
+                                task.due_at
+                                  ? `Change due date for "${task.title}"`
+                                  : `Set due date for "${task.title}"`
+                              }
                             >
                               <Clock className="h-4 w-4" />
                             </Button>

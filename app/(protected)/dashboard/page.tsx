@@ -1,9 +1,10 @@
 "use client";
 
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LEGACY_ONBOARDING_SEEN_KEY } from "@/lib/legacy-keys";
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
 import {
   AlertCircle,
@@ -216,12 +217,10 @@ export default function DashboardPage() {
 
   return (
     <div className="p-8 max-w-[1600px] mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Your document activity and insights at a glance
-        </p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Your document activity and insights at a glance"
+      />
 
       {showWelcome && (
         <div className="mb-4 rounded-lg border bg-card p-4 shadow-sm">
@@ -249,6 +248,7 @@ export default function DashboardPage() {
               size="icon"
               onClick={handleDismissWelcome}
               className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              aria-label="Dismiss welcome message"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -463,10 +463,10 @@ export default function DashboardPage() {
                 <div className="flex items-start gap-3">
                   <div
                     className={`h-2 w-2 rounded-full mt-2 flex-shrink-0 ${insight.priority === 'high'
-                        ? 'bg-red-500'
-                        : insight.priority === 'medium'
-                          ? 'bg-orange-500'
-                          : 'bg-blue-500'
+                      ? 'bg-red-500'
+                      : insight.priority === 'medium'
+                        ? 'bg-orange-500'
+                        : 'bg-blue-500'
                       }`}
                   />
                   <div className="flex-1 space-y-1 min-w-0">

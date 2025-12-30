@@ -170,9 +170,30 @@ Layout:
   - Tables may stack or use simpler list layouts.
   - Builder columns stack vertically.
 
-## 6. Implementation Notes
+## 6. Actionable Widgets Standard
+
+All first-class widgets (Dashboard, Workbench, Insights, Playbooks) must support:
+
+1) **Drill-down**: Click → filtered list/detail view
+2) **Action bar**: Appears with primary action + 2–3 alternative chips
+3) **Maestro sidecar**: Shows preview + "Why?" explanation + approve/execute controls
+
+Design tokens & slots:
+- `Widget.Header` — widget title and metadata
+- `Widget.Body` — main content/visualization
+- `Widget.Actions` — action bar with primary + chips
+- `Widget.Sidecar` — Maestro preview panel
+
+Sidecar behavior:
+- Desktop: opens inline (right side or overlay)
+- Mobile: full-height drawer
+- Always shows "Why?" explanation for proposed actions
+- Clear approve/execute controls with undo capability
+
+## 7. Implementation Notes
 
 - Tailwind dark mode should be configured using `class` strategy (`dark` class on `<html>`).
 - All core screens (Workbench, Builder, Vault, Share, Signatures) must respect light/dark colors and typography defined here.
 - Any new UI component that introduces a new color or style must be reflected back into this document.
+- All widgets must implement the Actionable Widgets Standard (section 6) for consistency.
 

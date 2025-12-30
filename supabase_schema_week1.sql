@@ -1,41 +1,59 @@
 -- supabase_schema_week1.sql
--- Week-1 schema snapshot for Harmonyk (dev; RLS OFF)
+-- DEPRECATED / DO NOT RUN (PGW1+)
+-- This file is kept ONLY as an early historical snapshot.
+-- Canonical schema is now managed by Supabase migrations under /supabase/migrations.
+-- If you try to run this in Supabase SQL editor, it will intentionally fail to prevent drift.
+
+DO $$
+BEGIN
+  RAISE EXCEPTION
+    'DEPRECATED: supabase_schema_week1.sql is a historical snapshot and must NOT be executed. Use /supabase/migrations as the source of truth.';
+END
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Everything below is retained for reference only.
+-- ---------------------------------------------------------------------------
+
 -- Create required extension(s)
 create extension if not exists pgcrypto;
 
 -- =====================================================
--- documents
+-- document
 -- =====================================================
-create table if not exists public.documents (
+create table if not exists public.document (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null,
   title text not null,
   status text not null check (status in ('draft','shared','signed','archived')),
   created_at timestamptz not null default now()
 );
-create index if not exists documents_owner_id_idx on public.documents (owner_id);
-create index if not exists documents_status_idx on public.documents (status);
+create index if not exists document_owner_id_idx on public.document (owner_id);
+create index if not exists document_status_idx on public.document (status);
 
 -- =====================================================
--- versions
+-- version
 -- =====================================================
-create table if not exists public.versions (
+create table if not exists public.version (
   id uuid primary key default gen_random_uuid(),
-  doc_id uuid not null references public.documents(id) on delete cascade,
+  document_id uuid not null references public.document(id) on delete cascade,
   number int not null,
-  content_url text not null,
+  content text not null,
   checksum text,
   created_at timestamptz not null default now(),
-  unique (doc_id, number)
+  unique (document_id, number)
 );
-create index if not exists versions_doc_id_idx on public.versions (doc_id);
+create index if not exists version_document_id_idx on public.version (document_id);
 
 -- =====================================================
--- shares
+-- shares (legacy early design; current implementation uses public.share_link)
 -- =====================================================
+-- NOTE: current canonical table is:
+--   public.share_link (id, org_id, document_id, version_id, token, passcode_hash, ...)
+-- This legacy table is intentionally not kept in sync.
 create table if not exists public.shares (
   id uuid primary key default gen_random_uuid(),
-  doc_id uuid not null references public.documents(id) on delete cascade,
+  doc_id uuid not null references public.document(id) on delete cascade,
   created_by uuid not null,
   access text not null check (access in ('public','passcode')),
   passcode_hash text,
@@ -51,7 +69,7 @@ create index if not exists shares_doc_id_expires_idx on public.shares (doc_id, e
 -- =====================================================
 create table if not exists public.events (
   id bigserial primary key,
-  doc_id uuid references public.documents(id) on delete set null,
+  doc_id uuid references public.document(id) on delete set null,
   event_type text not null check (event_type in ('view','download','share_created','analyze','preview')),
   actor uuid,
   meta_json jsonb not null default '{}'::jsonb,

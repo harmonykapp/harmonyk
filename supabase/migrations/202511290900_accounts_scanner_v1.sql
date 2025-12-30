@@ -43,7 +43,7 @@ BEGIN
       external_id text NOT NULL,
 
       -- Optional link to a Vault document if/when it is vaulted
-      vault_document_id uuid REFERENCES public.documents (id) ON DELETE SET NULL,
+      vault_document_id uuid REFERENCES public.document (id) ON DELETE SET NULL,
 
       -- Classification
       financial_doc_type public.financial_doc_type NOT NULL DEFAULT 'other',

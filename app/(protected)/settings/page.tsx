@@ -419,8 +419,8 @@ export default function SettingsPage() {
                   <div
                     key={plan.id}
                     className={`relative p-6 border-2 rounded-lg ${plan.current
-                        ? "border-primary bg-primary/5"
-                        : "border-border"
+                      ? "border-primary bg-primary/5"
+                      : "border-border"
                       }`}
                   >
                     {plan.current && (
@@ -524,7 +524,12 @@ export default function SettingsPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="font-semibold">{invoice.amount}</span>
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={`Download invoice ${invoice.id}`}
+                        aria-label={`Download invoice ${invoice.id}`}
+                      >
                         <Download className="h-4 w-4" />
                       </Button>
                     </div>

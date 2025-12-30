@@ -1,15 +1,18 @@
 // lib/google-token.ts
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 
 /**
  * Returns the Google OAuth access token from the current Supabase session,
- * or null if the user hasn't connected Google in /integrations.
+ * if available.
  */
 export async function getGoogleAccessToken(): Promise<string | null> {
-  const supabase = supabaseBrowser();
-  const { data } = await supabase.auth.getSession();
-  // Supabase exposes provider_token client-side for OAuth providers.
-  // @ts-expect-error: not in public typings
-  const token: string | undefined = data?.session?.provider_token;
-  return token ?? null;
+  // Safety: this helper must only run in the browser
+  if (typeof window === "undefined") return null;
+
+  const supabase = createBrowserSupabaseClient();
+  const { data, error } = await supabase.auth.getSession();
+  if (error) return null;
+
+  // Supabase stores the provider token on the session (Google OAuth access token)
+  return (data.session as any)?.provider_token ?? null;
 }

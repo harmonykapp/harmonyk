@@ -651,7 +651,7 @@ async function fetchDocumentsForOrg(
   // First attempt: filter by org_id for environments where documents is still
   // org-scoped. This is the desired GA shape.
   let { data, error } = await supabase
-    .from("documents")
+    .from("document")
     .select("id")
     .eq("org_id", orgId);
 
@@ -662,9 +662,9 @@ async function fetchDocumentsForOrg(
   if (
     error &&
     typeof error.message === "string" &&
-    error.message.includes("documents.org_id")
+    error.message.includes("document.org_id")
   ) {
-    const fallback = await supabase.from("documents").select("id");
+    const fallback = await supabase.from("document").select("id");
 
     if (fallback.error) {
       throw new Error(

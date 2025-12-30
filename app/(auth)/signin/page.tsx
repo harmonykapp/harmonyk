@@ -1,92 +1,106 @@
 ﻿"use client";
 
-import { useState } from "react";
-// If "@/lib/..." doesn't work, use: import { supabaseBrowser } from "../../..//../lib/supabase-browser";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
+import { useMemo, useState } from "react";
 
 export default function SignInPage() {
+  const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const isLocalhost =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+  const callbackUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/auth/callback?next=/vault`
+      : "/auth/callback?next=/vault";
 
   async function sendMagicLink(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("sending");
-    setMessage("");
-    const supabase = supabaseBrowser();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
-    });
-    if (error) {
-      setStatus("error");
-      setMessage(error.message);
-    } else {
-      setStatus("sent");
-      setMessage("Magic link sent. Check your email.");
+    setBusy(true);
+    setMsg(null);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: callbackUrl,
+        },
+      });
+      if (error) throw error;
+      setMsg(
+        isLocalhost
+          ? "Magic link sent (LOCAL). Open Mailpit at http://127.0.0.1:54324 and click it."
+          : "Magic link sent. Check your inbox.",
+      );
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "Failed to send magic link";
+      setMsg(text);
+    } finally {
+      setBusy(false);
     }
   }
 
-  async function signInWithGoogle() {
-    const supabase = supabaseBrowser();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/dashboard` },
-    });
-  }
-
   return (
-    <div style={{ maxWidth: 420, margin: "80px auto", fontFamily: "system-ui, sans-serif" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Sign in</h1>
+    <div className="mx-auto max-w-md p-6 space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold">Sign in</h1>
+        <p className="text-sm text-muted-foreground">
+          Use Google or a magic link. After auth you will return to /auth/callback.
+        </p>
+      </div>
 
+      {/* Google OAuth should work on localhost too (your Supabase Redirect URLs already allow it) */}
       <button
-        onClick={signInWithGoogle}
-        style={{
-          width: "100%",
-          padding: "10px 12px",
-          border: "1px solid #ccc",
-          borderRadius: 8,
-          cursor: "pointer",
-          marginBottom: 12,
+        className="w-full rounded-md border px-3 py-2 text-sm font-medium"
+        onClick={async () => {
+          setBusy(true);
+          setMsg(null);
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: { redirectTo: callbackUrl },
+          });
+          if (error) setMsg(error.message);
+          setBusy(false);
         }}
+        disabled={busy}
       >
         Continue with Google
       </button>
 
-      <div style={{ opacity: 0.6, fontSize: 12, margin: "8px 0" }}>or</div>
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-background px-2 text-muted-foreground">or</span>
+        </div>
+      </div>
 
-      <form onSubmit={sendMagicLink} style={{ display: "grid", gap: 12 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          <span>Email</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            style={{ padding: "10px 12px", border: "1px solid #ccc", borderRadius: 8 }}
-          />
-        </label>
+      <form onSubmit={sendMagicLink} className="space-y-3">
+        <label className="block text-sm font-medium">Email</label>
+        <input
+          className="w-full rounded-md border px-3 py-2 text-sm"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@company.com"
+          disabled={busy}
+        />
         <button
+          className="w-full rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium disabled:opacity-60"
           type="submit"
-          disabled={status === "sending" || email.trim() === ""}
-          style={{
-            padding: "10px 12px",
-            border: "1px solid #aa80ff",
-            background: "#aa80ff",
-            color: "#fff",
-            borderRadius: 8,
-            cursor: "pointer",
-            opacity: status === "sending" ? 0.6 : 1,
-          }}
+          disabled={busy || !email.trim()}
         >
-          {status === "sending" ? "Sending…" : "Send magic link"}
+          Send magic link
         </button>
       </form>
 
-      {message && (
-        <p style={{ marginTop: 12, color: status === "error" ? "#B00020" : "#2f6f2f" }}>
-          {message}
+      {msg && (
+        <p className={`text-sm ${msg.toLowerCase().includes("fail") ? "text-red-600" : "text-muted-foreground"}`}>
+          {msg}
         </p>
       )}
     </div>

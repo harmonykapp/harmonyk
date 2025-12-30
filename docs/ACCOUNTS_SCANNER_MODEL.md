@@ -68,7 +68,7 @@ This is primarily used for metadata on Accounts documents saved to Vault and for
 
 - `vault_document_id uuid`  
 
-  - Optional FK → `public.documents(id)` if/when the item is vaulted.
+  - Optional FK → `public.document(id)` if/when the item is vaulted.
 
 - `financial_doc_type financial_doc_type not null default 'other'`  
 

@@ -1,22 +1,35 @@
-# North Star — Product Definition (Harmonyk + Maestro)
+# Harmonyk North Star (SSOT)
 
-_This file defines the product vision, scope, and guardrails for GA and beyond. Updated 2025-12-20._
+## Post-GA UI + Maestro doctrine (SSOT)
+Harmonyk is not a chat app. It is a **document-first operating system** with **Maestro** as an operator.
+Prompts remain available, but **secondary**.
 
-## Mission
-Harmonyk is a **document-first operating system** that helps founders create, share, sign, and track business docs — and actually get outcomes — with **Maestro** as the operator.
+### 2026 AI UX Doctrine (Harmonyk + Maestro)
+- AI platforms will not be prompt-first. Prompts become a *secondary* input portal.
+- The primary UX is **predictive insights + optimized choices + execution + reminders**.
+- Maestro operates mainly through **UI actions embedded in pages** (buttons/chips), not chat.
+- The UI is personalised to each user's state, workload, and priorities.
 
----
+### 3-Layer Model (official)
+1) **Predictive Signals** (widgets surface what changed / what's blocked / what's due / what's risky)
+2) **Optimized Choices** (one primary action + 2–3 alternative chips + "Why?")
+3) **Execute + Remind** (Maestro prepares → user approves if needed → executes → follows up with reminders until completed)
 
-## 2026 AI UX Doctrine (Harmonyk + Maestro)
+Rule: **Prompt window stays available, but is never required** for the main workflow.
 
-> Prompts stay available, but are never required for main workflow.
+### Product UI standard: Actionable Widgets
+Every dashboard/workbench/insights widget must support:
+1) click → drill-down view (filtered list / detail)
+2) action bar appears with primary action + 2–3 chips
+3) Maestro "sidecar" can show preview + "Why?" + approve/execute
 
-1) **Predictive Signals** — widgets surface what changed / what's blocked / what's due / what's risky.  
-2) **Optimized Choices** — one primary action + 2–3 alternative chips + a short **"Why?"**.  
-3) **Execute + Remind** — Maestro prepares → user approves if needed → executes → **reminds** until done.
+### Reminder Layer (first-class)
+Maestro doesn't just propose/execute; it **reminds until outcomes happen**.
+- Reminder modes: Off / Manual (approve each) / Autopilot (approve once; within limits)
+- Guardrails: rate limits, stop conditions (signed/moved stage), mute/pause per doc/counterparty
 
-**Maestro operates mainly through UI actions embedded in pages (buttons/chips), not chat.**  
-The UI is personalised to each user's state, workload, and priorities.
+### Canonical reference docs
+- See: `docs/UI/MAESTRO_UX_DOCTRINE.md` (full spec + context pack + PGW alignment)
 
 ---
 
@@ -80,10 +93,10 @@ Move from prompt Q&A to **action-centric RAG**:
 ---
 
 ## PGW Alignment (26-week Post-GA plan snapshot)
-- **PGW1**: Responsive AppShell + UI consistency; layout slots ready for actionable widgets.  
-- **PGW2**: User Progress Narrator + Maestro quick-starts; viral loops; standard drill-down + action bar.  
-- **PGW3–6**: Operator-grade Maestro (action taxonomy, sidecar previews, Reminder v1, Action Context Pack scaffolding).  
-- **PGW7–26**: Scale connectors, deepen Workbench/Insights, harden reliability, expand action-centric RAG/evals.
+- **PGW1**: Stabilisation + schema correctness + core reliability (auth/share/vault); prepare UI surfaces for actionable widgets (layout slots, drill-down patterns).  
+- **PGW2**: Implement User Progress Narrator (Dashboard hero + Maestro quick-start chips); implement viral loops v1 (free collaborators, keep-a-copy, clone-template); standardize widget drill-down + action bar UX.  
+- **PGW3–6**: Operator-grade Maestro (action taxonomy, sidecar previews, Reminder v1, Action Context Pack scaffolding) + template operational metadata.  
+- **PGW7–26**: Scale connectors, deepen Workbench/Insights, reliability hardening, A/B refine action ranking, richer automation, mature action-centric RAG/evals.
 
 ---
 

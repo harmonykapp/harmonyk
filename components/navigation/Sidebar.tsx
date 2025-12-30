@@ -1,27 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import {
-  LayoutDashboard,
-  Layers,
-  Hammer,
-  Vault,
-  Play,
-  Share2,
-  FileSignature,
-  Settings,
-  Activity,
-  Plug,
-  BarChart3,
-  Calendar,
-  CheckSquare,
-  ChevronDown,
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
+import {
+  BarChart3,
+  CheckSquare,
+  ChevronDown,
+  Hammer,
+  Layers,
+  LayoutDashboard,
+  Play,
+  Plug,
+  Settings,
+  Share2,
+  Vault
+} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 type NavigationSubitem = {
   name: string;
@@ -71,10 +68,10 @@ export function Sidebar({ navOverride }: { navOverride?: NavItemOverride[] }) {
   // Convert navOverride to NavigationItem format
   const navigation: NavigationItem[] = navOverride
     ? navOverride.map((item) => ({
-        name: item.title,
-        href: item.href,
-        icon: (item.icon || LayoutDashboard) as LucideIcon,
-      }))
+      name: item.title,
+      href: item.href,
+      icon: (item.icon || LayoutDashboard) as LucideIcon,
+    }))
     : navigationDefault;
 
   return (
@@ -86,7 +83,7 @@ export function Sidebar({ navOverride }: { navOverride?: NavItemOverride[] }) {
             alt="Harmonyk"
             width={160}
             height={32}
-            className="block dark:hidden"
+            className="block h-8 w-auto dark:hidden"
             priority
             suppressHydrationWarning
           />
@@ -95,7 +92,7 @@ export function Sidebar({ navOverride }: { navOverride?: NavItemOverride[] }) {
             alt="Harmonyk"
             width={160}
             height={32}
-            className="hidden dark:block"
+            className="hidden h-8 w-auto dark:block"
             priority
             suppressHydrationWarning
           />

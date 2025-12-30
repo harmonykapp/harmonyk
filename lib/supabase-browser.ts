@@ -1,33 +1,37 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from "@/lib/supabase/database.types";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+let _browserClient: SupabaseClient<Database> | null = null;
 
-if (!supabaseUrl) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL for Supabase browser client');
-}
+/**
+ * Browser-only Supabase client (singleton).
+ * - Uses NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY (REMOTE)
+ * - detectSessionInUrl=true is required for magic-link + OAuth callback pages
+ */
+export function createBrowserSupabaseClient() {
+  if (_browserClient) return _browserClient;
 
-if (!anonKey) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY for Supabase browser client');
-}
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-let browserClient: SupabaseClient | null = null;
-
-function ensureBrowserClient(): SupabaseClient {
-  if (!browserClient) {
-    // These are checked at module load time, so they're guaranteed to be strings here
-    browserClient = createClient(supabaseUrl!, anonKey!);
+  if (!url || !anon) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY in environment",
+    );
   }
-  return browserClient;
+
+  _browserClient = createClient<Database>(url, anon, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
+
+  return _browserClient;
 }
 
-// Preferred name going forward
-export function getBrowserSupabaseClient(): SupabaseClient {
-  return ensureBrowserClient();
-}
-
-// Backwards-compatible export for existing imports:
-//   import { supabaseBrowser } from '@/lib/supabase-browser';
-export function supabaseBrowser(): SupabaseClient {
-  return ensureBrowserClient();
+// Back-compat alias (repo already imports this name in multiple places)
+export function getBrowserSupabaseClient() {
+  return createBrowserSupabaseClient();
 }

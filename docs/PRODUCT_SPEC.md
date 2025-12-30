@@ -54,11 +54,17 @@ Audit:
 ---
 
 ## 4) Viral Loops (Growth)
-1) **Free Collaborator role** (view/comment/suggest only)  
-2) **Keep a copy in your Vault** (post-view/sign CTA)  
-3) **Clone this template for yourself** (Smart Share CTA)  
-Events: `invite_collaborator`, `claim_signed_doc`, `clone_template`
-Guardrails: never block view/sign; optional CTAs.
+1) **Free Collaborator Role**
+   - Paid workspaces can invite unlimited free collaborators (view/comment/suggest only).
+2) **"Keep a copy in your Vault"**
+   - After viewing/signing, recipient gets an optional CTA to create a free workspace with the doc copied into their Vault.
+3) **"Clone this template for yourself"**
+   - Smart Share page offers optional CTA to spin up free workspace with the underlying template.
+
+Guardrails:
+- Never block view/sign.
+- CTAs are non-spammy + clearly separated from core action.
+- Instrument events: `invite_collaborator`, `claim_signed_doc`, `clone_template`.
 
 ---
 

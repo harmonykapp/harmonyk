@@ -1,74 +1,115 @@
-# NORTH_STAR_POST_GA.md — Harmonyk (post-GA vision, read-only during GA)
+# Harmonyk North Star (Post-GA) — SSOT
 
-## One-liner
+## Post-GA UI + Maestro Direction Update
+Updated: 2025-12-20  
+Scope: Post-GA definition + PGW1–PGW26 alignment + UI/AI philosophy shift
 
-**All your docs, wherever they live. One brain that actually follows through.**
+### 1) New Core UX Doctrine (Post-GA)
+#### 2026 AI UX Doctrine (Harmonyk + Maestro)
+- AI platforms will not be prompt-first. Prompts become a *secondary* input portal.
+- The primary UX is **predictive insights + optimized choices + execution + reminders**.
+- Maestro operates mainly through UI actions embedded in pages (buttons/chips), not chat.
+- The UI is personalised to each user's state, workload, and priorities.
 
-## Principles (unchanged)
+#### 3-Layer Model (official)
+1) **Predictive Signals** (widgets surface what changed / what's blocked / what's due / what's risky)
+2) **Optimized Choices** (one primary action + 2–3 alternative chips + "Why?")
+3) **Execute + Remind** (Maestro prepares → user approves if needed → executes → follows up with reminders until completed)
 
-- Document-first (contracts, decks, investor snapshots).  
+Rule: **Prompt window stays available, but is never required** for the main workflow.
 
-- Maestro is assistant, not autonomous (proposes; you approve).  
+---
 
-- Metadata-first ingestion; Vault-only semantics for RAG/search.  
+### 2) Concrete Product Feature Additions
+#### A) User Progress Narrator (Dashboard + Maestro Quick Starts)
+Per-user `UserProgressState` drives:
+- Dashboard hero ("Welcome {firstName}… next best step")
+- Maestro quick-start chips (state-aware)
 
-- Explainability + Undo on every AI/automation.
+States:
+- `ONBOARD_CONNECTORS`, `ONBOARD_IMPORT`, `ORGANISE_METADATA`,
+  `START_DEAL`, `ENABLE_AUTOMATION`, `MATURE_TODAY_FOCUS`
 
-## Big Objectives (first 90–180 days after GA)
+Each state produces:
+- one primary CTA + optional secondary CTA
+- 3–5 Maestro quick-start actions/prompts
 
-1) **Integrations:** ship a broad but sane set so Workbench is truly single-view.  
+This is the "no blank dashboard" solution.
 
-2) **Calendar-aware Tasks:** read **Google Calendar (RO first)** to time tasks and Playbooks.  
+#### B) Actionable Widgets Standard
+Every widget must support:
+1) click → drill-down view (filtered list / detail)
+2) action bar appears with primary action + chips
+3) Maestro sidecar shows preview + "Why?" + approve/execute
 
-3) **Playbooks v2:** accept external triggers (calendar, CRM, e-sign) and add outbound actions (Slack/Teams webhooks, email sequences).
+#### C) Reminder Layer (first-class)
+Maestro proposes/executes and **reminds**.
+- Reminder modes: Off / Manual / Autopilot
+- Guardrails: rate limits, stop conditions, mute/pause per doc/counterparty
 
-## Integration Strategy
+---
 
-**Tiers:** T0=metadata list · T1=+on-demand fetch→Vault · T2=+webhooks/deltas · T3=+actions/domain behaviors.  
+### 3) High-ROI Viral Loops (Low Complexity Only)
+1) **Free Collaborator Role** (view/comment/suggest only)
+2) **Keep a copy in your Vault** (recipient CTA after viewing/signing)
+3) **Clone this template for yourself** (share page CTA)
 
-**Phase 0 (3 days):** Connector SDK (OAuth wrapper, pagination/backoff, job contracts, metrics), UnifiedItem mapping, test harness, DoD checklist.  
+Guardrails:
+- Never block view/sign.
+- CTAs are non-spammy + clearly separated from core action.
+- Instrument events: `invite_collaborator`, `claim_signed_doc`, `clone_template`.
 
-**Phase 1 (2 weeks):** 6–8 Tier-0/1 connectors for wide visibility — Dropbox, OneDrive, Box, Notion, Slack, DocuSign, DocSend, **Google Calendar (RO)**.  
+---
 
-**Phase 2 (2–3 weeks):** deepen 4–6 to Tier-2 (webhooks/deltas) — Dropbox, Notion, Slack, OneDrive.  
+### 4) RAG + Template Strategy (Impacted by new UI)
+We are moving from prompt-based Q&A to **action-centric RAG**.
+Retrieval must support actions with:
+- Evidence (Vault content + citations)
+- Constraints (preferences/policy)
+- Entity context (docId/envelopeId/shareLinkId/taskId)
 
-**Phase 3 (3–4 weeks):** hard ones (pick 3–5) — SharePoint/Teams, HubSpot/Pipedrive, QuickBooks/Xero, Pitch.com, Airtable.
+Define "Action Context Pack" concept:
+- `{goal, entities, evidence, policy, options, reminder_plan}` as canonical input to Maestro, previews, and audit logs.
 
-**Top-20 targets (after Drive+Gmail):** Google Calendar, Dropbox, OneDrive, Box, Notion, Slack, DocuSign, DocSend, Adobe Sign, Dropbox Sign, Trello, Asana, HubSpot, Pipedrive, QuickBooks, Xero, Microsoft Teams, SharePoint, Pitch.com, Airtable.
+Indexing aligns to UI:
+- Vault semantic index (content)
+- metadata index (structured)
+- activity/event index (timeline)
+- internal template/clause library index (generation choices)
 
-## Calendar & Tasks
+Templates must carry operational metadata:
+- required inputs, risk profile, recommended workflow, default reminder cadence,
+  optional/required clauses, tone variants.
 
-- **Google Calendar (RO):** pull selected calendars; map Tasks to events; triggers like "After Board meeting → generate Investor Update deck."  
+---
 
-- **Privacy:** explicit calendar selection; don't copy private notes by default.  
+### 5) PGW1–PGW26 Plan Alignment (high-level)
+#### PGW1 — Foundation
+- Stabilisation + schema correctness + core reliability (auth/share/vault)
+- Prepare UI surfaces for actionable widgets (layout slots, drill-down patterns)
 
-- **Later:** optional write-back (event creation) behind clear opt-in.
+#### PGW2 — Guided UX + Viral v1
+- Implement User Progress Narrator (Dashboard hero + Maestro quick-start chips)
+- Implement viral loops v1 (free collaborators, keep-a-copy, clone-template)
+- Standardize widget drill-down + action bar UX
 
-## Playbooks (post-GA)
+#### PGW3–PGW6 — Operator-grade Maestro
+- Action taxonomy + execution previews ("Maestro sidecar")
+- Reminder system v1 (modes + guardrails + stop conditions)
+- Action-centric RAG scaffolding (Action Context Pack) + template operational metadata
 
-- New triggers: Calendar event, CRM stage change, 3rd-party e-sign completion.  
+#### PGW7–PGW26 — Scale + Depth
+- Expand connectors, deepen Workbench/Insights, reliability hardening, A/B refine action ranking,
+  richer automation, mature action-centric RAG/evals.
 
-- New actions: Slack/Teams webhooks, CRM notes, scheduled email sequences.  
+---
 
-- Still human-in-the-loop: Maestro drafts changes; user accepts.
+### 6) Ultimate Post-GA Definition
+Harmonyk is a **document-first operating system** with Maestro as an operator:
+- UI surfaces predictive signals
+- offers simple choices
+- executes with human-in-loop
+- reminds until outcomes happen
+Prompts remain available, but secondary.
 
-## UX notes
-
-- Workbench: connector filter chips, Saved Views (e.g., "Investor docs last 30d"), freshness badges.  
-
-- Integrations cards: scopes, state (Connected/Error/Reauth), last sync, throttle.  
-
-- Vault copy flow: always show **GB impact**; heavy media stays reference-only.
-
-## Packaging (initial stance)
-
-- Connector caps by plan (e.g., Free:1 · Starter:3 · Pro:6 · Team:12).  
-
-- Tier-2 (webhooks/deltas) unlocks on **Pro+**.
-
-## KPIs
-
-- Connect Rate (≥3 connectors/workspace), Coverage (items surfaced), Vault Lift (items copied), Time-to-Signal, Task Follow-through, Stability (<0.5% error/connector).
-
-> This file is guidance only until GA ships. Treat it as a roadmap, not scope.
-
+Canonical detail: `docs/UI/MAESTRO_UX_DOCTRINE.md`

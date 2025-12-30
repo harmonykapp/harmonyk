@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       accounts_expenses: {
@@ -1779,6 +1754,7 @@ export type Database = {
           label: string | null
           max_views: number | null
           org_id: string
+          passcode_hash: string | null
           require_email: boolean
           revoked_at: string | null
           token: string
@@ -1795,6 +1771,7 @@ export type Database = {
           label?: string | null
           max_views?: number | null
           org_id: string
+          passcode_hash?: string | null
           require_email?: boolean
           revoked_at?: string | null
           token: string
@@ -1811,6 +1788,7 @@ export type Database = {
           label?: string | null
           max_views?: number | null
           org_id?: string
+          passcode_hash?: string | null
           require_email?: boolean
           revoked_at?: string | null
           token?: string
@@ -2523,9 +2501,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       accounts_pack_status: ["success", "failure", "partial"],

@@ -1,191 +1,176 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import type { Database } from "@/lib/supabase/database.types";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { renderContent } from "@/lib/render";
-import { SHARE_PASSCODE_COOKIE_PREFIX, comparePasscodeHashes } from "@/lib/shares";
-import type { Version } from "@/lib/types";
 
-// Legacy share row type (for old "shares" table compatibility)
-type ShareRow = {
-  id: string;
-  doc_id: string | null;
-  access: "public" | "passcode";
-  passcode_hash?: string | null;
-  // Optional fields that may exist in some schemas
-  version_id?: string | null;
-  title?: string | null;
-  passcode_required?: boolean | null;
-};
+export const runtime = "nodejs";
 
-// Version row type that supports both old and new schema fields
-type VersionRow = Pick<Version, "id" | "title"> & {
-  name?: string | null;
-  content_url?: string | null;
-  content_md?: string | null;
-  body_md?: string | null;
-  markdown?: string | null;
-  md?: string | null;
-} & Record<string, unknown>;
+type ShareLinkRow = Database["public"]["Tables"]["share_link"]["Row"];
+type ShareLinkRowWithPasscode = ShareLinkRow & { passcode_hash?: string | null };
 
-function getSupabaseServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error("Missing Supabase credentials for share rendering");
-  }
-  return createClient(url, key);
+function withNoStore(resp: NextResponse) {
+  // Prevent caching at every layer (browser + CDN + Vercel)
+  resp.headers.set("Cache-Control", "no-store, max-age=0");
+  resp.headers.set("Pragma", "no-cache");
+  resp.headers.set("Expires", "0");
+  // Rendering can vary by passcode cookie state
+  resp.headers.set("Vary", "Cookie");
+  return resp;
 }
 
-function inferRequiresPasscode(share: ShareRow) {
-  // Use access field first (from base schema), then fallback to passcode_required or passcode_hash
-  if (share.access === "passcode") {
-    return true;
-  }
-  return Boolean(share.passcode_required || share.passcode_hash);
+function isLikelyHtml(s: string) {
+  const t = s.trim().toLowerCase();
+  return (
+    t.startsWith("<!doctype") ||
+    t.startsWith("<html") ||
+    t.startsWith("<div") ||
+    t.startsWith("<h1") ||
+    t.startsWith("<p")
+  );
 }
 
-async function resolveMarkdown(
-  supabase: SupabaseClient,
-  share: ShareRow
-): Promise<{ markdown: string; title: string; docId: string }> {
-  let versionId = share.version_id;
-  if (!versionId && share.doc_id) {
-    const { data: latest } = await supabase
-      .from("versions")
-      .select("id")
-      .eq("doc_id", share.doc_id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const latestId = (latest as { id?: string } | null)?.id;
-    versionId = typeof latestId === "string" ? latestId : null;
-  }
+function markdownToHtml(md: string) {
+  let html = md
+    .replace(/^# (.*$)/gim, "<h1>$1</h1>")
+    .replace(/^## (.*$)/gim, "<h2>$1</h2>")
+    .replace(/^### (.*$)/gim, "<h3>$1</h3>")
+    .replace(/^\* (.*$)/gim, "<li>$1</li>")
+    .replace(/^- (.*$)/gim, "<li>$1</li>")
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/`(.*?)`/g, "<code>$1</code>")
+    .replace(/\n\n/g, "</p><p>")
+    .replace(/\n/g, "<br>");
 
-  if (!versionId) {
-    throw new Error("NO_VERSION");
-  }
-
-  const { data } = await supabase.from("versions").select("*").eq("id", versionId).single();
-  const version = data as VersionRow | null;
-  if (!version) {
-    throw new Error("VERSION_NOT_FOUND");
-  }
-
-  const mdCandidates = ["content_md", "body_md", "markdown", "md"] as const;
-  let markdown: string | null = null;
-
-  for (const key of mdCandidates) {
-    const candidate = version[key];
-    if (typeof candidate === "string" && candidate.trim().length > 0) {
-      markdown = candidate;
-      break;
-    }
-  }
-
-  if (!markdown && typeof version.content_url === "string") {
-    const url = version.content_url;
-    if (url.startsWith("/generated/")) {
-      const abs = path.join(process.cwd(), "public", url.replace("/generated/", "generated/"));
-      try {
-        markdown = await fs.readFile(abs, "utf8");
-      } catch {
-        throw new Error("CONTENT_FILE_ERROR");
-      }
-    }
-  }
-
-  if (!markdown) {
-    throw new Error("NO_MARKDOWN");
-  }
-
-  const title = (share.title ?? version.title ?? version.name) || "Shared Document";
-
-  return { markdown, title, docId: share.doc_id ?? "" };
+  html = html.replace(/(<li>.*?<\/li>)/g, "<ul>$1</ul>");
+  return `<p>${html}</p>`;
 }
 
-async function ensurePasscodeAccess(share: ShareRow) {
-  if (!inferRequiresPasscode(share)) {
-    return true;
-  }
+async function getShareByTokenOrId(
+  admin: ReturnType<typeof createServerSupabaseClient>,
+  idOrToken: string
+) {
+  const { data, error } = await admin
+    .from("share_link")
+    .select("*")
+    .or(`token.eq.${idOrToken},id.eq.${idOrToken}`)
+    .maybeSingle<ShareLinkRowWithPasscode>();
 
-  const cookieStore = await cookies();
-  const cookieName = `${SHARE_PASSCODE_COOKIE_PREFIX}${share.id}`;
-  const cookieValue = cookieStore.get(cookieName)?.value;
-  if (!cookieValue) {
-    return false;
-  }
-
-  const storedHash = share.passcode_hash;
-  if (!storedHash) {
-    return true;
-  }
-
-  return comparePasscodeHashes(cookieValue, storedHash);
+  if (error) throw new Error(error.message);
+  return data ?? null;
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const id = req.nextUrl.searchParams.get("id");
-    if (!id) {
-      return NextResponse.json({ error: "Missing share id" }, { status: 400 });
+    const url = new URL(req.url);
+    const idOrToken = url.searchParams.get("id")?.trim() ?? "";
+    if (!idOrToken) {
+      return withNoStore(NextResponse.json({ error: "Missing id" }, { status: 400 }));
     }
 
-    const supabase = getSupabaseServiceClient();
-    // Select only base schema fields that are guaranteed to exist
-    // Optional fields (version_id, title, passcode_required) will be null if they don't exist
-    const { data: share, error } = await supabase
-      .from("shares")
-      .select("id, doc_id, access, passcode_hash")
-      .eq("id", id)
-      .single();
-
-    if (error || !share) {
-      // Log the actual error for debugging
-      console.error("Share lookup error:", error?.message || "No share found");
-      return NextResponse.json({ error: "Share not found" }, { status: 404 });
+    const admin = createServerSupabaseClient();
+    const share = await getShareByTokenOrId(admin, idOrToken);
+    if (!share) {
+      return withNoStore(NextResponse.json({ error: "Not found" }, { status: 404 }));
     }
 
-    // Create full share object with optional fields as null (they may not exist in schema)
-    const fullShare: ShareRow = {
-      ...share,
-      version_id: null,
-      title: null,
-      passcode_required: null,
-    };
-
-    const requiresPasscode = inferRequiresPasscode(fullShare);
-    const hasAccess = await ensurePasscodeAccess(fullShare);
-    if (requiresPasscode && !hasAccess) {
-      return NextResponse.json({ requiresPasscode: true }, { status: 401 });
+    // Revoked check
+    if (share.revoked_at) {
+      return withNoStore(NextResponse.json({ error: "Revoked" }, { status: 404 }));
     }
 
-    const { markdown, title, docId } = await resolveMarkdown(supabase, fullShare);
-    const { html } = renderContent(markdown, "md");
-
-    return NextResponse.json({
-      html,
-      title,
-      docId,
-      requiresPasscode: false,
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      if (error.message === "NO_VERSION") {
-        return NextResponse.json({ error: "No version for document" }, { status: 404 });
-      }
-      if (error.message === "VERSION_NOT_FOUND") {
-        return NextResponse.json({ error: "Version not found" }, { status: 404 });
-      }
-      if (error.message === "NO_MARKDOWN") {
-        return NextResponse.json({ error: "No content available" }, { status: 404 });
-      }
-      if (error.message === "CONTENT_FILE_ERROR") {
-        return NextResponse.json({ error: "Failed to load content file" }, { status: 500 });
+    // Expiry check
+    if (share.expires_at) {
+      const exp = new Date(share.expires_at).getTime();
+      if (Number.isFinite(exp) && Date.now() > exp) {
+        return withNoStore(NextResponse.json({ error: "Expired" }, { status: 404 }));
       }
     }
 
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    // Max views check (enforce before doing any work)
+    if (share.max_views !== null && share.max_views !== undefined) {
+      const max = Number(share.max_views);
+      const count = Number(share.view_count ?? 0);
+      if (Number.isFinite(max) && max >= 0 && count >= max) {
+        return withNoStore(NextResponse.json({ error: "Max views reached" }, { status: 404 }));
+      }
+    }
+
+    // Passcode gate:
+    // - NEW: enforced when passcode_hash exists
+    // - BACKCOMPAT: if require_email=true but passcode_hash missing, we still gate (older "passcode links")
+    const cookieStore = await cookies();
+    const unlocked = cookieStore.get(`share_unlocked_${share.id}`)?.value === "1";
+    const requiresPasscode = Boolean((share as ShareLinkRowWithPasscode).passcode_hash) || Boolean(share.require_email);
+    if (requiresPasscode && !unlocked) {
+      return withNoStore(NextResponse.json({ error: "Passcode required" }, { status: 401 }));
+    }
+
+    // View count increment (fail-open): if this update fails, we still render.
+    // NOTE: This is not perfectly race-free, but good enough for PGW1.
+    try {
+      const nextCount = Number(share.view_count ?? 0) + 1;
+      await admin
+        .from("share_link")
+        .update({ view_count: nextCount, updated_at: new Date().toISOString() })
+        .eq("id", share.id);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[shares/render] view_count increment failed (ignored)", err);
+    }
+
+    // Load doc title + pick version
+    const { data: doc, error: docErr } = await admin
+      .from("document")
+      .select("id, title, kind, current_version_id")
+      .eq("id", share.document_id)
+      .maybeSingle();
+
+    if (docErr) return withNoStore(NextResponse.json({ error: docErr.message }, { status: 500 }));
+    if (!doc) return withNoStore(NextResponse.json({ error: "Document not found" }, { status: 404 }));
+
+    let versionId = share.version_id ?? doc.current_version_id ?? null;
+
+    if (!versionId) {
+      const { data: latest, error: latestErr } = await admin
+        .from("version")
+        .select("id")
+        .eq("document_id", doc.id)
+        .order("number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestErr) return withNoStore(NextResponse.json({ error: latestErr.message }, { status: 500 }));
+      versionId = latest?.id ?? null;
+    }
+
+    if (!versionId) {
+      return withNoStore(NextResponse.json({ error: "No version available" }, { status: 404 }));
+    }
+
+    const { data: v, error: vErr } = await admin
+      .from("version")
+      .select("id, content")
+      .eq("id", versionId)
+      .maybeSingle();
+
+    if (vErr) return withNoStore(NextResponse.json({ error: vErr.message }, { status: 500 }));
+    if (!v?.content) return withNoStore(NextResponse.json({ error: "Empty content" }, { status: 404 }));
+
+    const content = String(v.content);
+    const html = isLikelyHtml(content) ? content : markdownToHtml(content);
+
+    return withNoStore(
+      NextResponse.json({
+        title: doc.title ?? "Document",
+        html,
+        docId: doc.id,
+        requiresPasscode,
+      }),
+    );
+  } catch (e: any) {
+    return withNoStore(
+      NextResponse.json({ error: e?.message ?? "Render failed" }, { status: 500 }),
+    );
   }
 }

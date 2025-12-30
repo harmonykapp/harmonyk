@@ -25,6 +25,7 @@ import type {
 import { analyzeItem } from "@/lib/ai/analyze";
 import type { AnalyzeResult } from "@/lib/ai/schemas";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { isFeatureEnabled as isFeatureEnabledFromFlags } from "@/lib/flags";
 import { handleApiError } from "@/lib/handle-api-error";
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
 import { logBuilderEvent } from "@/lib/telemetry/builder";
@@ -39,6 +40,7 @@ import {
   FileSignature,
   FileText,
   FolderOpen,
+  Image,
   Plus,
   Save,
   Search,
@@ -221,6 +223,7 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
   const { toast } = useToast();
   const router = useRouter();
   const monoTrainingEnabled = isFeatureEnabled("FEATURE_VAULT_EXPERIMENTAL_ACTIONS");
+  const visualAssistantEnabled = isFeatureEnabledFromFlags({ flag: "FEATURE_VISUAL_ASSISTANT" });
   const safeTemplates = Array.isArray(templates) ? templates : [];
   const safeClauses = Array.isArray(clauses) ? clauses : [];
   const safeDeckTemplates = Array.isArray(deckTemplates) ? deckTemplates : [];
@@ -1544,7 +1547,7 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
                     </Button>
                     <div>
                       <Badge variant="outline">{selectedTemplate.name}</Badge>
-                      <h1 className="text-2xl font-bold mt-2">New Document</h1>
+                      <h2 className="text-2xl font-semibold mt-2">New Document</h2>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -2201,6 +2204,24 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
       }
     };
 
+    // Handle generate visuals (Visual Assistant feature)
+    const handleGenerateVisuals = async () => {
+      if (generatedDeckSections.length === 0) {
+        toast({
+          title: "No content available",
+          description: "Please generate deck content first before generating visuals.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Visual Assistant (Coming Soon)",
+        description: "Slide visuals generation will be available in a future update. This feature is behind FEATURE_VISUAL_ASSISTANT flag.",
+      });
+      // TODO: Implement visual generation in PG-W11+
+    };
+
     // Build deck narrative for saving (combines all enabled sections)
     const buildDeckNarrative = (): string => {
       const enabledSections = deckOutlineSections
@@ -2748,6 +2769,16 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
                           <Save className="h-4 w-4 mr-2" />
                           {isSavingDeck ? "Saving..." : "Save Deck to Vault"}
                         </Button>
+                        {visualAssistantEnabled && generatedDeckSections.length > 0 && (
+                          <Button
+                            variant="outline"
+                            onClick={handleGenerateVisuals}
+                            className="w-full"
+                          >
+                            <Image className="h-4 w-4 mr-2" />
+                            Generate Visuals
+                          </Button>
+                        )}
                         {generatedDeckSections.length === 0 && (
                           <p className="text-xs text-muted-foreground text-center">
                             Generate a draft with Maestro before saving to Vault.
@@ -3055,9 +3086,9 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
           <div className="border-b p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h1 className="text-xl font-semibold">
+                <h2 className="text-xl font-semibold">
                   {isInboxView ? "Financial Inbox" : "Accounts Packs"}
-                </h1>
+                </h2>
                 {isInboxView ? (
                   <p className="text-xs text-muted-foreground">
                     Preview of classified financial documents from your connectors. No write actions yet.
@@ -3361,10 +3392,10 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
   return (
     <div className="h-full flex flex-col">
       {/* Builder Type Switcher */}
-      <div className="border-b bg-background px-6 pt-4 pb-2 flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Builder</h1>
-          <p className="text-xs text-muted-foreground">
+        <div className="border-b bg-background px-6 pt-4 pb-2 flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Builder</h1>
+            <p className="text-xs text-muted-foreground">
             Draft contracts, decks, and accounts packs from one workspace.
           </p>
         </div>

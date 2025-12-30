@@ -34,6 +34,21 @@ type ActionContextPack = {
 - Clear provenance chips for every snippet
 - Vault-first semantics; external docs only when explicitly imported or clearly marked
 
+## Template Operational Metadata
+Templates must carry operational metadata:
+- `required_inputs[]` — what fields/clauses must be provided
+- `risk_profile` — conservative/balanced/aggressive
+- `recommended_workflow` — suggested steps and approvals
+- `default_reminder_cadence` — when to remind (e.g., "3 days before renewal")
+- `optional_clauses[]` — clauses that can be added
+- `required_clauses[]` — clauses that must be included
+- `tone_variants[]` — available tone options (formal/friendly/neutral)
+
+Used by Maestro to:
+- Pre-configure sidecar actions & reminders
+- Suggest appropriate templates based on context
+- Generate Action Context Packs with proper defaults
+
 ## Evaluation
 - Golden Q&A/action sets per domain (Contracts/Decks/Accounts)
 - Regression checks on ranking & snippet accuracy

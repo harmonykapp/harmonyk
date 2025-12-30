@@ -435,9 +435,20 @@ export default function VaultPage() {
       .single();
 
     try {
+      // Get access token from the browser session and send it to the API.
+      const { data: sessionData } = await sb.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        throw new Error("No session access token found. Please sign in again.");
+      }
+
       const response = await fetch("/api/shares/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
           documentId: r.id,
           versionId: doc?.current_version_id ?? null,
@@ -516,6 +527,7 @@ export default function VaultPage() {
     }
     const pass = prompt("Set a passcode for this link:");
     if (!pass) return;
+    const passcodeHash = await sha256Hex(pass);
 
     const { data: doc } = await sb
       .from("document")
@@ -524,26 +536,47 @@ export default function VaultPage() {
       .single();
 
     try {
+      // Match onCreateLink: use bearer token so the server can auth even if cookies aren't present.
+      const { data: sessionData } = await sb.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        throw new Error("No session access token found. Please sign in again.");
+      }
+
       const response = await fetch("/api/shares/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
           documentId: r.id,
           versionId: doc?.current_version_id ?? null,
+          // Back-compat flag (still set), but real enforcement is passcode_hash.
           requireEmail: true,
+          passcodeHash,
         }),
       });
 
       if (!response.ok) {
         const status = response.status;
         let payload: { id?: string; url?: string; error?: string } = {};
-        try {
-          payload = await response.json();
-        } catch {
-          // Ignore JSON parse errors
-        }
+        let errorMessage = "Failed to create passcode link";
 
-        const errorMessage = payload?.error || "Failed to create passcode link";
+        try {
+          const text = await response.text();
+          if (text) {
+            try {
+              payload = JSON.parse(text) as { id?: string; url?: string; error?: string };
+              errorMessage = payload?.error || errorMessage;
+            } catch {
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          errorMessage = response.statusText || errorMessage;
+        }
 
         handleApiError({
           status,

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,13 +20,13 @@ import {
 import {
   AlertTriangle,
   ArrowUpRight,
-  Clock,
   FileSignature,
   FileText,
   Link2,
-  TrendingUp,
+  TrendingUp
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 type InsightDocKind = "contract" | "deck" | "financial";
 
@@ -258,36 +257,32 @@ export default function InsightsPage() {
           <button
             type="button"
             onClick={() => setKindFilter("all")}
-            className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-              kindFilter === "all" ? "bg-background text-foreground shadow-sm" : ""
-            }`}
+            className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${kindFilter === "all" ? "bg-background text-foreground shadow-sm" : ""
+              }`}
           >
             All
           </button>
           <button
             type="button"
             onClick={() => setKindFilter("contract")}
-            className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-              kindFilter === "contract" ? "bg-background text-foreground shadow-sm" : ""
-            }`}
+            className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${kindFilter === "contract" ? "bg-background text-foreground shadow-sm" : ""
+              }`}
           >
             Contracts
           </button>
           <button
             type="button"
             onClick={() => setKindFilter("deck")}
-            className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-              kindFilter === "deck" ? "bg-background text-foreground shadow-sm" : ""
-            }`}
+            className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${kindFilter === "deck" ? "bg-background text-foreground shadow-sm" : ""
+              }`}
           >
             Decks
           </button>
           <button
             type="button"
             onClick={() => setKindFilter("financial")}
-            className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-              kindFilter === "financial" ? "bg-background text-foreground shadow-sm" : ""
-            }`}
+            className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${kindFilter === "financial" ? "bg-background text-foreground shadow-sm" : ""
+              }`}
           >
             Financials
           </button>
@@ -392,6 +387,7 @@ export default function InsightsPage() {
                         size="icon"
                         className="h-8 w-8"
                         title="Open in Workbench"
+                        aria-label="Open in Workbench"
                       >
                         <ArrowUpRight className="h-4 w-4" />
                       </Button>

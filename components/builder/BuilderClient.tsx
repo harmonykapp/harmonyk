@@ -195,7 +195,7 @@ export default function BuilderClient({ templates, initialDoc }: Props) {
       <div className="page-header">
         <div>
           <p className="eyebrow">Contracts</p>
-          <h1>Builder</h1>
+          <h2 className="text-2xl font-semibold leading-tight">Builder</h2>
           <p className="text-secondary">
             {selected?.description ?? "Pick a template, personalize it, then save to Vault."}
           </p>
