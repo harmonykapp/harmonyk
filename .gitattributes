@@ -1,0 +1,7 @@
+# Ensure Supabase generated types are treated as text (prevents "binary" lint parsing issues)
+lib/supabase/database.types.ts text
+
+# General TS/TSX are text
+*.ts text
+*.tsx text
+
