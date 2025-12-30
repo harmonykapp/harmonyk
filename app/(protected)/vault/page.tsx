@@ -20,7 +20,7 @@ import { handleApiError } from "@/lib/handle-api-error";
 import { phCapture } from "@/lib/posthog-client";
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
 import { logBuilderEvent } from "@/lib/telemetry/builder";
-import type { Document, Version } from "@/lib/types";
+import type { Version } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
   Archive,
@@ -109,6 +109,12 @@ export default function VaultPage() {
   const ragEnabled = isRagEnabled();
   const { toast } = useToast();
   const sb = useMemo(() => getBrowserSupabaseClient(), []);
+  // NOTE:
+  // `next build` is using a generated Database typing where "document", "version", and "events"
+  // are NOT present in the union of allowed tables (even though they exist at runtime).
+  // Use an untyped handle in this file to avoid TS overload failures.
+  // This does NOT change runtime behavior — it only bypasses incorrect type unions.
+  const sbAny: any = sb;
   const router = useRouter();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -183,12 +189,11 @@ export default function VaultPage() {
         return;
       }
 
-      const { data: docs, error: docsErr } = await sb
+      const { data: docs, error: docsErr } = await sbAny
         .from("document")
         .select("id, org_id, owner_id, title, kind, status, created_at, updated_at, current_version_id")
         .eq("owner_id", userId)
-        .order("created_at", { ascending: false })
-        .returns<Document[]>();
+        .order("created_at", { ascending: false });
 
       if (cancelled) return;
 
@@ -213,13 +218,12 @@ export default function VaultPage() {
         return;
       }
 
-      const ids = docs.map((d) => d.id);
-      const { data: versions, error: vErr } = await sb
+      const ids = docs.map((d: any) => d.id);
+      const { data: versions, error: vErr } = await sbAny
         .from("version")
         .select("document_id, number, content, created_at")
         .in("document_id", ids)
-        .order("number", { ascending: false })
-        .returns<Pick<Version, "document_id" | "number" | "content" | "created_at">[]>();
+        .order("number", { ascending: false });
 
       if (cancelled) return;
 
@@ -243,7 +247,7 @@ export default function VaultPage() {
         { latest?: VersionSummary; count: number; updatedAt: string }
       >();
 
-      versions?.forEach((v) => {
+      versions?.forEach((v: any) => {
         const current = info.get(v.document_id) ?? { latest: undefined, count: 0, updatedAt: "" };
         current.count += 1;
         if (!current.latest || v.number > current.latest.number) {
@@ -255,7 +259,7 @@ export default function VaultPage() {
         info.set(v.document_id, current);
       });
 
-      const merged: Row[] = (docs ?? []).map((d) => {
+      const merged: Row[] = (docs ?? []).map((d: any) => {
         const meta = info.get(d.id) ?? { latest: undefined, count: 0, updatedAt: d.created_at };
         return {
           id: d.id,
@@ -286,7 +290,7 @@ export default function VaultPage() {
   ) {
     if (!userId) return;
     const metaPayload: EventMeta = meta ? { from: "vault", ...meta } : { from: "vault" };
-    const { error } = await sb.from("events").insert({
+    const { error } = await sbAny.from("events").insert({
       doc_id: docId,
       event_type: type,
       actor: userId,
@@ -428,7 +432,7 @@ export default function VaultPage() {
       return;
     }
 
-    const { data: doc } = await sb
+    const { data: doc } = await sbAny
       .from("document")
       .select("current_version_id")
       .eq("id", r.id)
@@ -529,7 +533,7 @@ export default function VaultPage() {
     if (!pass) return;
     const passcodeHash = await sha256Hex(pass);
 
-    const { data: doc } = await sb
+    const { data: doc } = await sbAny
       .from("document")
       .select("current_version_id")
       .eq("id", r.id)
@@ -645,11 +649,11 @@ export default function VaultPage() {
     try {
       setIsSendingForSignature(true);
 
-      const { data: docRow, error: docErr } = await sb
+      const { data: docRow, error: docErr } = await sbAny
         .from("document")
         .select("current_version_id")
         .eq("id", doc.id)
-        .single<{ current_version_id: string | null }>();
+        .single();
 
       if (docErr) {
         const errorMessage = docErr.message;

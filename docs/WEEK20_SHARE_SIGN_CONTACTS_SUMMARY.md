@@ -72,7 +72,9 @@
 
 - Replace demo data with real **Share Links** table backed by:
 
-  - `public.shares` (or equivalent) for link metadata
+  - `public.share_link` for share-link metadata (canonical)
+    - Note: legacy snapshot tables like `public.shares/public.documents/public.versions`
+      are archived under `docs/legacy/` only and must not be used by Harmonyk code.
 
   - Aggregated events for views/downloads.
 

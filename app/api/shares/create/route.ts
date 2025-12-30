@@ -131,7 +131,13 @@ export async function POST(req: NextRequest) {
       : supabase;
 
     // Preflight: ensure the document exists & is visible to the current user, and get its org_id.
-    const { data: docRow, error: docErr } = await userDb
+    // NOTE:
+    // `next build` is currently type-checking Supabase with a Database union that
+    // does not include "document"/"version" even though they exist at runtime.
+    // Use an untyped handle here to avoid TS overload failures during build.
+    const userDbAny: any = userDb;
+
+    const { data: docRow, error: docErr } = await userDbAny
       .from("document")
       .select("id, org_id")
       .eq("id", body.documentId)
@@ -163,7 +169,7 @@ export async function POST(req: NextRequest) {
 
     // If versionId was provided, validate it exists and belongs to the document (user-visible).
     if (body.versionId) {
-      const { data: vRow, error: vErr } = await userDb
+      const { data: vRow, error: vErr } = await userDbAny
         .from("version")
         .select("id, document_id")
         .eq("id", body.versionId)

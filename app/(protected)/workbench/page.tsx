@@ -87,6 +87,11 @@ const statusColors: Record<string, string> = {
 export default function WorkbenchPage() {
   const { toast } = useToast();
   const sb = useMemo(() => getBrowserSupabaseClient(), []);
+  // NOTE:
+  // `next build` is currently type-checking Supabase with a Database union that
+  // does not include "document"/"version" even though they exist at runtime.
+  // Use an untyped handle in this page to avoid TS overload failures.
+  const sbAny: any = sb;
   const connectorsExtraEnabled = isFeatureEnabled("FEATURE_CONNECTORS_EXTRA");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -122,7 +127,7 @@ export default function WorkbenchPage() {
           return;
         }
 
-        const { data, error } = await sb
+        const { data, error } = await sbAny
           .from("document")
           .select("id")
           .eq("owner_id", user.id)

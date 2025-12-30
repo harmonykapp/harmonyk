@@ -220,7 +220,9 @@ Use a code search for markers like `"STUB"`, `"stub"`, `"TODO"`, `"DEV ONLY"`, `
 - [ ] \dev\harmonyk\harmonyk\lib\playbooks\engine.ts - stub
 - [ ] \dev\harmonyk\harmonyk\lib\rag\index.ts - stub
 - [ ] \dev\harmonyk\harmonyk\lib\telemetry\builder.ts - stub
-- [ ] \dev\harmonyk\harmonyk\supabase_schema_week1.sql - todo
+- [x] docs/legacy/supabase_schema_week1.sql
+  - Archived historical snapshot (Week 1). Do NOT execute.
+  - `/supabase/migrations/*` is the source of truth.
 - [ ] \dev\harmonyk\harmonyk\app\(protected)\share\page.tsx - todo
 - [ ] \dev\harmonyk\harmonyk\app\api\connectors\drive\callback\route.ts - todo
 - [ ] \dev\harmonyk\harmonyk\app\api\mono\route.ts - todo
