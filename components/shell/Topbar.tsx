@@ -13,9 +13,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { getBrowserSupabaseClient } from '@/lib/supabase-browser';
+import { getPageTitle } from '@/lib/ui/page-titles';
 import { tokens } from '@/lib/ui/tokens';
 import { Moon, Search, Sparkles, Sun } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface TopbarProps {
@@ -26,6 +27,8 @@ interface TopbarProps {
 export function Topbar({ onMonoToggle, monoOpen }: TopbarProps) {
   const { setTheme, theme } = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
+  const pageTitle = getPageTitle(pathname);
   const [user, setUser] = useState<{ name: string; email: string; initials: string } | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -66,19 +69,24 @@ export function Topbar({ onMonoToggle, monoOpen }: TopbarProps) {
       style={{ height: tokens.layout.topbarHeight }}
       suppressHydrationWarning
     >
-      <div className="flex-1 max-w-md" suppressHydrationWarning>
-        <div className="relative" suppressHydrationWarning>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" style={{ width: tokens.iconSize.sm, height: tokens.iconSize.sm }} />
-          <Input
-            type="search"
-            placeholder="Search docs, tasks, or threads..."
-            className="pl-9 w-full"
-            suppressHydrationWarning
-          />
+      <div className="flex items-center gap-4 w-full">
+        <div className="min-w-[140px] max-w-[220px]">
+          <div className="text-lg font-semibold leading-none truncate">{pageTitle}</div>
         </div>
-      </div>
 
-      <div className="flex items-center" style={{ gap: tokens.spacing[2] }} suppressHydrationWarning>
+        <div className="flex-1 max-w-md" suppressHydrationWarning>
+          <div className="relative" suppressHydrationWarning>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" style={{ width: tokens.iconSize.sm, height: tokens.iconSize.sm }} />
+            <Input
+              type="search"
+              placeholder="Search docs, tasks, or threads..."
+              className="pl-9 w-full"
+              suppressHydrationWarning
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center" style={{ gap: tokens.spacing[2] }} suppressHydrationWarning>
         <div suppressHydrationWarning>
           <Button
             variant={monoOpen ? 'default' : 'outline'}
@@ -142,6 +150,7 @@ export function Topbar({ onMonoToggle, monoOpen }: TopbarProps) {
             </Button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
