@@ -17,7 +17,6 @@ import {
   Settings,
   Share2,
   Vault,
-  X,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -30,6 +29,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 type NavigationItem = {
   name: string;
@@ -59,6 +64,60 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const renderNavItem = (item: NavigationItem, isMobile = false) => {
+    const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
+    const Icon = item.icon;
+
+    const linkContent = (
+      <Link
+        key={item.name}
+        href={item.href}
+        onClick={isMobile ? () => setMobileOpen(false) : undefined}
+        className={cn(
+          'flex items-center rounded-lg text-sm transition-all relative',
+          collapsed && !isMobile ? 'justify-center p-3' : 'gap-3 px-3 py-2.5',
+          isActive
+            ? 'bg-sidebar-active text-primary font-semibold'
+            : 'text-sidebar-foreground hover:bg-sidebar-active/50 hover:text-sidebar-foreground font-medium'
+        )}
+        suppressHydrationWarning
+      >
+        {isActive && !isMobile && (
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 bg-primary rounded-r-full"
+            style={{ height: '60%' }}
+          />
+        )}
+        {isActive && isMobile && (
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 bg-primary rounded-r-full"
+            style={{ height: '60%' }}
+          />
+        )}
+        <Icon
+          style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }}
+          className="flex-shrink-0"
+        />
+        {(!collapsed || isMobile) && <span>{item.name}</span>}
+      </Link>
+    );
+
+    if (collapsed && !isMobile) {
+      return (
+        <Tooltip key={item.name} delayDuration={0}>
+          <TooltipTrigger asChild>
+            {linkContent}
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8}>
+            <p>{item.name}</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return linkContent;
+  };
+
   return (
     <>
       <Button
@@ -72,14 +131,19 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
       <aside
         className={cn(
-          'hidden lg:flex flex-col bg-sidebar border-r transition-all duration-300',
-          collapsed ? 'w-16' : 'w-64'
+          'hidden lg:flex flex-col bg-sidebar border-r transition-all duration-300 ease-in-out'
         )}
-        style={{ height: '100vh' }}
+        style={{
+          height: '100vh',
+          width: collapsed ? '64px' : '256px',
+        }}
         suppressHydrationWarning
       >
         <div
-          className={cn('border-b flex items-center', collapsed ? 'justify-center px-2' : 'px-6')}
+          className={cn(
+            'border-b flex items-center transition-all duration-300',
+            collapsed ? 'justify-center px-2' : 'px-6'
+          )}
           style={{ height: tokens.layout.topbarHeight }}
           suppressHydrationWarning
         >
@@ -120,58 +184,62 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto" style={{ padding: tokens.spacing[3] }} suppressHydrationWarning>
-          <div className="space-y-1">
-            {navigationDefault.map((item) => {
-              const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
-              const Icon = item.icon;
+        <TooltipProvider>
+          <nav
+            className="flex-1 overflow-y-auto"
+            style={{ padding: tokens.spacing[3] }}
+            suppressHydrationWarning
+          >
+            <div className="space-y-1">
+              {navigationDefault.map((item) => renderNavItem(item, false))}
+            </div>
+          </nav>
 
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    'flex items-center rounded-lg text-sm font-medium transition-colors',
-                    collapsed ? 'justify-center p-3' : 'gap-3 px-3 py-2.5',
-                    isActive
-                      ? 'bg-sidebar-active text-primary'
-                      : 'text-sidebar-foreground hover:bg-sidebar-active/50 hover:text-sidebar-foreground'
-                  )}
-                  title={collapsed ? item.name : undefined}
-                  suppressHydrationWarning
-                >
-                  <Icon style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
-                  {!collapsed && <span>{item.name}</span>}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-
-        {onToggle && (
-          <div className="border-t" style={{ padding: tokens.spacing[3] }}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggle}
-              className={cn('w-full', collapsed && 'px-2')}
-            >
-              {collapsed ? (
-                <ChevronRight style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
-              ) : (
-                <>
-                  <ChevronLeft style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
-                  <span className="ml-2">Collapse</span>
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+          {onToggle && (
+            <div className="border-t" style={{ padding: tokens.spacing[2] }}>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onToggle}
+                    className={cn(
+                      'w-full transition-all duration-300',
+                      collapsed ? 'px-0 justify-center' : 'justify-start'
+                    )}
+                  >
+                    {collapsed ? (
+                      <ChevronRight style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
+                    ) : (
+                      <>
+                        <ChevronLeft style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
+                        <span className="ml-2">Collapse</span>
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                {collapsed && (
+                  <TooltipContent side="right" sideOffset={8}>
+                    <p>Expand sidebar</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </div>
+          )}
+        </TooltipProvider>
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-64 p-0">
-          <SheetHeader className="border-b px-6" style={{ height: tokens.layout.topbarHeight, display: 'flex', alignItems: 'center' }}>
+          <SheetHeader
+            className="border-b px-6"
+            style={{
+              height: tokens.layout.topbarHeight,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
             <SheetTitle>
               <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
                 <Image
@@ -193,29 +261,15 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
               </Link>
             </SheetTitle>
           </SheetHeader>
-          <nav className="overflow-y-auto" style={{ padding: tokens.spacing[3], height: `calc(100vh - ${tokens.layout.topbarHeight})` }}>
+          <nav
+            className="overflow-y-auto"
+            style={{
+              padding: tokens.spacing[3],
+              height: `calc(100vh - ${tokens.layout.topbarHeight})`,
+            }}
+          >
             <div className="space-y-1">
-              {navigationDefault.map((item) => {
-                const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
-                const Icon = item.icon;
-
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-sidebar-active text-primary'
-                        : 'text-sidebar-foreground hover:bg-sidebar-active/50 hover:text-sidebar-foreground'
-                    )}
-                  >
-                    <Icon style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
-                    <span>{item.name}</span>
-                  </Link>
-                );
-              })}
+              {navigationDefault.map((item) => renderNavItem(item, true))}
             </div>
           </nav>
         </SheetContent>
