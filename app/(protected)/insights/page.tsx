@@ -179,18 +179,6 @@ export default function InsightsPage() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      {/* Heading + tagline */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Insights</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          See opens, shares, signatures, and stuck deals.
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          This dashboard gives you a read-only view of how documents are moving. At GA, all
-          activity is still triggered from Workbench, Vault, Share Hub, and Signatures.
-        </p>
-      </div>
-
       {/* Summary cards */}
       <div className="grid gap-6 md:grid-cols-4">
         <Card>

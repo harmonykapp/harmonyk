@@ -215,13 +215,6 @@ export default function PlaybooksPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      {/* Heading + optional tabs scaffold for consistency */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Playbooks</h1>
-          <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
-          One-click automated workflows for repeatable tasks.
-        </p>
-      </div>
       <div suppressHydrationWarning>
         {tabsHydrationReady ? (
           <Tabs defaultValue="overview" className="w-full">

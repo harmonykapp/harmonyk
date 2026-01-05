@@ -71,7 +71,7 @@ export function Topbar({ onMonoToggle, monoOpen }: TopbarProps) {
     >
       <div className="flex items-center gap-4 w-full">
         <div className="min-w-[140px] max-w-[220px]">
-          <div className="text-lg font-semibold leading-none truncate">{pageTitle}</div>
+          <div className="text-xl font-semibold tracking-tight truncate">{pageTitle}</div>
         </div>
 
         <div className="flex-1 max-w-md" suppressHydrationWarning>

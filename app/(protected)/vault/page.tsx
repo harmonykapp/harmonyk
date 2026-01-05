@@ -1041,18 +1041,8 @@ export default function VaultPage() {
   if (rows === null && !loading && !err) {
     return (
       <div className="h-full flex flex-col">
-        {/* Heading + tagline */}
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-4 border-b">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vault</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Find docs by categories, tags, people, or activity.
-            </p>
-          </div>
-        </div>
-
         {/* Top tabs (My Files / My Drafts) — second tab links to Workbench drafts */}
-        <div className="px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-8 pt-4">
           <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
             <Link
               href="/vault"
@@ -1088,18 +1078,8 @@ export default function VaultPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Heading + tagline */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-4 border-b">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vault</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Find docs by categories, tags, people, or activity.
-          </p>
-        </div>
-      </div>
-
       {/* Top tabs (My Files / My Drafts) — second tab links to Workbench drafts */}
-      <div className="px-4 sm:px-6 lg:px-8">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4">
         <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
           <Link
             href="/vault"

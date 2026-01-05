@@ -260,27 +260,6 @@ export default function SharePage() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      {/* Heading + tagline */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Share Hub</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Right documents. Right people. Right now.
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Free plan: up to {FREE_SHARE_LINK_LIMIT} active share links. Starter, Pro, and Teams
-          plans have effectively unlimited share links.
-        </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {isDemoEnvironment ? (
-            <>You currently have{" "}
-              <span className="font-mono">{activeLinks}</span> active link
-              {activeLinks === 1 ? "" : "s"} in this demo environment.</>
-          ) : (
-            <>Share link management from this page is a post-GA enhancement. Existing share and signature flows remain available from Builder and Vault.</>
-          )}
-        </p>
-      </div>
-
       {/* Top tabs: Overview / Share Links / Signatures / Contacts */}
       <div className="w-fit">
         <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">

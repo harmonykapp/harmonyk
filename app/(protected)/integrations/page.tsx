@@ -338,24 +338,7 @@ export default function IntegrationsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
       <header className="mb-2">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Integrations</h1>
-            <p className="mt-1 text-sm text-neutral-400">
-              Connect Harmonyk to your external tools. Drive imports can be synced on demand.
-            </p>
-            <p className="mt-1 text-xs text-neutral-500">
-              Pro plan: up to {CONNECTED_SOURCE_LIMIT} connected sources.{" "}
-              <span className="font-mono">
-                {connectedSources}/{CONNECTED_SOURCE_LIMIT} used
-              </span>
-              {remainingSources > 0 && (
-                <span className="ml-1">
-                  · {remainingSources} remaining
-                </span>
-              )}
-            </p>
-          </div>
+        <div className="flex items-end justify-end gap-4">
           <a
             href="/activity?groups=connectors"
             className="inline-flex items-center rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-50 hover:bg-neutral-800 transition"
