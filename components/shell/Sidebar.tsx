@@ -170,13 +170,22 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             </Link>
           )}
           {collapsed && (
-            <Link href="/dashboard" suppressHydrationWarning>
+            <Link href="/dashboard" className="flex items-center" suppressHydrationWarning>
               <Image
-                src="/brand/harmonyk-mark.png"
+                src="/brand/harmonyk-logo-horizontal_icononly.png"
                 alt="Harmonyk"
                 width={32}
                 height={32}
-                className="h-8 w-8"
+                className="block h-8 w-8 dark:hidden"
+                priority
+                suppressHydrationWarning
+              />
+              <Image
+                src="/brand/harmonyk-logo-horizontal-dark-icononly.png"
+                alt="Harmonyk"
+                width={32}
+                height={32}
+                className="hidden h-8 w-8 dark:block"
                 priority
                 suppressHydrationWarning
               />
