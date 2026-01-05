@@ -173,7 +173,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             </Link>
           )}
           {collapsed && (
-            <Link href="/dashboard" className="flex items-center justify-center" suppressHydrationWarning>
+            <Link href="/dashboard" className="flex items-center justify-center w-full" suppressHydrationWarning>
               <Image
                 src="/brand/harmonyk-logo-horizontal_icononly.png"
                 alt="Harmonyk"
