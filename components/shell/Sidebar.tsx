@@ -131,7 +131,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
       <aside
         className={cn(
-          'hidden lg:flex flex-col bg-sidebar border-r transition-all duration-300 ease-in-out'
+          'hidden lg:flex flex-col bg-sidebar border-r transition-[width] duration-200 ease-in-out'
         )}
         style={{
           height: '100vh',
@@ -141,10 +141,13 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       >
         <div
           className={cn(
-            'border-b flex items-center transition-all duration-300',
-            collapsed ? 'justify-center px-2' : 'px-6'
+            'border-b flex items-center transition-all duration-200',
+            collapsed ? 'justify-center' : ''
           )}
-          style={{ height: tokens.layout.topbarHeight }}
+          style={{
+            height: tokens.layout.topbarHeight,
+            padding: collapsed ? tokens.spacing[3] : `${tokens.spacing[4]} ${tokens.spacing[3]}`,
+          }}
           suppressHydrationWarning
         >
           {!collapsed && (
@@ -170,7 +173,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             </Link>
           )}
           {collapsed && (
-            <Link href="/dashboard" className="flex items-center" suppressHydrationWarning>
+            <Link href="/dashboard" className="flex items-center justify-center" suppressHydrationWarning>
               <Image
                 src="/brand/harmonyk-logo-horizontal_icononly.png"
                 alt="Harmonyk"
@@ -205,7 +208,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           </nav>
 
           {onToggle && (
-            <div className="border-t" style={{ padding: tokens.spacing[2] }}>
+            <div className="border-t" style={{ padding: tokens.spacing[3] }}>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
@@ -213,9 +216,10 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                     size="sm"
                     onClick={onToggle}
                     className={cn(
-                      'w-full transition-all duration-300',
-                      collapsed ? 'px-0 justify-center' : 'justify-start'
+                      'w-full transition-all duration-200',
+                      collapsed ? 'justify-center p-3' : 'justify-start px-3 py-2.5'
                     )}
+                    aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                   >
                     {collapsed ? (
                       <ChevronRight style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
@@ -227,11 +231,9 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                     )}
                   </Button>
                 </TooltipTrigger>
-                {collapsed && (
-                  <TooltipContent side="right" sideOffset={8}>
-                    <p>Expand sidebar</p>
-                  </TooltipContent>
-                )}
+                <TooltipContent side="right" sideOffset={8}>
+                  <p>{collapsed ? 'Expand sidebar' : 'Collapse sidebar'}</p>
+                </TooltipContent>
               </Tooltip>
             </div>
           )}
