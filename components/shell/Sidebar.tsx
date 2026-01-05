@@ -8,9 +8,9 @@ import {
   CheckSquare,
   ChevronLeft,
   ChevronRight,
+  Gauge,
   Hammer,
   Layers,
-  LayoutDashboard,
   Menu,
   Play,
   Plug,
@@ -43,7 +43,7 @@ type NavigationItem = {
 };
 
 const navigationDefault: NavigationItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: Gauge },
   { name: 'Workbench', href: '/workbench', icon: Layers },
   { name: 'Builder', href: '/builder', icon: Hammer },
   { name: 'Vault', href: '/vault', icon: Vault },
