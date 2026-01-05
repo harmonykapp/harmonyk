@@ -75,7 +75,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         onClick={isMobile ? () => setMobileOpen(false) : undefined}
         className={cn(
           'flex items-center rounded-lg text-sm transition-all relative',
-          collapsed && !isMobile ? 'justify-center p-3' : 'gap-3 px-3 py-2.5',
+          collapsed && !isMobile ? 'justify-center px-3 py-2.5' : 'gap-3 px-3 py-2.5',
           isActive
             ? 'bg-sidebar-active text-primary font-semibold'
             : 'text-sidebar-foreground hover:bg-sidebar-active/50 hover:text-sidebar-foreground font-medium'
@@ -217,7 +217,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                     onClick={onToggle}
                     className={cn(
                       'w-full transition-all duration-200',
-                      collapsed ? 'justify-center p-3' : 'justify-start px-3 py-2.5'
+                      collapsed ? 'justify-center px-3 py-2.5' : 'justify-start px-3 py-2.5'
                     )}
                     aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                   >
