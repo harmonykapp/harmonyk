@@ -1,6 +1,5 @@
 "use client";
 
-import { PageHeader } from "@/components/shell/PageHeader";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { MaestroQuickStart } from "@/components/dashboard/MaestroQuickStart";
 import { Widget } from "@/components/ui/widget";
@@ -145,11 +144,6 @@ export default function DashboardPage() {
   return (
     <div style={{ padding: tokens.spacing[8], maxWidth: tokens.layout.pageMaxWidth, margin: '0 auto' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing[6] }}>
-        <PageHeader
-          title="Dashboard"
-          subtitle="Your document activity and insights at a glance"
-        />
-
         {onboardingStatus && (
           <DashboardHero progressState={onboardingStatus} />
         )}

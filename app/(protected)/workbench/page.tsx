@@ -790,13 +790,6 @@ export default function WorkbenchPage() {
     <div className="h-full flex flex-col">
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="p-6 space-y-4">
-          <div className="mb-4 rounded-lg border bg-background p-4">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Workbench</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Where you organize and analyze your documents and tasks.
-            </p>
-          </div>
-
           {/* Drive Recent */}
           <div className="mb-4">
             <DriveRecent />

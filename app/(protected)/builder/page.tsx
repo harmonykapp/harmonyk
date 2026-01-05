@@ -1,6 +1,5 @@
 "use client";
 
-import { PageHeader } from "@/components/shell/PageHeader";
 import { Widget } from "@/components/ui/widget";
 import { Button } from "@/components/ui/button";
 import { tokens } from "@/lib/ui/tokens";
@@ -48,11 +47,6 @@ export default function BuilderHubPage() {
   return (
     <div style={{ padding: tokens.spacing[8], maxWidth: tokens.layout.pageMaxWidth, margin: '0 auto' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing[6] }}>
-        <PageHeader
-          title="Builder"
-          subtitle="Pick a document type. Maestro will start suggesting next actions once you have a few docs."
-        />
-
         <Widget
           title="Maestro Suggestions"
           description="This will evolve into predictive insights + optimized choices (Post-GA doctrine)."

@@ -40,23 +40,6 @@ export default function WhitepapersBuilderPage() {
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Whitepapers &amp; Patents</h1>
-          <p className="text-muted-foreground">
-            Business + technical whitepapers, plus provisional and non-provisional patent drafts.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/builder"
-            className="inline-flex h-10 items-center justify-center rounded-md bg-muted px-4 text-sm font-medium"
-          >
-            Back to Builder Hub
-          </Link>
-        </div>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         {/* LEFT RAIL: template types (replaces horizontal tabs) */}
         <aside className="rounded-xl border bg-background p-4">
