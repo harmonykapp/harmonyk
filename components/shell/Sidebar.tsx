@@ -135,7 +135,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         )}
         style={{
           height: '100vh',
-          width: collapsed ? '64px' : '256px',
+          width: collapsed ? tokens.layout.sidebarWidthCollapsed : tokens.layout.sidebarWidthExpanded,
         }}
         suppressHydrationWarning
       >

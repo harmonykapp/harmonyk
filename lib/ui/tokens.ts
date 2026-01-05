@@ -63,7 +63,7 @@ export const tokens = {
   },
 
   layout: {
-    sidebarWidthExpanded: '256px',
+    sidebarWidthExpanded: '220px',
     sidebarWidthCollapsed: '64px',
     topbarHeight: '64px',
     pageMaxWidth: '1600px',
