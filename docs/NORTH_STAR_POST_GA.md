@@ -1,17 +1,20 @@
 # Harmonyk North Star (Post-GA) — SSOT
 
 ## Post-GA UI + Maestro Direction Update
-Updated: 2025-12-20  
+Updated: 2025-12-20
 Scope: Post-GA definition + PGW1–PGW26 alignment + UI/AI philosophy shift
 
-### 1) New Core UX Doctrine (Post-GA)
-#### 2026 AI UX Doctrine (Harmonyk + Maestro)
+---
+
+## 1) New Core UX Doctrine (Post-GA)
+
+### 2026 AI UX Doctrine (Harmonyk + Maestro)
 - AI platforms will not be prompt-first. Prompts become a *secondary* input portal.
 - The primary UX is **predictive insights + optimized choices + execution + reminders**.
-- Maestro operates mainly through UI actions embedded in pages (buttons/chips), not chat.
-- The UI is personalised to each user's state, workload, and priorities.
+- Maestro operates mainly through **UI actions embedded in pages** (buttons/chips), not chat.
+- The UI is personalised to each user's **state**, **workload**, and **priorities**.
 
-#### 3-Layer Model (official)
+### 3-Layer Model (official)
 1) **Predictive Signals** (widgets surface what changed / what's blocked / what's due / what's risky)
 2) **Optimized Choices** (one primary action + 2–3 alternative chips + "Why?")
 3) **Execute + Remind** (Maestro prepares → user approves if needed → executes → follows up with reminders until completed)
@@ -20,55 +23,102 @@ Rule: **Prompt window stays available, but is never required** for the main work
 
 ---
 
-### 2) Concrete Product Feature Additions
-#### A) User Progress Narrator (Dashboard + Maestro Quick Starts)
+## 2) Mandatory UI surface separation (no drift)
+
+Harmonyk stays document-first by enforcing page intent:
+
+### Dashboard (state of business)
+- High-level summary of doc/deal state, risk, signatures, activity, ingestion.
+- Always includes a state-aware **Dashboard Hero** (User Progress Narrator) to avoid a blank dashboard.
+- Click-throughs route to Workbench/Insights/Vault with filters applied.
+
+### Workbench (what do I do now)
+- Actionable only. Every element must lead to a next step (review, share, sign, follow-up, reminder).
+- No heavy analytics on this page.
+
+### Insights (analytics)
+- All heavy analytics live here: histograms, heatmaps, geo, cohort/segment funnels.
+- Organized by functional tabs (Overview, Activity, Connectors, Engagement, Timing/SLA, Automation, AI Impact, Usage/Ownership).
+
+### Operational pages (Vault, Share Hub, Playbooks, Tasks, Integrations)
+- Explorer/control first.
+- Light health/status tiles allowed.
+- Deep analytics belong in Insights.
+
+---
+
+## 3) Concrete product feature additions (v1)
+### A) User Progress Narrator (Dashboard + Maestro Quick Starts)
 Per-user `UserProgressState` drives:
 - Dashboard hero ("Welcome {firstName}… next best step")
 - Maestro quick-start chips (state-aware)
 
-States:
+Canonical states:
 - `ONBOARD_CONNECTORS`, `ONBOARD_IMPORT`, `ORGANISE_METADATA`,
   `START_DEAL`, `ENABLE_AUTOMATION`, `MATURE_TODAY_FOCUS`
 
+Minimum rule-set (first matching rule wins):
+1) no connectors → `ONBOARD_CONNECTORS`
+2) connectors but no docs → `ONBOARD_IMPORT`
+3) docs but poor metadata → `ORGANISE_METADATA`
+4) no deal/workflow started → `START_DEAL`
+5) no automation enabled → `ENABLE_AUTOMATION`
+6) else → `MATURE_TODAY_FOCUS`
+
 Each state produces:
 - one primary CTA + optional secondary CTA
-- 3–5 Maestro quick-start actions/prompts
+- 3–5 Maestro quick-start actions/chips
 
 This is the "no blank dashboard" solution.
 
-#### B) Actionable Widgets Standard
+### B) Actionable Widgets Standard (one widget system everywhere)
 Every widget must support:
 1) click → drill-down view (filtered list / detail)
-2) action bar appears with primary action + chips
-3) Maestro sidecar shows preview + "Why?" + approve/execute
+2) action bar appears with one primary action + 2–3 chips + "Why?"
+3) optional Maestro sidecar shows preview + "Why?" + approve/execute
+4) loading / empty / error states
 
-#### C) Reminder Layer (first-class)
+Widget slots (standard):
+- Header (title, optional subtitle, optional time-range control)
+- Body (chart/list/content)
+- Actions (0–3 actions max)
+- Sidecar (optional: filters, explanation, preview, approval CTA)
+
+Widget sizing (12-col grid only; no one-off widths):
+- S = 3 cols (KPI/status)
+- M = 4 cols (small lists/sparklines)
+- L = 6 cols (primary charts/lists)
+- XL = 12 cols (funnels/swimlanes/matrices)
+
+### C) Reminder Layer (first-class)
 Maestro proposes/executes and **reminds**.
 - Reminder modes: Off / Manual / Autopilot
-- Guardrails: rate limits, stop conditions, mute/pause per doc/counterparty
+- Guardrails: rate limits, stop conditions (signed/moved stage/responded), mute/pause per doc/counterparty
 
 ---
 
-### 3) High-ROI Viral Loops (Low Complexity Only)
+## 4) High-ROI viral loops (low complexity only)
 1) **Free Collaborator Role** (view/comment/suggest only)
 2) **Keep a copy in your Vault** (recipient CTA after viewing/signing)
 3) **Clone this template for yourself** (share page CTA)
 
 Guardrails:
 - Never block view/sign.
-- CTAs are non-spammy + clearly separated from core action.
-- Instrument events: `invite_collaborator`, `claim_signed_doc`, `clone_template`.
+- CTAs are non-spammy and clearly separated from the primary action.
+
+Instrumentation events (canonical):
+- `invite_collaborator`, `claim_signed_doc`, `clone_template`
 
 ---
 
-### 4) RAG + Template Strategy (Impacted by new UI)
+## 5) RAG + template strategy (impacted by new UI)
 We are moving from prompt-based Q&A to **action-centric RAG**.
 Retrieval must support actions with:
 - Evidence (Vault content + citations)
 - Constraints (preferences/policy)
 - Entity context (docId/envelopeId/shareLinkId/taskId)
 
-Define "Action Context Pack" concept:
+Define "Action Context Pack":
 - `{goal, entities, evidence, policy, options, reminder_plan}` as canonical input to Maestro, previews, and audit logs.
 
 Indexing aligns to UI:
@@ -79,37 +129,47 @@ Indexing aligns to UI:
 
 Templates must carry operational metadata:
 - required inputs, risk profile, recommended workflow, default reminder cadence,
-  optional/required clauses, tone variants.
+  optional/required clauses, tone variants
 
 ---
 
-### 5) PGW1–PGW26 Plan Alignment (high-level)
-#### PGW1 — Foundation
+## 6) PGW1–PGW26 plan alignment (high level)
+
+### PGW1 — Foundation (complete)
 - Stabilisation + schema correctness + core reliability (auth/share/vault)
 - Prepare UI surfaces for actionable widgets (layout slots, drill-down patterns)
 
-#### PGW2 — Guided UX + Viral v1
+### PGW2 — Guided UX + Viral v1 (this week)
 - Implement User Progress Narrator (Dashboard hero + Maestro quick-start chips)
-- Implement viral loops v1 (free collaborators, keep-a-copy, clone-template)
-- Standardize widget drill-down + action bar UX
+- Implement viral loops v1 (free collaborators, keep-a-copy, clone-template) behind feature flags
+- Standardize widget drill-down + action bar UX (single widget system)
+- Lock design tokens (spacing/type/radius/shadows/icon sizing) and apply to Dashboard + Builder Hub
 
-#### PGW3–PGW6 — Operator-grade Maestro
+PGW2 acceptance criteria:
+- AppShell renders all routes with **one** sidebar component and **one** header component; no duplicate nav trees.
+- Tokens exist in a single source and are used by Dashboard + Builder Hub.
+- UserProgressState drives DashboardHero + Maestro quick-start chips.
+- Viral CTAs are behind flags and never block view/sign.
+- No regressions: share → sign → save flows pass smoke.
+
+### PGW3–PGW6 — Operator-grade Maestro
 - Action taxonomy + execution previews ("Maestro sidecar")
 - Reminder system v1 (modes + guardrails + stop conditions)
 - Action-centric RAG scaffolding (Action Context Pack) + template operational metadata
 
-#### PGW7–PGW26 — Scale + Depth
+### PGW7–PGW26 — Scale + Depth
 - Expand connectors, deepen Workbench/Insights, reliability hardening, A/B refine action ranking,
-  richer automation, mature action-centric RAG/evals.
+  richer automation, mature action-centric RAG/evals
 
 ---
 
-### 6) Ultimate Post-GA Definition
+## 7) Ultimate Post-GA definition
 Harmonyk is a **document-first operating system** with Maestro as an operator:
 - UI surfaces predictive signals
 - offers simple choices
 - executes with human-in-loop
 - reminds until outcomes happen
+
 Prompts remain available, but secondary.
 
 Canonical detail: `docs/UI/MAESTRO_UX_DOCTRINE.md`

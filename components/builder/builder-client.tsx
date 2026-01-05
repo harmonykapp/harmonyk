@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { ClausePickerCompact, type ClauseOption as ClausePickerOption } from "@/components/builder/clauses/clause-picker-compact";
 import type {
   AccountsPackResponse,
   InvestorAccountsSnapshotPack,
@@ -148,12 +149,21 @@ type FinancialInboxItem = {
   created_at?: string | null;
 };
 
+export type BuilderMode = "contracts" | "decks" | "whitepapers" | "accounts";
+export type WhitepaperKind =
+  | "business_whitepaper"
+  | "technical_whitepaper"
+  | "provisional_patent"
+  | "nonprovisional_patent";
+
 interface BuilderClientProps {
   templates: TemplateOption[];
   clauses: ClauseOption[];
   deckTemplates?: DeckTemplate[];
   initialDocId?: string;
   initialTab?: "contracts" | "decks" | "accounts";
+  mode?: BuilderMode;
+  whitepaperKind?: WhitepaperKind;
 }
 
 // Map database categories to bolt design categories
@@ -219,7 +229,7 @@ function groupTemplatesByCategory(templates: TemplateOption[]) {
   return Object.entries(grouped).filter(([_, items]) => items.length > 0);
 }
 
-export function BuilderClient({ templates, clauses, deckTemplates = [], initialDocId, initialTab }: BuilderClientProps) {
+export function BuilderClient({ templates, clauses, deckTemplates = [], initialDocId, initialTab, mode, whitepaperKind }: BuilderClientProps) {
   const { toast } = useToast();
   const router = useRouter();
   const monoTrainingEnabled = isFeatureEnabled("FEATURE_VAULT_EXPERIMENTAL_ACTIONS");
@@ -228,7 +238,13 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
   const safeClauses = Array.isArray(clauses) ? clauses : [];
   const safeDeckTemplates = Array.isArray(deckTemplates) ? deckTemplates : [];
 
-  const [activeBuilder, setActiveBuilder] = useState<"contracts" | "decks" | "accounts">(initialTab ?? "contracts");
+  // Use mode prop if provided, otherwise fall back to initialTab or default
+  const effectiveMode: BuilderMode = mode ?? (initialTab === "contracts" || initialTab === "decks" || initialTab === "accounts" ? initialTab : "contracts");
+  const [activeBuilder, setActiveBuilder] = useState<"contracts" | "decks" | "accounts">(
+    effectiveMode === "contracts" || effectiveMode === "decks" || effectiveMode === "accounts" 
+      ? effectiveMode 
+      : "contracts"
+  );
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [selectedClauseIds, setSelectedClauseIds] = useState<string[]>([]);
   const [selectedDeckTemplateId, setSelectedDeckTemplateId] = useState<string>("");
@@ -585,6 +601,24 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     );
   };
+
+  const handleAddClause = (id: string) => {
+    if (!selectedClauseIds.includes(id)) {
+      setSelectedClauseIds((prev) => [...prev, id]);
+    }
+  };
+
+  const handleRemoveClause = (id: string) => {
+    setSelectedClauseIds((prev) => prev.filter((c) => c !== id));
+  };
+
+  // Convert clauses to ClausePickerCompact format
+  const clausePickerOptions: ClausePickerOption[] = safeClauses.map((c) => ({
+    id: c.id,
+    title: c.name,
+    category: c.category,
+    required: null, // We don't have required field in ClauseOption, but ClausePickerCompact supports it
+  }));
 
   const handleGenerate = async () => {
     if (!selectedTemplate) {
@@ -1672,8 +1706,17 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {/* Step 2: Clauses */}
-                      {safeClauses.length > 0 && (
+                      {/* Step 2: Clauses - Compact picker for contracts mode */}
+                      {effectiveMode === "contracts" && safeClauses.length > 0 && (
+                        <ClausePickerCompact
+                          available={clausePickerOptions}
+                          selectedIds={selectedClauseIds}
+                          onAdd={handleAddClause}
+                          onRemove={handleRemoveClause}
+                        />
+                      )}
+                      {/* Legacy clause picker for non-contracts mode (if needed) */}
+                      {effectiveMode !== "contracts" && safeClauses.length > 0 && (
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Clauses (optional)</label>
                           <ScrollArea className="h-32 rounded-md border p-2 bg-muted/40">
@@ -3401,9 +3444,13 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
     );
   };
 
+  // When mode is provided, hide the tab switcher and show the appropriate builder directly
+  const showTabSwitcher = !mode;
+
   return (
     <div className="h-full flex flex-col">
-      {/* Builder Type Switcher */}
+      {/* Builder Type Switcher - only show when mode is not provided */}
+      {showTabSwitcher && (
         <div className="border-b bg-background px-6 pt-4 pb-2 flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Builder</h1>
@@ -3438,11 +3485,12 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
           </Button>
         </div>
       </div>
+      )}
 
       <div className="flex-1">
-        {activeBuilder === "contracts" && renderContractsBuilder()}
-        {activeBuilder === "decks" && renderDecksBuilder()}
-        {activeBuilder === "accounts" && renderAccountsBuilder()}
+        {(activeBuilder === "contracts" || effectiveMode === "contracts" || effectiveMode === "whitepapers") && renderContractsBuilder()}
+        {(activeBuilder === "decks" || effectiveMode === "decks") && renderDecksBuilder()}
+        {(activeBuilder === "accounts" || effectiveMode === "accounts") && renderAccountsBuilder()}
       </div>
     </div>
   );

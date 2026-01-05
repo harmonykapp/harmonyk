@@ -2,6 +2,16 @@
 
 This checklist is used to validate the GA candidate build (up to Week 18). Each item should be marked ✅ / ⚠️ / ❌ as part of the GA cut.
 
+## PGW2 (Builder UX + Sidebar)
+- [ ] Builder hub page exists at `/builder` (Contracts, Decks, Whitepapers, Accounts).
+- [ ] Builder subpages exist:
+  - `/builder/contracts`
+  - `/builder/decks`
+  - `/builder/whitepapers`
+  - `/builder/accounts`
+- [ ] Contract clauses UI is compact (search + chips) with Risk/Conflicts placeholder.
+- [ ] Sidebar is collapsible on desktop and uses a drawer on mobile.
+
 ## GA Modules (v1)
 
 The following modules are considered in-scope and GA-ready (with known caveats documented below):
