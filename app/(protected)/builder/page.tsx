@@ -1,138 +1,112 @@
-// Builder Hub — document type entry point
-// Note: Import happens here, Export happens inside the editor once a draft exists.
-
 "use client";
 
-import React from "react";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { Widget } from "@/components/ui/widget";
+import { Button } from "@/components/ui/button";
+import { tokens } from "@/lib/ui/tokens";
+import { Hammer, FileText, Presentation, FileSearch, Calculator } from 'lucide-react';
+import Link from 'next/link';
+
+const builderCards = [
+  {
+    title: 'Legal Contracts',
+    description: 'Generate and manage contracts with compact clause controls.',
+    href: '/builder/contracts',
+    icon: FileText,
+    color: 'text-blue-600',
+  },
+  {
+    title: 'Pitch Decks',
+    description: 'Build fundraising and update decks from canonical outlines.',
+    href: '/builder/decks',
+    icon: Presentation,
+    color: 'text-green-600',
+  },
+  {
+    title: 'Whitepapers & Patents',
+    description: 'Business/technical whitepapers plus patent draft workflows.',
+    href: '/builder/whitepapers',
+    icon: FileSearch,
+    color: 'text-purple-600',
+  },
+  {
+    title: 'Financial Accounts',
+    description: 'Generate accounts packs and export tables for investors.',
+    href: '/builder/accounts',
+    icon: Calculator,
+    color: 'text-orange-600',
+  },
+];
+
+const maestroSuggestions = [
+  'Create a template set for your 3 most common contracts.',
+  'Generate an investor snapshot pack from your latest expenses.',
+  'Draft a technical whitepaper outline for your next raise.',
+];
 
 export default function BuilderHubPage() {
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Builder</h1>
-        <p className="text-muted-foreground">
-          Pick a document type. Maestro will start suggesting next actions once you have a few docs.
-        </p>
-      </div>
+    <div style={{ padding: tokens.spacing[8], maxWidth: tokens.layout.pageMaxWidth, margin: '0 auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing[6] }}>
+        <PageHeader
+          title="Builder"
+          subtitle="Pick a document type. Maestro will start suggesting next actions once you have a few docs."
+        />
 
-      <div className="rounded-xl border bg-background p-6">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold">Maestro Suggestions</h2>
-          <p className="text-sm text-muted-foreground">
-            This will evolve into predictive insights + optimized choices (Post-GA doctrine).
-          </p>
-        </div>
-        <ul className="list-disc pl-5 text-sm text-muted-foreground">
-          <li>Create a template set for your 3 most common contracts.</li>
-          <li>Generate an investor snapshot pack from your latest expenses.</li>
-          <li>Draft a technical whitepaper outline for your next raise.</li>
-        </ul>
-      </div>
+        <Widget
+          title="Maestro Suggestions"
+          description="This will evolve into predictive insights + optimized choices (Post-GA doctrine)."
+        >
+          <ul className="space-y-2">
+            {maestroSuggestions.map((suggestion, idx) => (
+              <li key={idx} className="flex items-start gap-3">
+                <span className="text-muted-foreground mt-0.5">•</span>
+                <span className="text-sm text-muted-foreground">{suggestion}</span>
+              </li>
+            ))}
+          </ul>
+        </Widget>
 
-      <div>
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Legal Contracts */}
-          <div className="rounded-xl border bg-background p-6">
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Legal Contracts</h2>
-              <p className="text-sm text-muted-foreground">
-                Generate and manage contracts with compact clause controls.
-              </p>
-            </div>
-            <div className="mt-4 flex items-center gap-3">
-              <a className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground" href="/builder/contracts">
-                Open
-              </a>
-              <button
-                type="button"
-                className="inline-flex h-10 items-center justify-center rounded-md bg-muted px-4 text-sm font-medium"
-                onClick={() => alert("Import from Word (.docx) is coming soon. Export is available after you draft/edit.")}
-              >
-                Import: Word
-              </button>
-            </div>
-            <div className="mt-3 text-xs text-muted-foreground">
-              Export happens after you draft/edit (inside the document).
-            </div>
-          </div>
-
-          {/* Pitch Decks */}
-          <div className="rounded-xl border bg-background p-6">
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Pitch Decks</h2>
-              <p className="text-sm text-muted-foreground">
-                Build fundraising and update decks from canonical outlines.
-              </p>
-            </div>
-            <div className="mt-4 flex items-center gap-3">
-              <a className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground" href="/builder/decks">
-                Open
-              </a>
-              <button
-                type="button"
-                className="inline-flex h-10 items-center justify-center rounded-md bg-muted px-4 text-sm font-medium"
-                onClick={() => alert("Import from PowerPoint (.pptx) is coming soon. Export is available after you draft/edit.")}
-              >
-                Import: PowerPoint
-              </button>
-            </div>
-            <div className="mt-3 text-xs text-muted-foreground">
-              Export happens after you draft/edit (inside the deck).
-            </div>
-          </div>
-
-          {/* Whitepapers & Patents */}
-          <div className="rounded-xl border bg-background p-6">
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Whitepapers &amp; Patents</h2>
-              <p className="text-sm text-muted-foreground">
-                Business/technical whitepapers plus patent draft workflows.
-              </p>
-            </div>
-            <div className="mt-4 flex items-center gap-3">
-              <a className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground" href="/builder/whitepapers">
-                Open
-              </a>
-              <button
-                type="button"
-                className="inline-flex h-10 items-center justify-center rounded-md bg-muted px-4 text-sm font-medium"
-                onClick={() => alert("Import from Word (.docx) is coming soon. Export is available after you draft/edit.")}
-              >
-                Import: Word
-              </button>
-            </div>
-            <div className="mt-3 text-xs text-muted-foreground">
-              Export happens after you draft/edit (inside the document).
-            </div>
-          </div>
-
-          {/* Financial Accounts */}
-          <div className="rounded-xl border bg-background p-6">
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Financial Accounts</h2>
-              <p className="text-sm text-muted-foreground">
-                Generate accounts packs and export tables for investors.
-              </p>
-            </div>
-            <div className="mt-4 flex items-center gap-3">
-              <a className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground" href="/builder/accounts">
-                Open
-              </a>
-              <button
-                type="button"
-                className="inline-flex h-10 items-center justify-center rounded-md bg-muted px-4 text-sm font-medium"
-                onClick={() => alert("Import from Excel (.xlsx) is coming soon. Export is available after you generate/edit.")}
-              >
-                Import: Excel
-              </button>
-            </div>
-            <div className="mt-3 text-xs text-muted-foreground">
-              Export happens after you generate/edit (inside Accounts).
-            </div>
-          </div>
+          {builderCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <Widget key={card.title}>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-lg bg-muted`}>
+                      <Icon className={card.color} style={{ width: tokens.iconSize.lg, height: tokens.iconSize.lg }} />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <h3 className="font-semibold" style={{ fontSize: tokens.fontSize.lg }}>
+                        {card.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {card.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Link href={card.href} className="flex-1">
+                      <Button className="w-full">
+                        Open
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      onClick={() => alert("Import functionality is coming soon. Export is available after you draft/edit.")}
+                    >
+                      Import
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Export happens after you draft/edit (inside the document).
+                  </p>
+                </div>
+              </Widget>
+            );
+          })}
         </div>
-      </div>
       </div>
     </div>
   );
