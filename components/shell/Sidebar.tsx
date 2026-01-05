@@ -151,7 +151,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           suppressHydrationWarning
         >
           {!collapsed && (
-            <Link href="/dashboard" className="flex items-center group pl-1" suppressHydrationWarning>
+            <Link href="/dashboard" className="flex items-center group pl-1 relative -top-px" suppressHydrationWarning>
               <Image
                 src="/brand/harmonyk-logo-horizontal.png"
                 alt="Harmonyk"
@@ -173,7 +173,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             </Link>
           )}
           {collapsed && (
-            <Link href="/dashboard" className="flex items-center justify-center w-full" suppressHydrationWarning>
+            <Link href="/dashboard" className="flex items-center justify-center w-full relative -top-px" suppressHydrationWarning>
               <Image
                 src="/brand/harmonyk-logo-horizontal_icononly.png"
                 alt="Harmonyk"
@@ -252,7 +252,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             }}
           >
             <SheetTitle>
-              <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
+              <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="relative -top-px">
                 <Image
                   src="/brand/harmonyk-logo-horizontal.png"
                   alt="Harmonyk"
