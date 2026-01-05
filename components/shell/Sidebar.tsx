@@ -151,7 +151,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           suppressHydrationWarning
         >
           {!collapsed && (
-            <Link href="/dashboard" className="flex items-center group" suppressHydrationWarning>
+            <Link href="/dashboard" className="flex items-center group pl-1" suppressHydrationWarning>
               <Image
                 src="/brand/harmonyk-logo-horizontal.png"
                 alt="Harmonyk"
