@@ -16,6 +16,7 @@ export function getPageTitle(pathname: string | null | undefined): string {
   if (path === '/insights' || path.startsWith('/insights/')) return 'Insights';
   if (path === '/playbooks' || path.startsWith('/playbooks/')) return 'Playbooks';
   if (path === '/tasks' || path.startsWith('/tasks/')) return 'Tasks';
+  if (path === '/calendar' || path.startsWith('/calendar/')) return 'Tasks';
   if (path === '/integrations' || path.startsWith('/integrations/')) return 'Integrations';
   if (path === '/settings' || path.startsWith('/settings/')) return 'Settings';
 
