@@ -357,16 +357,7 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      {/* Heading + tagline */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Task Hub</h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1">
-          Schedule your important tasks, get reminders.
-        </p>
-      </div>
-
-      {/* Top tabs (Overview / Calendar) */}
+    <div className="p-8 max-w-[1600px] mx-auto space-y-6">
       <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
         <a
           href="/tasks"

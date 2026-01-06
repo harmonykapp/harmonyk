@@ -236,26 +236,14 @@ export default function CalendarPage() {
 
   if (!isReady || !referenceDate) {
     return (
-      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto">
+      <div className="p-8 max-w-[1600px] mx-auto">
         <p className="text-sm text-muted-foreground">Loading calendar…</p>
       </div>
     );
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      {/* Heading + tagline */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Task Calendar</h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1">
-          See your open tasks laid out across the week.
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Only tasks with a due date are shown here. Use the Task Hub to manage unscheduled work.
-        </p>
-      </div>
-
-      {/* Top tabs (Overview / Calendar) */}
+    <div className="p-8 max-w-[1600px] mx-auto space-y-6">
       <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
         <Link
           href="/tasks"
