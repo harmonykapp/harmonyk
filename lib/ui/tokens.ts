@@ -69,6 +69,30 @@ export const tokens = {
     pageMaxWidth: '1600px',
     pageMarginX: '32px',
   },
+
+  text: {
+    pageTitle: 'text-xl font-semibold',
+    sectionTitle: 'text-lg font-semibold',
+    cardTitle: 'text-base font-semibold',
+    body: 'text-sm',
+    muted: 'text-sm text-muted-foreground',
+    label: 'text-sm font-medium',
+  },
+
+  density: {
+    cardPadding: 'p-6',
+    cardGap: 'gap-6',
+    tableRowHeight: 'h-12',
+    controlHeightSm: 'h-9',
+    controlHeightMd: 'h-10',
+    controlHeightLg: 'h-11',
+  },
+
+  icon: {
+    nav: '20px',
+    action: '18px',
+    inline: '16px',
+  },
 } as const;
 
 export type Tokens = typeof tokens;
