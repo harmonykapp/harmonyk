@@ -1,99 +1,28 @@
 "use client";
 
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
-import { MaestroQuickStart } from "@/components/dashboard/MaestroQuickStart";
-import { Widget } from "@/components/ui/widget";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { tokens } from "@/lib/ui/tokens";
-import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
+import { cn } from "@/lib/utils";
 import {
-  AlertCircle,
-  ArrowRight,
-  FileSignature,
-  FileText,
-  Sparkles,
-  TrendingUp,
-  X
-} from 'lucide-react';
+  FunnelCard,
+  KpiCard,
+  LinkLeaderboardCard,
+  RankedListCard,
+  SparklineCard,
+  WidgetCard,
+} from "@/components/widgets";
+import {
+  mockActivityTrend,
+  mockAtRiskItems,
+  mockDashboardPriorities,
+  mockDealFunnelStages,
+  mockLinkLeaderboard,
+  mockSignatureLoad,
+} from "@/lib/mock/widgets";
+import { tokens } from "@/lib/ui/tokens";
+import { getUserProgressNarration, type UserProgressSignals } from "@/lib/user-progress";
 import Link from "next/link";
+import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
-
-const summaryCards = [
-  {
-    title: 'Docs in Motion',
-    value: '12',
-    change: '+3 today',
-    icon: FileText,
-    color: 'text-blue-600',
-  },
-  {
-    title: 'Pending Signatures',
-    value: '5',
-    change: '2 urgent',
-    icon: FileSignature,
-    color: 'text-orange-600',
-  },
-  {
-    title: 'Recent Imports',
-    value: '18',
-    change: 'Last 24h',
-    icon: TrendingUp,
-    color: 'text-green-600',
-  },
-  {
-    title: 'Action Required',
-    value: '7',
-    change: 'Needs review',
-    icon: AlertCircle,
-    color: 'text-red-600',
-  },
-];
-
-const activeDeals = [
-  {
-    name: 'Acme Corp Partnership Agreement',
-    status: 'In Review',
-    owner: 'Sarah Chen',
-    updated: '2 hours ago',
-    progress: 75,
-  },
-  {
-    name: 'Q4 Sales Proposal - TechStart Inc',
-    status: 'Awaiting Signature',
-    owner: 'Mike Johnson',
-    updated: '4 hours ago',
-    progress: 90,
-  },
-  {
-    name: 'Vendor NDA - CloudSystems',
-    status: 'Draft',
-    owner: 'You',
-    updated: '1 day ago',
-    progress: 40,
-  },
-];
-
-const aiInsights = [
-  {
-    title: 'Expiring NDAs',
-    description: '3 NDAs expire in the next 30 days. Review and renew if needed.',
-    action: 'Review Now',
-    priority: 'medium',
-  },
-  {
-    title: 'Stale Proposals',
-    description: '5 proposals haven\'t been updated in 2 weeks. Follow up with owners.',
-    action: 'View All',
-    priority: 'low',
-  },
-  {
-    title: 'Missing Signatures',
-    description: 'Acme Corp agreement has been pending signature for 5 days.',
-    action: 'Send Reminder',
-    priority: 'high',
-  },
-];
 
 type OnboardingStatus = {
   hasConnectedGoogleDrive: boolean;
@@ -104,9 +33,7 @@ type OnboardingStatus = {
 };
 
 export default function DashboardPage() {
-  const sb = useMemo(() => getBrowserSupabaseClient(), []);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
-  const [loadingOnboarding, setLoadingOnboarding] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,10 +57,6 @@ export default function DashboardPage() {
         }
       } catch (err) {
         console.warn("[dashboard] Failed to load onboarding status", err);
-      } finally {
-        if (!cancelled) {
-          setLoadingOnboarding(false);
-        }
       }
     })();
     return () => {
@@ -141,141 +64,248 @@ export default function DashboardPage() {
     };
   }, []);
 
-  return (
-    <div style={{ padding: tokens.spacing[8], maxWidth: tokens.layout.pageMaxWidth, margin: '0 auto' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing[6] }}>
-        {onboardingStatus && (
-          <DashboardHero progressState={onboardingStatus} />
-        )}
+  const progressSignals: UserProgressSignals = useMemo(() => {
+    // Safe defaults: keep the dashboard non-blank even if onboarding status fails to load.
+    // We'll deepen these signals later (tasks, playbooks, metadata) once we wire real analytics.
+    const hasConnectedAnyConnector = onboardingStatus?.hasConnectedGoogleDrive ?? false;
+    const hasAnyDocsInVault = onboardingStatus?.hasVaultDoc ?? false;
+    const hasCreatedAnyDealOrWorkflow =
+      (onboardingStatus?.hasDraftedContract ?? false) ||
+      (onboardingStatus?.hasDraftedDeck ?? false) ||
+      (onboardingStatus?.hasRunAccountsPack ?? false);
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {summaryCards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <Widget key={card.title}>
-                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <div className="text-sm font-medium">{card.title}</div>
-                  <Icon className={card.color} style={{ width: tokens.iconSize.sm, height: tokens.iconSize.sm }} />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{card.value}</div>
-                  <p className="text-xs text-muted-foreground mt-1">{card.change}</p>
-                </div>
-              </Widget>
-            );
-          })}
+    return {
+      hasConnectedAnyConnector,
+      hasImportedAnyDocs: hasAnyDocsInVault,
+      hasAnyDocsInVault,
+      hasCompletedMetadataBasics: false,
+      hasCreatedAnyDealOrWorkflow,
+      hasRunAnyPlaybook: false,
+      hasAnyTasks: false,
+    };
+  }, [onboardingStatus]);
+
+  const narration = useMemo(() => getUserProgressNarration(progressSignals), [progressSignals]);
+
+  // Dashboard rule: no scrollbars inside widgets. Show fewer rows instead.
+  const prioritiesToShow = mockDashboardPriorities.slice(0, 3);
+  const atRiskToShow = mockAtRiskItems.slice(0, 3);
+  const topLinksToShow = mockLinkLeaderboard.slice(0, 3);
+  const showQuickStart = !(onboardingStatus?.hasConnectedGoogleDrive ?? false);
+
+  return (
+    <div
+      className="mx-auto w-full px-4 py-8 sm:px-6 lg:px-8"
+      style={{ maxWidth: tokens.layout.pageMaxWidth }}
+    >
+      <div className="flex flex-col gap-4">
+        {/* Slim banner at top */}
+        <div className="col-span-12">
+          <DashboardHero narration={narration} progressState={onboardingStatus ?? undefined} />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {onboardingStatus && (
-            <MaestroQuickStart progressState={onboardingStatus} />
-          )}
-
-          <Widget
-            title="Active Deals & Workflows"
-            description="Documents currently in progress"
+        {/* Maestro Next Steps (compact): 3 recommended next actions */}
+        {showQuickStart ? (
+          <WidgetCard
+            title="Next Steps recommended by Maestro"
+            subtitle="3 quick wins to unlock the dashboard"
+            density="compact"
           >
-            <div className="space-y-4">
-              {activeDeals.map((deal) => (
-                <div key={deal.name} className="space-y-2">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <p className="font-medium leading-none truncate" style={{ fontSize: tokens.fontSize.sm }}>{deal.name}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Badge variant="secondary" className="text-xs">
-                          {deal.status}
-                        </Badge>
-                        <span>•</span>
-                        <span className="truncate">{deal.owner}</span>
-                      </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Link
+                href="/integrations"
+                className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
+              >
+                <div className="text-sm font-semibold">Connect Google Drive</div>
+                <div className="mt-1 text-xs text-muted-foreground">Import docs into Vault</div>
+              </Link>
+              <Link
+                href="/integrations"
+                className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
+              >
+                <div className="text-sm font-semibold">Connect Gmail</div>
+                <div className="mt-1 text-xs text-muted-foreground">Find docs in email threads</div>
+              </Link>
+              <Link
+                href="/share"
+                className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
+              >
+                <div className="text-sm font-semibold">Create a share link</div>
+                <div className="mt-1 text-xs text-muted-foreground">Track views + follow-ups</div>
+              </Link>
+            </div>
+          </WidgetCard>
+        ) : null}
+
+        {/* Row 1: 3 widgets (standard) */}
+        <div className="grid gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-4 lg:h-[320px]">
+            <WidgetCard title="Today's Priorities" subtitle="Do next" density="compact" className="h-full">
+              {prioritiesToShow.length === 0 ? (
+                <div className="px-2 pb-3">
+                  <div className="rounded-xl border border-border/60 bg-muted/40 px-4 py-4">
+                    <div className="text-sm font-medium">No priorities yet</div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      Once you start working in Workbench, Maestro will surface next actions here.
                     </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {deal.updated}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {prioritiesToShow.map((item) => {
+                    const Row: React.ElementType = item.href ? Link : "div";
+                    const rowProps = item.href ? { href: item.href } : {};
+                    return (
+                      <Row
+                        key={item.id}
+                        {...rowProps}
+                        className={[
+                          "block rounded-xl px-3 py-2 hover:bg-muted transition-colors",
+                          item.href ? "cursor-pointer" : "",
+                        ].join(" ")}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="truncate text-sm font-medium">{item.title}</div>
+                              {item.tag ? (
+                                <div className="shrink-0 rounded-full border border-border/60 bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                                  {item.tag}
+                                </div>
+                              ) : null}
+                            </div>
+                            {item.subtitle ? (
+                              <div className="mt-0.5 truncate text-sm text-muted-foreground">
+                                {item.subtitle}
+                              </div>
+                            ) : null}
+                          </div>
+                          {item.valueLabel ? (
+                            <div className="shrink-0 text-xs text-muted-foreground">
+                              {item.valueLabel}
+                            </div>
+                          ) : null}
+                        </div>
+                        {typeof item.valuePct === "number" ? (
+                          <div className="mt-2">
+                            <div className="h-2 w-full rounded-full bg-muted">
+                              <div
+                                className="h-2 rounded-full bg-indigo-500/25 dark:bg-indigo-400/20"
+                                style={{
+                                  width: `${Math.max(0, Math.min(100, item.valuePct))}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ) : null}
+                      </Row>
+                    );
+                  })}
+                </div>
+              )}
+            </WidgetCard>
+          </div>
+          <div className="lg:col-span-4 lg:h-[320px]">
+            <RankedListCard
+              title="At-Risk Deals"
+              items={atRiskToShow}
+              emptyTitle="No at-risk deals"
+              emptyDescription="All deals are on track."
+              className="h-full"
+            />
+          </div>
+
+          <div className="lg:col-span-4 lg:h-[320px]">
+            <WidgetCard
+              title="Signature Load"
+              subtitle="What needs signing next"
+              density="compact"
+              className="h-full"
+            >
+              {/* Keep everything visible inside the fixed 1/3 widget height */}
+              <div className="flex h-full min-h-0 flex-col gap-2">
+                <Link href="/share/signatures" className="block">
+                  <KpiCard
+                    label="Waiting on me"
+                    value={mockSignatureLoad.waitingOnMe}
+                    helper="Review"
+                    tone="purple"
+                    className="cursor-pointer hover:bg-muted py-2"
+                  />
+                </Link>
+                <Link href="/share/signatures" className="block">
+                  <KpiCard
+                    label="Waiting on others"
+                    value={mockSignatureLoad.waitingOnOthers}
+                    helper="Nudge"
+                    tone="purple"
+                    className="cursor-pointer hover:bg-muted py-2"
+                  />
+                </Link>
+
+                {/* Compact bottom section (no clipping) */}
+                <div className="mt-auto pt-1">
+                  <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>Waiting on me</span>
+                    <span>
+                      {mockSignatureLoad.waitingOnMe + mockSignatureLoad.waitingOnOthers}
                     </span>
                   </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full rounded-full bg-muted">
                     <div
-                      className="h-full bg-primary transition-all"
-                      style={{ width: `${deal.progress}%` }}
+                      className="h-1.5 rounded-full bg-purple-600/70 dark:bg-purple-400/70"
+                      style={{
+                        width: `${Math.round(
+                          (mockSignatureLoad.waitingOnMe /
+                            Math.max(
+                              1,
+                              mockSignatureLoad.waitingOnMe + mockSignatureLoad.waitingOnOthers,
+                            )) *
+                            100,
+                        )}%`,
+                      }}
                     />
                   </div>
                 </div>
-              ))}
-            </div>
-          </Widget>
-
-          <Widget
-            title="AI Insights"
-            description="Recommendations from Maestro"
-            headerActions={
-              <Sparkles className="text-mono" style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
-            }
-          >
-            <div className="space-y-4">
-              {aiInsights.map((insight) => (
-                <div key={insight.title} className="space-y-2">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`h-2 w-2 rounded-full mt-2 flex-shrink-0 ${insight.priority === 'high'
-                        ? 'bg-red-500'
-                        : insight.priority === 'medium'
-                          ? 'bg-orange-500'
-                          : 'bg-blue-500'
-                        }`}
-                    />
-                    <div className="flex-1 space-y-1 min-w-0">
-                      <p className="font-medium leading-none" style={{ fontSize: tokens.fontSize.sm }}>{insight.title}</p>
-                      <p className="text-sm text-muted-foreground">{insight.description}</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full">
-                    {insight.action}
-                    <ArrowRight className="ml-2" style={{ width: tokens.iconSize.xs, height: tokens.iconSize.xs }} />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </Widget>
+              </div>
+            </WidgetCard>
+          </div>
         </div>
 
-        <Widget
-          title="Recently Edited"
-          description="Documents you've worked on recently"
-        >
-          <div className="space-y-3">
-            {[
-              {
-                name: 'Employment Agreement - Jane Doe',
-                type: 'Contract',
-                time: '30 minutes ago',
-              },
-              {
-                name: 'Q1 Financial Report',
-                type: 'Report',
-                time: '2 hours ago',
-              },
-              {
-                name: 'Product Roadmap Deck',
-                type: 'Presentation',
-                time: '1 day ago',
-              },
-            ].map((doc) => (
-              <div
-                key={doc.name}
-                className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <FileText className="text-muted-foreground" style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
-                  <div>
-                    <p className="font-medium text-sm">{doc.name}</p>
-                    <p className="text-xs text-muted-foreground">{doc.type}</p>
-                  </div>
-                </div>
-                <span className="text-xs text-muted-foreground">{doc.time}</span>
-              </div>
-            ))}
+        {/* Row 2: 3 widgets (standard) */}
+        <div className="grid gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-4 lg:h-[320px]">
+            <FunnelCard
+              title="Deal Funnel"
+              subtitle="Documents by stage"
+              stages={mockDealFunnelStages}
+              onClick={() => console.log("Funnel clicked")}
+              tone="blue"
+              className="h-full"
+            />
           </div>
-        </Widget>
+
+          <div className="lg:col-span-4 lg:h-[320px]">
+            <SparklineCard
+              title="Activity Trend"
+              subtitle="Last 12 days"
+              points={mockActivityTrend}
+              onClick={() => console.log("Activity trend clicked")}
+              tone="emerald"
+              className="h-full"
+            />
+          </div>
+
+          <div className="lg:col-span-4 lg:h-[320px]">
+            <LinkLeaderboardCard
+              title="Top Share Links"
+              subtitle="Views + last activity"
+              rows={topLinksToShow}
+              href="/share"
+              className="h-full"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -65,7 +65,11 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const renderNavItem = (item: NavigationItem, isMobile = false) => {
-    const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
+    const isShareHubRoute =
+      item.href === "/share" &&
+      (pathname === "/share" || pathname?.startsWith("/share/") || pathname === "/signatures" || pathname?.startsWith("/signatures/"));
+
+    const isActive = isShareHubRoute || pathname === item.href || pathname?.startsWith(item.href + '/');
     const Icon = item.icon;
 
     const linkContent = (

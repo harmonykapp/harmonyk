@@ -1,9 +1,10 @@
 'use client';
 
-import { tokens } from '@/lib/ui/tokens';
-import { cn } from '@/lib/utils';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { tokens } from '@/lib/ui/tokens';
+import type { UserProgressNarration } from '@/lib/user-progress';
+import Link from 'next/link';
 
 interface ProgressState {
   hasConnectedGoogleDrive: boolean;
@@ -14,32 +15,32 @@ interface ProgressState {
 }
 
 interface DashboardHeroProps {
-  progressState: ProgressState;
+  narration: UserProgressNarration;
+  progressState?: ProgressState;
 }
 
-export function DashboardHero({ progressState }: DashboardHeroProps) {
-  const completedCount = Object.values(progressState).filter(Boolean).length;
-  const totalCount = Object.values(progressState).length;
-  const progressPercentage = (completedCount / totalCount) * 100;
+export function DashboardHero({ narration, progressState }: DashboardHeroProps) {
+  const completedCount = progressState ? Object.values(progressState).filter(Boolean).length : 0;
+  const totalCount = progressState ? Object.values(progressState).length : 0;
+  const progressPercentage =
+    totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
-  if (completedCount === totalCount) {
-    return null;
-  }
+  if (progressState && completedCount === totalCount) return null;
 
   return (
     <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-      <CardContent style={{ padding: tokens.spacing[6] }}>
-        <div className="space-y-4">
-          <div>
+      <CardContent style={{ padding: `${tokens.spacing[3]} ${tokens.spacing[4]}` }}>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <h2
               className="font-semibold text-foreground"
               style={{
-                fontSize: tokens.fontSize.xl,
-                lineHeight: tokens.lineHeight.xl,
-                marginBottom: tokens.spacing[1],
+                fontSize: tokens.fontSize.base,
+                lineHeight: tokens.lineHeight.base,
+                marginBottom: "2px",
               }}
             >
-              Welcome to Harmonyk
+              {narration.title}
             </h2>
             <p
               className="text-muted-foreground"
@@ -48,36 +49,41 @@ export function DashboardHero({ progressState }: DashboardHeroProps) {
                 lineHeight: tokens.lineHeight.sm,
               }}
             >
-              Complete these steps to get the most out of your workspace
+              {narration.description}
             </p>
           </div>
 
-          <div className="relative pt-1">
-            <div className="flex mb-2 items-center justify-between">
-              <div>
-                <span
-                  className="text-xs font-semibold inline-block text-primary"
-                  style={{ fontSize: tokens.fontSize.xs }}
-                >
-                  {completedCount} of {totalCount} completed
-                </span>
-              </div>
-              <div className="text-right">
-                <span
-                  className="text-xs font-semibold inline-block text-primary"
-                  style={{ fontSize: tokens.fontSize.xs }}
-                >
-                  {Math.round(progressPercentage)}%
-                </span>
-              </div>
-            </div>
-            <div className="overflow-hidden h-2 text-xs flex rounded-full bg-primary/20">
-              <div
-                style={{ width: `${progressPercentage}%` }}
-                className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500"
-              />
-            </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href={narration.primaryCta.href}>
+              <Button size="sm">{narration.primaryCta.label}</Button>
+            </Link>
+            {narration.secondaryCta ? (
+              <Link href={narration.secondaryCta.href}>
+                <Button size="sm" variant="outline">
+                  {narration.secondaryCta.label}
+                </Button>
+              </Link>
+            ) : null}
           </div>
+
+          {progressState ? (
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-xs font-semibold text-primary"
+                  style={{ fontSize: tokens.fontSize.xs }}
+                >
+                  {completedCount}/{totalCount}
+                </span>
+                <div className="w-16 h-1.5 rounded-full bg-primary/20 overflow-hidden">
+                  <div
+                    style={{ width: `${progressPercentage}%` }}
+                    className="h-full bg-primary transition-all duration-500"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </CardContent>
     </Card>

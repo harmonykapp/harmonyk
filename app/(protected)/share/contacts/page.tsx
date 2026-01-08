@@ -226,18 +226,7 @@ export default function ContactsPage() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      {/* Heading + tagline */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Contacts</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          People you share docs with and send signatures to.
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Contacts are auto-created from share and signature activity. Google Contacts sync and
-          manual contact management are post-GA enhancements.
-        </p>
-      </div>
-
+      {/* Tabs stay — topbar already shows "Share Hub" */}
       {/* Top tabs: Overview / Share Links / Signatures / Contacts */}
       <div className="w-fit">
         <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">

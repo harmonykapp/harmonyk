@@ -30,12 +30,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SegmentBar } from "@/components/widgets";
 import DriveRecent from "@/components/workbench/DriveRecent";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeItem } from "@/lib/ai/analyze";
 import type { AnalyzeResult } from "@/lib/ai/schemas";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { handleApiError } from "@/lib/handle-api-error";
+import { mockWorkbenchFocus } from "@/lib/mock/widgets";
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
 import { trackEvent } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
@@ -71,6 +73,19 @@ type PlaybookSummary = {
   status: string;
 };
 
+type VaultDocCheckClient = {
+  from: (table: "document") => {
+    select: (columns: string) => {
+      eq: (column: "owner_id", value: string) => {
+        limit: (count: number) => Promise<{
+          data: Array<{ id: string }> | null;
+          error: unknown | null;
+        }>;
+      };
+    };
+  };
+};
+
 // Safe UUID helper
 function uuid() {
   return globalThis.crypto?.randomUUID?.()
@@ -90,8 +105,8 @@ export default function WorkbenchPage() {
   // NOTE:
   // `next build` is currently type-checking Supabase with a Database union that
   // does not include "document"/"version" even though they exist at runtime.
-  // Use an untyped handle in this page to avoid TS overload failures.
-  const sbAny: any = sb;
+  // Use a narrow, local casting type to avoid TS overload failures without using `any`.
+  const sbDoc = sb as unknown as VaultDocCheckClient;
   const connectorsExtraEnabled = isFeatureEnabled("FEATURE_CONNECTORS_EXTRA");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -127,7 +142,7 @@ export default function WorkbenchPage() {
           return;
         }
 
-        const { data, error } = await sbAny
+        const { data, error } = await sbDoc
           .from("document")
           .select("id")
           .eq("owner_id", user.id)
@@ -798,6 +813,15 @@ export default function WorkbenchPage() {
           {/* Task Reminders */}
           <div className="mb-4">
             <TaskReminders />
+          </div>
+
+          {/* P0: My Focus buckets (UI-first) */}
+          <div className="mb-4">
+            <SegmentBar
+              title="My Focus"
+              segments={mockWorkbenchFocus}
+              className="max-w-3xl"
+            />
           </div>
 
           {/* Empty state when no active work */}

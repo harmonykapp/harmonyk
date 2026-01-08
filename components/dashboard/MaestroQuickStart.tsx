@@ -1,11 +1,12 @@
 'use client';
 
-import { tokens } from '@/lib/ui/tokens';
-import { Widget } from '@/components/ui/widget';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Circle, ArrowRight } from 'lucide-react';
-import Link from 'next/link';
+import { Widget } from '@/components/ui/widget';
+import { tokens } from '@/lib/ui/tokens';
+import type { UserProgressNarration } from '@/lib/user-progress';
 import { cn } from '@/lib/utils';
+import { ArrowRight, Sparkles } from 'lucide-react';
+import Link from 'next/link';
 
 interface ProgressState {
   hasConnectedGoogleDrive: boolean;
@@ -16,94 +17,64 @@ interface ProgressState {
 }
 
 interface MaestroQuickStartProps {
-  progressState: ProgressState;
+  narration: UserProgressNarration;
+  progressState?: ProgressState;
 }
 
-const steps = [
-  {
-    key: 'hasConnectedGoogleDrive' as keyof ProgressState,
-    label: 'Connect Google Drive',
-    href: '/integrations?source=onboarding',
-  },
-  {
-    key: 'hasDraftedContract' as keyof ProgressState,
-    label: 'Generate your first contract',
-    href: '/builder?tab=contracts&source=onboarding',
-  },
-  {
-    key: 'hasDraftedDeck' as keyof ProgressState,
-    label: 'Generate your first deck',
-    href: '/builder?tab=decks&source=onboarding',
-  },
-  {
-    key: 'hasVaultDoc' as keyof ProgressState,
-    label: 'Save a document to Vault',
-    href: '/vault?source=onboarding',
-  },
-  {
-    key: 'hasRunAccountsPack' as keyof ProgressState,
-    label: '(Optional) Run an Accounts pack',
-    href: '/builder?tab=accounts&source=onboarding',
-  },
-];
+function getQuickStartHref(n: UserProgressNarration, index: number): string {
+  const item = n.quickStarts[index];
+  if (!item) return '/dashboard';
+  if (item.kind === 'link') return item.href;
+  // UI-only placeholder: later we'll wire this to open Maestro with an "intent".
+  return `/dashboard?maestroIntent=${encodeURIComponent(item.intent)}`;
+}
 
-export function MaestroQuickStart({ progressState }: MaestroQuickStartProps) {
-  const completedCount = Object.values(progressState).filter(Boolean).length;
-  const totalCount = Object.values(progressState).length;
-
-  if (completedCount === totalCount) {
-    return null;
+export function MaestroQuickStart({ narration, progressState }: MaestroQuickStartProps) {
+  if (progressState) {
+    const completedCount = Object.values(progressState).filter(Boolean).length;
+    const totalCount = Object.values(progressState).length;
+    if (completedCount === totalCount) return null;
   }
 
   return (
     <Widget
       title="Quick Start"
-      description="Follow these steps to set up your workspace"
+      description="Pick a next step — Maestro will guide you"
+      headerActions={
+        <Sparkles className="text-mono" style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
+      }
     >
       <div className="space-y-3">
-        {steps.map((step) => {
-          const isComplete = progressState[step.key];
-          const Icon = isComplete ? CheckCircle2 : Circle;
+        {narration.quickStarts.map((qs, idx) => {
+          const href = getQuickStartHref(narration, idx);
 
           return (
             <div
-              key={step.key}
+              key={`${qs.kind}-${idx}`}
               className={cn(
-                'flex items-center gap-3 p-3 rounded-lg border transition-colors',
-                isComplete ? 'bg-muted/50' : 'bg-background hover:bg-accent/50'
+                'flex items-center gap-3 p-3 rounded-lg border transition-colors bg-background hover:bg-accent/50'
               )}
             >
-              <Icon
-                className={cn(
-                  isComplete ? 'text-green-600' : 'text-muted-foreground'
-                )}
-                style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }}
-              />
-              <div className="flex-1 min-w-0">
-                {isComplete ? (
-                  <span
-                    className="text-sm text-muted-foreground line-through"
-                    style={{ fontSize: tokens.fontSize.sm }}
-                  >
-                    {step.label}
-                  </span>
-                ) : (
-                  <Link
-                    href={step.href}
-                    className="text-sm hover:underline hover:text-primary transition-colors"
-                    style={{ fontSize: tokens.fontSize.sm }}
-                  >
-                    {step.label}
-                  </Link>
-                )}
+              <div
+                className="rounded-md bg-primary/10 text-primary flex items-center justify-center"
+                style={{ width: tokens.iconSize.lg, height: tokens.iconSize.lg }}
+              >
+                <Sparkles style={{ width: tokens.iconSize.sm, height: tokens.iconSize.sm }} />
               </div>
-              {!isComplete && (
-                <Link href={step.href}>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <ArrowRight style={{ width: tokens.iconSize.sm, height: tokens.iconSize.sm }} />
-                  </Button>
+              <div className="flex-1 min-w-0">
+                <Link
+                  href={href}
+                  className="text-sm hover:underline hover:text-primary transition-colors"
+                  style={{ fontSize: tokens.fontSize.sm }}
+                >
+                  {qs.label}
                 </Link>
-              )}
+              </div>
+              <Link href={href}>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <ArrowRight style={{ width: tokens.iconSize.sm, height: tokens.iconSize.sm }} />
+                </Button>
+              </Link>
             </div>
           );
         })}
