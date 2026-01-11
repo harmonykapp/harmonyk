@@ -99,6 +99,7 @@ export default function CalendarPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"week" | "month">("week");
 
   useEffect(() => {
     setIsReady(true);
@@ -234,28 +235,55 @@ export default function CalendarPage() {
 
   const hasAnyScheduled = tasksByDay.some((bucket) => bucket.length > 0);
 
+  // Month view helpers
+  const monthStart = useMemo(() => {
+    if (!referenceDate) return new Date();
+    const d = new Date(referenceDate);
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [referenceDate]);
+
+  const monthDays = useMemo(() => {
+    const start = new Date(monthStart);
+    const firstDayOfWeek = start.getDay();
+    const adjustedStart = (firstDayOfWeek + 6) % 7;
+
+    start.setDate(start.getDate() - adjustedStart);
+
+    const days: Date[] = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }, [monthStart]);
+
+  const taskCountsByMonthDay = useMemo(() => {
+    const counts = new Map<string, number>();
+    monthDays.forEach((day) => {
+      const key = day.toISOString().split('T')[0];
+      const count = tasks.filter((task) => {
+        if (!task.due_at) return false;
+        const due = new Date(task.due_at);
+        return isSameDay(due, day);
+      }).length;
+      counts.set(key, count);
+    });
+    return counts;
+  }, [tasks, monthDays]);
+
   if (!isReady || !referenceDate) {
     return (
-      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto">
+      <div className="p-6 max-w-[1600px] mx-auto">
         <p className="text-sm text-muted-foreground">Loading calendar…</p>
       </div>
     );
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      {/* Heading + tagline */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Task Calendar</h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1">
-          See your open tasks laid out across the week.
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Only tasks with a due date are shown here. Use the Task Hub to manage unscheduled work.
-        </p>
-      </div>
-
-      {/* Top tabs (Overview / Calendar) */}
+    <div className="p-6 max-w-[1600px] mx-auto space-y-4">
       <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
         <Link
           href="/tasks"
@@ -273,63 +301,99 @@ export default function CalendarPage() {
         </Link>
       </div>
 
-      {/* Week controls + summary */}
+      {/* View controls + summary */}
       <Card>
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-3">
           <div>
-            <CardTitle className="text-sm sm:text-base">Week Overview</CardTitle>
-            <CardDescription>
-              {formatWeekRange(weekStart)} · {tasks.length} open task
-              {tasks.length === 1 ? "" : "s"} with due dates
+            <CardTitle className="text-sm sm:text-base">
+              {viewMode === "week" ? "Week Overview" : "Month Overview"}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {viewMode === "week"
+                ? `${formatWeekRange(weekStart)} · ${tasks.length} open task${tasks.length === 1 ? "" : "s"} with due dates`
+                : `${monthStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })} · ${tasks.length} open task${tasks.length === 1 ? "" : "s"}`
+              }
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const prev = new Date(weekStart);
-                prev.setDate(prev.getDate() - 7);
-                setReferenceDate(prev);
-              }}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous week
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setReferenceDate(new Date());
-              }}
-            >
-              This week
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const next = new Date(weekStart);
-                next.setDate(next.getDate() + 7);
-                setReferenceDate(next);
-              }}
-            >
-              Next week
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
+            <div className="inline-flex h-9 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+              <button
+                onClick={() => setViewMode("week")}
+                className={cn(
+                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-medium ring-offset-background transition-all",
+                  viewMode === "week" && "bg-background text-foreground shadow-sm"
+                )}
+              >
+                Week
+              </button>
+              <button
+                onClick={() => setViewMode("month")}
+                className={cn(
+                  "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-medium ring-offset-background transition-all",
+                  viewMode === "month" && "bg-background text-foreground shadow-sm"
+                )}
+              >
+                Month
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (viewMode === "week") {
+                    const prev = new Date(weekStart);
+                    prev.setDate(prev.getDate() - 7);
+                    setReferenceDate(prev);
+                  } else {
+                    const prev = new Date(monthStart);
+                    prev.setMonth(prev.getMonth() - 1);
+                    setReferenceDate(prev);
+                  }
+                }}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setReferenceDate(new Date());
+                }}
+              >
+                Today
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (viewMode === "week") {
+                    const next = new Date(weekStart);
+                    next.setDate(next.getDate() + 7);
+                    setReferenceDate(next);
+                  } else {
+                    const next = new Date(monthStart);
+                    next.setMonth(next.getMonth() + 1);
+                    setReferenceDate(next);
+                  }
+                }}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-4">
-            <Badge variant="outline">
-              {overdueTasks.length} overdue task{overdueTasks.length === 1 ? "" : "s"}
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline" className="text-xs">
+              {overdueTasks.length} overdue
             </Badge>
-            {!loading && !error && (
-              <Badge variant="outline">
-                {hasAnyScheduled ? "Tasks scheduled this week" : "No tasks scheduled this week"}
+            {!loading && !error && viewMode === "week" && (
+              <Badge variant="outline" className="text-xs">
+                {hasAnyScheduled ? "Tasks scheduled" : "No tasks scheduled"}
               </Badge>
             )}
           </div>
@@ -365,7 +429,8 @@ export default function CalendarPage() {
       </Card>
 
       {/* Week agenda */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {viewMode === "week" && (
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {weekDays.map((day, index) => {
           const bucket = tasksByDay[index];
           const isToday = isSameDay(day, today);
@@ -378,17 +443,17 @@ export default function CalendarPage() {
                 isToday && "border-primary/70 shadow-sm shadow-primary/10",
               )}
             >
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">
                   {formatDayLabel(day, today)}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs">
                   {bucket.length === 0
-                    ? "No tasks scheduled"
-                    : `${bucket.length} task${bucket.length === 1 ? "" : "s"} scheduled`}
+                    ? "No tasks"
+                    : `${bucket.length} task${bucket.length === 1 ? "" : "s"}`}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-1">
+              <CardContent className="flex-1 pt-0">
                 {loading ? (
                   <p className="text-xs text-muted-foreground">Loading…</p>
                 ) : bucket.length === 0 ? (
@@ -437,7 +502,56 @@ export default function CalendarPage() {
             </Card>
           );
         })}
-      </div>
+        </div>
+      )}
+
+      {/* Month view */}
+      {viewMode === "month" && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-7 gap-2">
+              {/* Day headers */}
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+                <div key={day} className="text-center text-xs font-semibold text-muted-foreground py-2">
+                  {day}
+                </div>
+              ))}
+              {/* Day cells */}
+              {monthDays.map((day) => {
+                const isToday = isSameDay(day, today);
+                const isCurrentMonth = day.getMonth() === monthStart.getMonth();
+                const key = day.toISOString().split('T')[0];
+                const taskCount = taskCountsByMonthDay.get(key) || 0;
+
+                return (
+                  <button
+                    key={day.toISOString()}
+                    className={cn(
+                      "aspect-square rounded-lg border p-2 text-sm transition-colors hover:bg-accent/50",
+                      isToday && "border-primary bg-primary/10",
+                      !isCurrentMonth && "opacity-40",
+                      taskCount > 0 && "font-medium"
+                    )}
+                  >
+                    <div className="flex flex-col h-full">
+                      <div className={cn("text-xs", isToday && "text-primary font-semibold")}>
+                        {day.getDate()}
+                      </div>
+                      {taskCount > 0 && (
+                        <div className="mt-auto">
+                          <div className="w-5 h-5 rounded-full bg-blue-400/40 flex items-center justify-center text-[10px] font-semibold mx-auto">
+                            {taskCount}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="text-xs text-muted-foreground">
         Tip: Use the{" "}

@@ -1,8 +1,13 @@
 # Harmonyk North Star (Post-GA) — SSOT
 
 ## Post-GA UI + Maestro Direction Update
-Updated: 2025-12-20
+Updated: 2025-12-20  
 Scope: Post-GA definition + PGW1–PGW26 alignment + UI/AI philosophy shift
+
+Canonical implementation artifacts:
+- `docs/USER_PROGRESS_NARRATOR.md`
+- `lib/user-progress.ts`
+- `lib/__tests__/user-progress.test.ts`
 
 ---
 

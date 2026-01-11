@@ -5,7 +5,7 @@
   "scripts": {
     "brand:audit": "node scripts/brand-audit.mjs",
     "supabase:types": "node scripts/gen-supabase-types.mjs",
-    "dev": "next dev",
+    "dev:bolt": "next dev -p 3000",
     "build": "next build",
     "preview": "next build && next start -p 3000",
     "clean": "rimraf .next && rimraf build",

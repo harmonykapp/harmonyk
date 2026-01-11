@@ -297,18 +297,7 @@ export default function SignaturesPage() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      {/* Heading + tagline */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Signatures</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Keep deals moving with signature-ready documents.
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          This dashboard gives you a central view of pending and completed signatures. At GA, all
-          envelopes are still created from document-level flows in Workbench and Vault.
-        </p>
-      </div>
-
+      {/* Tabs stay — topbar should show "Share Hub" via page-titles.ts */}
       {/* Top tabs: Overview / Share Links / Signatures / Contacts */}
       <div className="w-fit">
         <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">

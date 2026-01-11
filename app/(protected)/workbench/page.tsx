@@ -3,7 +3,6 @@
 
 "use client";
 
-import TaskReminders from "@/components/tasks/TaskReminders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import DriveRecent from "@/components/workbench/DriveRecent";
+import { WidgetCard } from "@/components/widgets/WidgetCard";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeItem } from "@/lib/ai/analyze";
 import type { AnalyzeResult } from "@/lib/ai/schemas";
@@ -71,6 +70,19 @@ type PlaybookSummary = {
   status: string;
 };
 
+type VaultDocCheckClient = {
+  from: (table: "document") => {
+    select: (columns: string) => {
+      eq: (column: "owner_id", value: string) => {
+        limit: (count: number) => Promise<{
+          data: Array<{ id: string }> | null;
+          error: unknown | null;
+        }>;
+      };
+    };
+  };
+};
+
 // Safe UUID helper
 function uuid() {
   return globalThis.crypto?.randomUUID?.()
@@ -84,14 +96,51 @@ const statusColors: Record<string, string> = {
   draft: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
 };
 
+const mockFocusToday = [
+  { id: "overdue", label: "Overdue", value: 3 },
+  { id: "today", label: "Due today", value: 5 },
+  { id: "week", label: "This week", value: 12 },
+];
+
+const mockRecentlyActive = [
+  { id: "1", title: "NDA — ACME Corp", subtitle: "Edited", valueLabel: "2h ago" },
+  { id: "2", title: "MSA — VendorX", subtitle: "Reviewed", valueLabel: "4h ago" },
+  { id: "3", title: "SOW — Q4 Project", subtitle: "Signed", valueLabel: "1d ago" },
+];
+
+const mockBlockedItems = [
+  { id: "1", title: "Partner Agreement", subtitle: "Legal hold", tag: "high", valueLabel: "5d" },
+  { id: "2", title: "Vendor Contract", subtitle: "Pending approval", tag: "medium", valueLabel: "3d" },
+  { id: "3", title: "Service Agreement", subtitle: "Missing signature", tag: "medium", valueLabel: "2d" },
+];
+
+const mockStageBreakdown = [
+  { id: "draft", label: "Draft", value: 12 },
+  { id: "review", label: "Review", value: 8 },
+  { id: "approved", label: "Approved", value: 5 },
+  { id: "signed", label: "Signed", value: 3 },
+];
+
+const mockReviewQueue = [
+  { id: "1", title: "Employment Agreement", subtitle: "Contract", tag: "pending", valueLabel: "2d" },
+  { id: "2", title: "NDA Template v2", subtitle: "Template", tag: "review", valueLabel: "1d" },
+  { id: "3", title: "SOW Amendment", subtitle: "Contract", tag: "pending", valueLabel: "4h" },
+];
+
+const mockSignatureQueue = [
+  { id: "1", title: "MSA — ClientCo", subtitle: "Waiting on them", tag: "medium", valueLabel: "3d" },
+  { id: "2", title: "NDA — PartnerX", subtitle: "Waiting on me", tag: "high", valueLabel: "1d" },
+  { id: "3", title: "SOW — ProjectY", subtitle: "Waiting on them", tag: "low", valueLabel: "5h" },
+];
+
 export default function WorkbenchPage() {
   const { toast } = useToast();
   const sb = useMemo(() => getBrowserSupabaseClient(), []);
   // NOTE:
   // `next build` is currently type-checking Supabase with a Database union that
   // does not include "document"/"version" even though they exist at runtime.
-  // Use an untyped handle in this page to avoid TS overload failures.
-  const sbAny: any = sb;
+  // Use a narrow, local casting type to avoid TS overload failures without using `any`.
+  const sbDoc = sb as unknown as VaultDocCheckClient;
   const connectorsExtraEnabled = isFeatureEnabled("FEATURE_CONNECTORS_EXTRA");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -127,7 +176,7 @@ export default function WorkbenchPage() {
           return;
         }
 
-        const { data, error } = await sbAny
+        const { data, error } = await sbDoc
           .from("document")
           .select("id")
           .eq("owner_id", user.id)
@@ -789,22 +838,232 @@ export default function WorkbenchPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="p-6 space-y-4">
-          <div className="mb-4 rounded-lg border bg-background p-4">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Workbench</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Where you organize and analyze your documents and tasks.
-            </p>
+        <div className="p-6 space-y-6">
+          {/* Integration Attention Strip */}
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="text-sm font-semibold">Integrations</div>
+                <div className="text-xs text-muted-foreground">Drive needs reauth • Gmail disconnected</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-7 text-xs">
+                  Fix Drive
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs">
+                  Fix Gmail
+                </Button>
+              </div>
+            </div>
           </div>
 
-          {/* Drive Recent */}
-          <div className="mb-4">
-            <DriveRecent />
-          </div>
+          {/* Widget Grid: 2 rows x 3 columns */}
+          <div className="space-y-4">
+            {/* Row 1 */}
+            <div className="grid gap-4 lg:grid-cols-12">
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard title="My Focus Today" density="compact" className="h-full" bodyClassName="!pt-0 !pb-2">
+                  <div className="space-y-3 -mt-1">
+                    <div className="space-y-2">
+                      {mockFocusToday.map((segment) => (
+                        <div key={segment.id} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{segment.label}</span>
+                          <span className="font-medium">{segment.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="flex h-2 w-full">
+                        {mockFocusToday.map((segment, idx) => {
+                          const total = mockFocusToday.reduce((acc, s) => acc + s.value, 0);
+                          const pct = (segment.value / total) * 100;
+                          const colors = ["bg-blue-400/40", "bg-orange-400/40", "bg-purple-400/40"];
+                          return (
+                            <div
+                              key={segment.id}
+                              className={colors[idx] || "bg-foreground/40"}
+                              style={{ width: `${pct}%` }}
+                              title={`${segment.label}: ${segment.value}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </WidgetCard>
+              </div>
 
-          {/* Task Reminders */}
-          <div className="mb-4">
-            <TaskReminders />
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard
+                  title="Recently Active Docs"
+                  density="compact"
+                  className="h-full"
+                  bodyClassName="!pt-0 !pb-2"
+                  rightSlot={
+                    <Link href="#" className="text-xs text-muted-foreground hover:text-foreground">
+                      View all →
+                    </Link>
+                  }
+                >
+                  <div className="space-y-1.5 -mt-1">
+                    {mockRecentlyActive.map((item) => (
+                      <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium truncate">{item.title}</div>
+                            <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </WidgetCard>
+              </div>
+
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard
+                  title="Blocked Items"
+                  density="compact"
+                  className="h-full"
+                  bodyClassName="!pt-0 !pb-2"
+                  rightSlot={
+                    <Link href="#" className="text-xs text-muted-foreground hover:text-foreground">
+                      View all →
+                    </Link>
+                  }
+                >
+                  <div className="space-y-1.5 -mt-1">
+                    {mockBlockedItems.map((item) => (
+                      <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium truncate">{item.title}</div>
+                              <Badge variant="outline" className={cn(
+                                "text-[10px] px-1.5 py-0",
+                                item.tag === "high" && "border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300",
+                                item.tag === "medium" && "border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-300"
+                              )}>
+                                {item.tag}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </WidgetCard>
+              </div>
+            </div>
+
+            {/* Row 2 */}
+            <div className="grid gap-4 lg:grid-cols-12">
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard title="Stage Breakdown" subtitle="Documents by status" density="compact" className="h-full" bodyClassName="!pt-0 !pb-2">
+                  <div className="space-y-3 -mt-1">
+                    <div className="space-y-2">
+                      {mockStageBreakdown.map((segment) => (
+                        <div key={segment.id} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{segment.label}</span>
+                          <span className="font-medium">{segment.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="flex h-2 w-full">
+                        {mockStageBreakdown.map((segment, idx) => {
+                          const total = mockStageBreakdown.reduce((acc, s) => acc + s.value, 0);
+                          const pct = (segment.value / total) * 100;
+                          const colors = ["bg-slate-400/30", "bg-blue-400/40", "bg-emerald-400/40", "bg-teal-400/40"];
+                          return (
+                            <div
+                              key={segment.id}
+                              className={colors[idx] || "bg-foreground/40"}
+                              style={{ width: `${pct}%` }}
+                              title={`${segment.label}: ${segment.value}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </WidgetCard>
+              </div>
+
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard
+                  title="Review Queue"
+                  density="compact"
+                  className="h-full"
+                  bodyClassName="!pt-0 !pb-2"
+                  rightSlot={
+                    <Link href="#" className="text-xs text-muted-foreground hover:text-foreground">
+                      View all →
+                    </Link>
+                  }
+                >
+                  <div className="space-y-1.5 -mt-1">
+                    {mockReviewQueue.map((item) => (
+                      <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium truncate">{item.title}</div>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border/60 bg-muted">
+                                {item.tag}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </WidgetCard>
+              </div>
+
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard
+                  title="Signature Queue"
+                  density="compact"
+                  className="h-full"
+                  bodyClassName="!pt-0 !pb-2"
+                  rightSlot={
+                    <Link href="#" className="text-xs text-muted-foreground hover:text-foreground">
+                      View all →
+                    </Link>
+                  }
+                >
+                  <div className="space-y-1.5 -mt-1">
+                    {mockSignatureQueue.map((item) => (
+                      <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium truncate">{item.title}</div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                              <Badge variant="outline" className={cn(
+                                "text-[10px] px-1.5 py-0",
+                                item.tag === "high" && "border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300",
+                                item.tag === "medium" && "border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-300",
+                                item.tag === "low" && "border-green-500/20 bg-green-500/10 text-green-800 dark:text-green-300"
+                              )}>
+                                {item.tag}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </WidgetCard>
+              </div>
+            </div>
           </div>
 
           {/* Empty state when no active work */}
@@ -862,7 +1121,7 @@ export default function WorkbenchPage() {
             </div>
 
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Source" />
               </SelectTrigger>
               <SelectContent>
@@ -873,7 +1132,7 @@ export default function WorkbenchPage() {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -892,9 +1151,8 @@ export default function WorkbenchPage() {
               size="sm"
               onClick={onRunPlaybookFromSelection}
               disabled={runPlaybookPending || !selectedRow}
-              className="ml-1"
             >
-              {runPlaybookPending ? "Running…" : "Run Playbook (dry-run)"}
+              {runPlaybookPending ? "Running…" : "Run Playbook"}
             </Button>
           </div>
         </div>

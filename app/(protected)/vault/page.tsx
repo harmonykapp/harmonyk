@@ -1,5 +1,4 @@
 "use client";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { FilterChipsRowSelectable as FilterChipsRow, type FilterChipItem } from "@/components/widgets/FilterChipsRowSelectable";
 import { TEMPLATES } from "@/data/templates";
 import { useToast } from "@/hooks/use-toast";
 import { isFeatureEnabled, isRagEnabled } from "@/lib/feature-flags";
@@ -56,6 +56,7 @@ type Row = {
   id: string;
   title: string;
   kind?: string | null;
+  status?: string | null;
   templateId?: string | null;
   org_id?: string | null;
   created_at: string;
@@ -96,15 +97,21 @@ type TrainResponse = {
   error?: string;
 };
 
-const folders = [
-  { icon: Star, label: 'Starred', count: 0, color: 'text-yellow-600' },
-  { icon: Clock, label: 'Recent', count: 0, color: 'text-blue-600' },
-  { icon: Users, label: 'Shared with me', count: 0, color: 'text-green-600' },
-  { icon: FileSignature, label: 'Signed Documents', count: 0, color: 'text-purple-600' },
-  { icon: Archive, label: 'Archived', count: 0, color: 'text-gray-600' },
-];
+const folderDefs: Array<{
+  id: "starred" | "recent" | "shared" | "signed" | "archived";
+  icon: typeof Star;
+  label: string;
+  color: string;
+}> = [
+    { id: "starred", icon: Star, label: "Starred", color: "text-yellow-600" },
+    { id: "recent", icon: Clock, label: "Recent", color: "text-blue-600" },
+    { id: "shared", icon: Users, label: "Shared with me", color: "text-green-600" },
+    { id: "signed", icon: FileSignature, label: "Signed Documents", color: "text-purple-600" },
+    { id: "archived", icon: Archive, label: "Archived", color: "text-gray-600" },
+  ];
 
 export default function VaultPage() {
+  const [quickFilter, setQuickFilter] = useState<string>("all");
   const vaultExperimental = isFeatureEnabled("FEATURE_VAULT_EXPERIMENTAL_ACTIONS");
   const ragEnabled = isRagEnabled();
   const { toast } = useToast();
@@ -135,6 +142,100 @@ export default function VaultPage() {
     TEMPLATES.forEach((template) => map.set(template.id, template.name));
     return map;
   }, []);
+
+  const RECENT_DAYS = 14;
+
+  const matchesQuickFilter = (row: Row, filter: string): boolean => {
+    if (filter === "all") return true;
+
+    const status = (row.status ?? "").toLowerCase();
+    const title = (row.title ?? "").toLowerCase();
+
+    const isRecent = (() => {
+      const iso = row.updated_at ?? row.created_at;
+      const t = new Date(iso).getTime();
+      if (!Number.isFinite(t)) return false;
+      const cutoff = Date.now() - RECENT_DAYS * 24 * 60 * 60 * 1000;
+      return t >= cutoff;
+    })();
+
+    switch (filter) {
+      case "archived":
+        return status === "archived";
+      case "signed":
+        return (
+          status === "signed" ||
+          status === "executed" ||
+          status === "completed" ||
+          title.includes("signed")
+        );
+      case "shared":
+        return status === "shared" || title.includes("shared");
+      case "starred":
+        return status === "starred" || title.includes("⭐");
+      case "recent":
+        return isRecent;
+      default:
+        return true;
+    }
+  };
+
+  const countsByFilter = useMemo(() => {
+    const base = rows ?? [];
+    const counts: Record<string, number> = {
+      all: base.length,
+      starred: 0,
+      recent: 0,
+      shared: 0,
+      signed: 0,
+      archived: 0,
+    };
+
+    for (const r of base) {
+      if (matchesQuickFilter(r, "starred")) counts.starred += 1;
+      if (matchesQuickFilter(r, "recent")) counts.recent += 1;
+      if (matchesQuickFilter(r, "shared")) counts.shared += 1;
+      if (matchesQuickFilter(r, "signed")) counts.signed += 1;
+      if (matchesQuickFilter(r, "archived")) counts.archived += 1;
+    }
+
+    return counts;
+  }, [rows]);
+
+  const quickFilters: FilterChipItem[] = useMemo(() => {
+    return [
+      { id: "all", label: "All", count: countsByFilter.all },
+      { id: "starred", label: "Starred", count: countsByFilter.starred },
+      { id: "recent", label: "Recent", count: countsByFilter.recent },
+      { id: "shared", label: "Shared", count: countsByFilter.shared },
+      { id: "signed", label: "Signed", count: countsByFilter.signed },
+      { id: "archived", label: "Archived", count: countsByFilter.archived },
+    ];
+  }, [countsByFilter]);
+
+  const folderItems = useMemo(() => {
+    return folderDefs.map((f) => ({
+      ...f,
+      count: countsByFilter[f.id] ?? 0,
+    }));
+  }, [countsByFilter]);
+
+  const visibleRows = useMemo(() => {
+    const base = rows ?? [];
+    const q = searchQuery.trim().toLowerCase();
+
+    return base.filter((row) => {
+      if (!matchesQuickFilter(row, quickFilter)) return false;
+      if (!q) return true;
+      return (row.title ?? "").toLowerCase().includes(q);
+    });
+  }, [rows, quickFilter, searchQuery]);
+
+  useEffect(() => {
+    if (!selectedDoc) return;
+    const stillVisible = visibleRows.some((r) => r.id === selectedDoc);
+    if (!stillVisible) setSelectedDoc(null);
+  }, [visibleRows, selectedDoc]);
 
   // 1) Load current user ASAP
   useEffect(() => {
@@ -266,6 +367,7 @@ export default function VaultPage() {
           title: d.title,
           org_id: (d as any).org_id ?? null,
           kind: d.kind ?? null,
+          status: (d as any).status ?? null,
           templateId: null,
           created_at: d.created_at,
           updated_at: meta.updatedAt ?? d.created_at,
@@ -1021,13 +1123,7 @@ export default function VaultPage() {
 
   const actionsDisabled = !userReady || !userId;
 
-  // Filter rows based on search
-  const filteredRows = rows?.filter((row) => {
-    if (!searchQuery) return true;
-    return row.title.toLowerCase().includes(searchQuery.toLowerCase());
-  }) ?? [];
-
-  const selectedDocument = selectedDoc ? filteredRows.find((doc) => doc.id === selectedDoc) : null;
+  const selectedDocument = selectedDoc ? visibleRows.find((doc) => doc.id === selectedDoc) : null;
 
   useEffect(() => {
     if (!vaultExperimental || !ragEnabled) return;
@@ -1041,18 +1137,8 @@ export default function VaultPage() {
   if (rows === null && !loading && !err) {
     return (
       <div className="h-full flex flex-col">
-        {/* Heading + tagline */}
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-4 border-b">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vault</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Find docs by categories, tags, people, or activity.
-            </p>
-          </div>
-        </div>
-
         {/* Top tabs (My Files / My Drafts) — second tab links to Workbench drafts */}
-        <div className="px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-8 pt-4">
           <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
             <Link
               href="/vault"
@@ -1088,18 +1174,8 @@ export default function VaultPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Heading + tagline */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-4 border-b">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vault</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Find docs by categories, tags, people, or activity.
-          </p>
-        </div>
-      </div>
-
       {/* Top tabs (My Files / My Drafts) — second tab links to Workbench drafts */}
-      <div className="px-4 sm:px-6 lg:px-8">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4">
         <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
           <Link
             href="/vault"
@@ -1138,12 +1214,17 @@ export default function VaultPage() {
             </div>
 
             <div className="space-y-1">
-              {folders.map((folder) => {
+              {folderItems.map((folder) => {
                 const Icon = folder.icon;
                 return (
                   <button
                     key={folder.label}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-active/50 transition-colors text-sm"
+                    onClick={() => setQuickFilter(folder.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm",
+                      "hover:bg-sidebar-active/50",
+                      quickFilter === folder.id && "bg-sidebar-active/60"
+                    )}
                   >
                     <Icon className={`h-4 w-4 ${folder.color}`} />
                     <span className="flex-1 text-left">{folder.label}</span>
@@ -1157,14 +1238,28 @@ export default function VaultPage() {
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="border-b p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
                 <h2 className="text-lg sm:text-xl font-bold text-muted-foreground">All documents</h2>
-                <p className="text-muted-foreground mt-1">
-                  {loading ? "Loading…" : `${filteredRows.length} documents`}
+                <p className="mt-1 text-muted-foreground">
+                  {loading ? "Loading…" : `${visibleRows.length} documents`}
                 </p>
+
+                {/* Desktop quick filters (left-aligned under the title) */}
+                <div className="mt-3 hidden md:block">
+                  <div className="overflow-x-auto">
+                    <FilterChipsRow
+                      items={quickFilters}
+                      value={quickFilter}
+                      onChange={setQuickFilter}
+                      className="justify-start flex-nowrap w-max"
+                      aria-label="Vault quick filters"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+
+              <div className="flex items-center gap-2 shrink-0">
                 <Link href="/activity">
                   <Button variant="outline" size="sm">View activity</Button>
                 </Link>
@@ -1173,6 +1268,16 @@ export default function VaultPage() {
                 </Link>
               </div>
             </div>
+          </div>
+
+          {/* Mobile quick filters row */}
+          <div className="px-6 pb-4 md:hidden">
+            <FilterChipsRow
+              items={quickFilters}
+              value={quickFilter}
+              onChange={setQuickFilter}
+              aria-label="Vault quick filters"
+            />
           </div>
 
           {loading && (
@@ -1187,7 +1292,7 @@ export default function VaultPage() {
             </div>
           )}
 
-          {!loading && !err && filteredRows.length === 0 && (
+          {!loading && !err && visibleRows.length === 0 && (
             <div className="flex-1 flex items-center justify-center">
               <Card className="p-8 text-center max-w-md">
                 <div className="space-y-4">
@@ -1216,11 +1321,11 @@ export default function VaultPage() {
             </div>
           )}
 
-          {!loading && !err && filteredRows.length > 0 && (
+          {!loading && !err && visibleRows.length > 0 && (
             <div className="flex-1 flex overflow-hidden">
               <div className={cn('flex-1 overflow-auto p-6', selectedDoc && 'max-w-[60%]')}>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredRows.map((doc) => (
+                  {visibleRows.map((doc) => (
                     <Card
                       key={doc.id}
                       className={cn(

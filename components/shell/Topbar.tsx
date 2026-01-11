@@ -14,16 +14,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { getBrowserSupabaseClient } from '@/lib/supabase-browser';
 import { getPageTitle } from '@/lib/ui/page-titles';
+import { tokens } from '@/lib/ui/tokens';
 import { Moon, Search, Sparkles, Sun } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-interface TopBarProps {
+interface TopbarProps {
   onMonoToggle: () => void;
   monoOpen: boolean;
 }
 
-export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
+export function Topbar({ onMonoToggle, monoOpen }: TopbarProps) {
   const { setTheme, theme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -50,7 +51,6 @@ export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
           .slice(0, 2) || 'U';
         setUser({ name, email, initials });
       } else {
-        // Fallback for demo/unauthenticated state
         setUser({ name: 'Guest User', email: 'guest@harmonyk.ai', initials: 'GU' });
       }
     };
@@ -64,15 +64,19 @@ export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
   };
 
   return (
-    <div className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-6 gap-4 sticky top-0 z-30" suppressHydrationWarning>
+    <div
+      className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-6 gap-4 sticky top-0 z-30"
+      style={{ height: tokens.layout.topbarHeight }}
+      suppressHydrationWarning
+    >
       <div className="flex items-center gap-4 w-full">
         <div className="min-w-[140px] max-w-[220px]">
-          <div className="text-lg font-semibold leading-none truncate">{pageTitle}</div>
+          <div className="text-xl font-semibold tracking-tight truncate">{pageTitle}</div>
         </div>
 
         <div className="flex-1 max-w-md" suppressHydrationWarning>
           <div className="relative" suppressHydrationWarning>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" style={{ width: tokens.iconSize.sm, height: tokens.iconSize.sm }} />
             <Input
               type="search"
               placeholder="Search docs, tasks, or threads..."
@@ -82,7 +86,7 @@ export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2" suppressHydrationWarning>
+        <div className="flex items-center" style={{ gap: tokens.spacing[2] }} suppressHydrationWarning>
         <div suppressHydrationWarning>
           <Button
             variant={monoOpen ? 'default' : 'outline'}
@@ -90,7 +94,7 @@ export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
             onClick={onMonoToggle}
             className="gap-2"
           >
-            <Sparkles className="h-4 w-4" />
+            <Sparkles style={{ width: tokens.iconSize.sm, height: tokens.iconSize.sm }} />
             <span className="hidden sm:inline">Ask Maestro</span>
           </Button>
         </div>
