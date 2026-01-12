@@ -1,7 +1,6 @@
 "use client";
 
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
-import { cn } from "@/lib/utils";
 import {
   FunnelCard,
   KpiCard,
@@ -33,7 +32,6 @@ type OnboardingStatus = {
 };
 
 export default function DashboardPage() {
-  const SHOW_ONBOARDING = true;
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
 
   useEffect(() => {
@@ -66,6 +64,8 @@ export default function DashboardPage() {
   }, []);
 
   const progressSignals: UserProgressSignals = useMemo(() => {
+    // Safe defaults: keep the dashboard non-blank even if onboarding status fails to load.
+    // We'll deepen these signals later (tasks, playbooks, metadata) once we wire real analytics.
     const hasConnectedAnyConnector = onboardingStatus?.hasConnectedGoogleDrive ?? false;
     const hasAnyDocsInVault = onboardingStatus?.hasVaultDoc ?? false;
     const hasCreatedAnyDealOrWorkflow =
@@ -86,9 +86,11 @@ export default function DashboardPage() {
 
   const narration = useMemo(() => getUserProgressNarration(progressSignals), [progressSignals]);
 
+  // Dashboard rule: no scrollbars inside widgets. Show fewer rows instead.
   const prioritiesToShow = mockDashboardPriorities.slice(0, 3);
   const atRiskToShow = mockAtRiskItems.slice(0, 3);
   const topLinksToShow = mockLinkLeaderboard.slice(0, 3);
+  const showQuickStart = !(onboardingStatus?.hasConnectedGoogleDrive ?? false);
 
   return (
     <div
@@ -96,40 +98,48 @@ export default function DashboardPage() {
       style={{ maxWidth: tokens.layout.pageMaxWidth }}
     >
       <div className="flex flex-col gap-4">
-        {/* Banner at top */}
-        <DashboardHero narration={narration} progressState={onboardingStatus ?? undefined} />
+        {/* Slim banner at top */}
+        <div className="col-span-12">
+          <DashboardHero narration={narration} progressState={onboardingStatus ?? undefined} />
+        </div>
 
-        {/* Onboarding tiles: 3 compact quick actions */}
-        {SHOW_ONBOARDING ? (
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Link
-              href="/integrations"
-              className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
-            >
-              <div className="text-sm font-semibold">Connect Google Drive</div>
-              <div className="mt-1 text-xs text-muted-foreground">Import docs into Vault</div>
-            </Link>
-            <Link
-              href="/integrations"
-              className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
-            >
-              <div className="text-sm font-semibold">Connect Gmail</div>
-              <div className="mt-1 text-xs text-muted-foreground">Find docs in email threads</div>
-            </Link>
-            <Link
-              href="/share"
-              className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
-            >
-              <div className="text-sm font-semibold">Create a share link</div>
-              <div className="mt-1 text-xs text-muted-foreground">Track views + follow-ups</div>
-            </Link>
-          </div>
+        {/* Maestro Next Steps (compact): 3 recommended next actions */}
+        {showQuickStart ? (
+          <WidgetCard
+            title="Next Steps recommended by Maestro"
+            subtitle="3 quick wins to unlock the dashboard"
+            density="compact"
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Link
+                href="/integrations"
+                className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
+              >
+                <div className="text-sm font-semibold">Connect Google Drive</div>
+                <div className="mt-1 text-xs text-muted-foreground">Import docs into Vault</div>
+              </Link>
+              <Link
+                href="/integrations"
+                className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
+              >
+                <div className="text-sm font-semibold">Connect Gmail</div>
+                <div className="mt-1 text-xs text-muted-foreground">Find docs in email threads</div>
+              </Link>
+              <Link
+                href="/share"
+                className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
+              >
+                <div className="text-sm font-semibold">Create a share link</div>
+                <div className="mt-1 text-xs text-muted-foreground">Track views + follow-ups</div>
+              </Link>
+            </div>
+          </WidgetCard>
         ) : null}
 
-        {/* Row 1: 3 M widgets at 280px height */}
+        {/* Row 1: 3 widgets (standard) */}
         <div className="grid gap-4 lg:grid-cols-12">
           <div className="lg:col-span-4 lg:h-[280px]">
-            <WidgetCard title="Next Steps recommended by Maestro" density="compact" className="h-full" bodyClassName="!pt-0 !pb-2">
+            <WidgetCard title="Today's Priorities" subtitle="Do next" density="compact" className="h-full">
               {prioritiesToShow.length === 0 ? (
                 <div className="px-2 pb-3">
                   <div className="rounded-xl border border-border/60 bg-muted/40 px-4 py-4">
@@ -140,7 +150,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-1.5 -mt-1">
+                <div className="space-y-2">
                   {prioritiesToShow.map((item) => {
                     const Row: React.ElementType = item.href ? Link : "div";
                     const rowProps = item.href ? { href: item.href } : {};
@@ -149,7 +159,7 @@ export default function DashboardPage() {
                         key={item.id}
                         {...rowProps}
                         className={[
-                          "block rounded-xl px-3 py-2.5 hover:bg-muted transition-colors min-h-[72px] flex flex-col justify-center",
+                          "block rounded-xl px-3 py-2 hover:bg-muted transition-colors",
                           item.href ? "cursor-pointer" : "",
                         ].join(" ")}
                       >
@@ -177,9 +187,9 @@ export default function DashboardPage() {
                         </div>
                         {typeof item.valuePct === "number" ? (
                           <div className="mt-2">
-                            <div className="h-1.5 w-full rounded-full bg-muted">
+                            <div className="h-2 w-full rounded-full bg-muted">
                               <div
-                                className="h-1.5 rounded-full bg-blue-500/25 dark:bg-blue-400/20"
+                                className="h-2 rounded-full bg-indigo-500/25 dark:bg-indigo-400/20"
                                 style={{
                                   width: `${Math.max(0, Math.min(100, item.valuePct))}%`,
                                 }}
@@ -210,10 +220,10 @@ export default function DashboardPage() {
               subtitle="What needs signing next"
               density="compact"
               className="h-full"
-              bodyClassName="!pt-0 !pb-2"
             >
-              <div className="flex h-full min-h-0 flex-col gap-1.5 -mt-1">
-                <Link href="/signatures" className="block">
+              {/* Keep everything visible inside the fixed 1/3 widget height */}
+              <div className="flex h-full min-h-0 flex-col gap-2">
+                <Link href="/share/signatures" className="block">
                   <KpiCard
                     label="Waiting on me"
                     value={mockSignatureLoad.waitingOnMe}
@@ -222,7 +232,7 @@ export default function DashboardPage() {
                     className="cursor-pointer hover:bg-muted py-2"
                   />
                 </Link>
-                <Link href="/signatures" className="block">
+                <Link href="/share/signatures" className="block">
                   <KpiCard
                     label="Waiting on others"
                     value={mockSignatureLoad.waitingOnOthers}
@@ -232,8 +242,9 @@ export default function DashboardPage() {
                   />
                 </Link>
 
+                {/* Compact bottom section (no clipping) */}
                 <div className="mt-auto pt-1">
-                  <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>Waiting on me</span>
                     <span>
                       {mockSignatureLoad.waitingOnMe + mockSignatureLoad.waitingOnOthers}
@@ -241,7 +252,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="h-1.5 w-full rounded-full bg-muted">
                     <div
-                      className="h-1.5 rounded-full bg-purple-500/25 dark:bg-purple-400/20"
+                      className="h-1.5 rounded-full bg-purple-600/70 dark:bg-purple-400/70"
                       style={{
                         width: `${Math.round(
                           (mockSignatureLoad.waitingOnMe /
@@ -249,7 +260,7 @@ export default function DashboardPage() {
                               1,
                               mockSignatureLoad.waitingOnMe + mockSignatureLoad.waitingOnOthers,
                             )) *
-                            100,
+                          100,
                         )}%`,
                       }}
                     />
@@ -260,8 +271,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Row 2: 3 M widgets at 280px height */}
-        <div className="grid gap-4 lg:grid-cols-12 mt-9">
+        {/* Row 2: 3 widgets (standard) */}
+        <div className="grid gap-4 lg:grid-cols-12">
           <div className="lg:col-span-4 lg:h-[280px]">
             <FunnelCard
               title="Deal Funnel"
