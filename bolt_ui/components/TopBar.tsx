@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Moon, Search, Sparkles, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useEffect, useRef } from 'react';
 
 interface TopBarProps {
   onMonoToggle: () => void;
@@ -21,6 +22,31 @@ interface TopBarProps {
 
 export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
   const { setTheme, theme } = useTheme();
+  const searchRef = useRef<HTMLInputElement | null>(null);
+
+  // Global keyboard shortcut: Cmd+K / Ctrl+K to focus search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const isEditable =
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select' ||
+        target?.isContentEditable === true;
+
+      if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
+        if (isEditable) return;
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+    };
+  }, []);
 
   return (
     <div className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-6 gap-4 sticky top-0 z-30">
@@ -28,6 +54,7 @@ export function TopBar({ onMonoToggle, monoOpen }: TopBarProps) {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            ref={searchRef}
             type="search"
             placeholder="Search docs, tasks, or threads..."
             className="pl-9 w-full"

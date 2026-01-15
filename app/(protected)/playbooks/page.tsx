@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+// PGW2 UI polish:
+// Increase Playbook Activity row height so the "Playbook Runs" list doesn't clip.
+const PLAYBOOK_ACTIVITY_ROW_CARD_HEIGHT = "lg:h-[420px]";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WidgetCard } from "@/components/widgets/WidgetCard";
+import { WidgetCard, WidgetRow } from "@/components/widgets";
 import { useToast } from "@/hooks/use-toast";
 import { handleApiError } from "@/lib/handle-api-error";
 import { trackEvent } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, BookOpen, FileText, Play, Zap, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, BookOpen, CheckCircle2, Clock, FileText, LayoutDashboard, Loader2, Play, Zap } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 type PlaybookStatus = "active" | "inactive";
 
@@ -199,9 +203,9 @@ export default function PlaybooksPage() {
           data?.message ??
           (rawText
             ? `Playbook run failed (status ${res.status}): ${rawText.slice(
-                0,
-                200,
-              )}`
+              0,
+              200,
+            )}`
             : `Playbook run failed (status ${res.status})`);
 
         if (res.status === 400) {
@@ -250,7 +254,15 @@ export default function PlaybooksPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
+    <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 space-y-6">
+      {/* Page heading (consistent with other protected pages) */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Playbooks</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Automations, runs, and outcomes across your document workflows.
+        </p>
+      </div>
+
       <div suppressHydrationWarning>
         {tabsHydrationReady ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -282,207 +294,225 @@ export default function PlaybooksPage() {
 
       {activeTab === "overview" && (
         <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <div className="md:col-span-6">
-          <WidgetCard title="Playbook Runs" subtitle="Recent activity" className="h-[320px]">
-            <div className="space-y-1">
-              {runs.slice(0, 6).map((run) => (
-                <div key={run.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/40 text-xs">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium truncate">{run.name}</div>
+          <WidgetRow
+            title="Playbook Activity"
+            subtitle="Runs, outcomes, and time saved"
+            storageKey="row:playbooks:activity"
+            className="mt-2"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <div className={`md:col-span-6 ${PLAYBOOK_ACTIVITY_ROW_CARD_HEIGHT}`}>
+                <WidgetCard title="Playbook Runs" subtitle="Recent activity" className="h-full">
+                  <div className="space-y-1">
+                    {runs.slice(0, 6).map((run) => (
+                      <div key={run.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/40 text-xs">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">{run.name}</div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={
+                            run.status === "success"
+                              ? "text-[10px] bg-emerald-50 border-emerald-400/40 text-emerald-700 dark:bg-emerald-950/20 shrink-0"
+                              : run.status === "failed"
+                                ? "text-[10px] bg-rose-50 border-rose-400/40 text-rose-700 dark:bg-rose-950/20 shrink-0"
+                                : "text-[10px] bg-amber-50 border-amber-400/40 text-amber-700 dark:bg-amber-950/20 shrink-0"
+                          }
+                        >
+                          {run.status === "success" && <CheckCircle2 className="h-3 w-3 mr-0.5" />}
+                          {run.status === "failed" && <AlertCircle className="h-3 w-3 mr-0.5" />}
+                          {run.status === "needs_input" && <Loader2 className="h-3 w-3 mr-0.5" />}
+                          {run.status === "success" ? "Success" : run.status === "failed" ? "Failed" : "Needs input"}
+                        </Badge>
+                        <div className="text-muted-foreground shrink-0 w-16">{run.lastRun}</div>
+                        <div className="flex items-center gap-1 text-muted-foreground shrink-0 w-12">
+                          <Clock className="h-3 w-3" />
+                          {run.duration}
+                        </div>
+                      </div>
+                    ))}
+                    {runs.length === 0 && (
+                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                        No playbook runs yet
+                      </div>
+                    )}
                   </div>
-                  <Badge
-                    variant="outline"
-                    className={
-                      run.status === "success"
-                        ? "text-[10px] bg-emerald-50 border-emerald-400/40 text-emerald-700 dark:bg-emerald-950/20 shrink-0"
-                        : run.status === "failed"
-                        ? "text-[10px] bg-rose-50 border-rose-400/40 text-rose-700 dark:bg-rose-950/20 shrink-0"
-                        : "text-[10px] bg-amber-50 border-amber-400/40 text-amber-700 dark:bg-amber-950/20 shrink-0"
-                    }
-                  >
-                    {run.status === "success" && <CheckCircle2 className="h-3 w-3 mr-0.5" />}
-                    {run.status === "failed" && <AlertCircle className="h-3 w-3 mr-0.5" />}
-                    {run.status === "needs_input" && <Loader2 className="h-3 w-3 mr-0.5" />}
-                    {run.status === "success" ? "Success" : run.status === "failed" ? "Failed" : "Needs input"}
-                  </Badge>
-                  <div className="text-muted-foreground shrink-0 w-16">{run.lastRun}</div>
-                  <div className="flex items-center gap-1 text-muted-foreground shrink-0 w-12">
-                    <Clock className="h-3 w-3" />
-                    {run.duration}
-                  </div>
-                </div>
-              ))}
-              {runs.length === 0 && (
-                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                  No playbook runs yet
-                </div>
-              )}
-            </div>
-          </WidgetCard>
-        </div>
+                </WidgetCard>
+              </div>
 
-        <div className="md:col-span-3">
-          <WidgetCard title="Run Outcomes" subtitle="Distribution" className="h-[320px]">
-            <div className="h-full flex items-center justify-center">
-              <div className="relative" style={{ width: "180px", height: "180px" }}>
-                <svg viewBox="0 0 100 100" className="transform -rotate-90">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="20"
-                    className="text-emerald-400/40"
-                    strokeDasharray="188 251"
-                    strokeDashoffset="0"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="20"
-                    className="text-rose-400/40"
-                    strokeDasharray="38 251"
-                    strokeDashoffset="-188"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="20"
-                    className="text-amber-400/40"
-                    strokeDasharray="25 251"
-                    strokeDashoffset="-226"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-2 text-[10px] mt-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400/40" />
-                  <span>Success</span>
-                </div>
-                <span className="font-medium">75%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-rose-400/40" />
-                  <span>Failed</span>
-                </div>
-                <span className="font-medium">15%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-amber-400/40" />
-                  <span>Needs input</span>
-                </div>
-                <span className="font-medium">10%</span>
-              </div>
-            </div>
-          </WidgetCard>
-        </div>
-
-        <div className="md:col-span-3">
-          <WidgetCard title="Time Saved" subtitle="Last 30 days" className="h-[320px]">
-            <div className="flex flex-col items-center justify-center gap-2 py-6">
-              <div className="text-4xl font-bold">102</div>
-              <div className="text-sm text-muted-foreground">hours saved</div>
-            </div>
-            <div className="h-24 flex items-end justify-between gap-[2px] mt-4">
-              {TIME_SAVED_SPARKLINE.map((value, i) => {
-                const height = (value / 120) * 96;
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center">
-                    <div
-                      className="w-full bg-blue-400/40 rounded-t"
-                      style={{ height: `${height}px` }}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </WidgetCard>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-[70px]">
-        <div className="md:col-span-4">
-          <WidgetCard title="Most Used Playbooks" subtitle="By run count" className="h-[320px]">
-            <div className="space-y-2">
-              {mostUsed.map((item, idx) => (
-                <div key={item.id} className="p-2 rounded border border-border/40">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <div className="text-lg font-semibold text-muted-foreground w-6">{idx + 1}</div>
-                      <div className="text-sm font-medium truncate">{item.name}</div>
+              <div className={`md:col-span-3 ${PLAYBOOK_ACTIVITY_ROW_CARD_HEIGHT}`}>
+                <WidgetCard title="Run Outcomes" subtitle="Distribution" className="h-full" bodyClassName="flex flex-col">
+                  <div className="flex flex-col items-center justify-start">
+                    <div className="shrink-0 mb-2">
+                      <div className="grid grid-cols-1 gap-1.5 text-[9px] text-muted-foreground">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 whitespace-nowrap">
+                            <div className="w-2 h-2 rounded-full bg-emerald-400/40" />
+                            <span>Success</span>
+                          </div>
+                          <span className="font-medium ml-2">75%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 whitespace-nowrap">
+                            <div className="w-2 h-2 rounded-full bg-rose-400/40" />
+                            <span>Failed</span>
+                          </div>
+                          <span className="font-medium ml-2">15%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 whitespace-nowrap">
+                            <div className="w-2 h-2 rounded-full bg-amber-400/40" />
+                            <span>Needs input</span>
+                          </div>
+                          <span className="font-medium ml-2">10%</span>
+                        </div>
+                      </div>
                     </div>
-                    <Badge variant="secondary" className="text-[10px] shrink-0">{item.runs} runs</Badge>
+                    <div className="mt-2 flex items-center justify-center flex-1 min-h-0">
+                      <div className="relative" style={{ width: "140px", height: "140px" }}>
+                        <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="20"
+                            className="text-emerald-400/40"
+                            strokeDasharray="188 251"
+                            strokeDashoffset="0"
+                          />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="20"
+                            className="text-rose-400/40"
+                            strokeDasharray="38 251"
+                            strokeDashoffset="-188"
+                          />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="20"
+                            className="text-amber-400/40"
+                            strokeDasharray="25 251"
+                            strokeDashoffset="-226"
+                          />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {mostUsed.length === 0 && (
-                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                  No playbooks used yet
-                </div>
-              )}
-            </div>
-          </WidgetCard>
-        </div>
+                </WidgetCard>
+              </div>
 
-        <div className="md:col-span-4">
-          <WidgetCard title="Scheduled Runs" subtitle="Upcoming" className="h-[320px]">
-            <div className="space-y-2">
-              {scheduled.map((item) => (
-                <div key={item.id} className="p-2 rounded border border-border/40">
-                  <div className="text-sm font-medium truncate mb-1">{item.name}</div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{item.scheduledFor}</span>
+              <div className={`md:col-span-3 ${PLAYBOOK_ACTIVITY_ROW_CARD_HEIGHT}`}>
+                <WidgetCard title="Time Saved" subtitle="Last 30 days" className="h-full">
+                  <div className="flex flex-col items-center justify-center gap-2 py-6">
+                    <div className="text-4xl font-bold">102</div>
+                    <div className="text-sm text-muted-foreground">hours saved</div>
                   </div>
-                </div>
-              ))}
-              {scheduled.length === 0 && (
-                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                  No scheduled runs
-                </div>
-              )}
-            </div>
-          </WidgetCard>
-        </div>
-
-        <div className="md:col-span-4">
-          <WidgetCard title="Recent Outputs" subtitle="Generated items" className="h-[320px]">
-            <div className="space-y-2">
-              {recentOutputs.map((item) => (
-                <div key={item.id} className="p-2 rounded border border-border/40">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge variant="outline" className="text-[10px]">{item.type}</Badge>
+                  <div className="h-24 flex items-end justify-between gap-[2px] mt-4">
+                    {TIME_SAVED_SPARKLINE.map((value, i) => {
+                      const height = (value / 120) * 96;
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center">
+                          <div
+                            className="w-full bg-blue-400/40 rounded-t"
+                            style={{ height: `${height}px` }}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="text-sm font-medium truncate">{item.title}</div>
-                </div>
-              ))}
-              {recentOutputs.length === 0 && (
-                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                  No outputs yet
-                </div>
-              )}
+                </WidgetCard>
+              </div>
             </div>
-          </WidgetCard>
-        </div>
-      </div>
+          </WidgetRow>
 
-      {isDemoEnvironment && (
-        <p className="text-[10px] text-muted-foreground mt-6">
-          Demo data only. In production, this view will show real playbook activity.
-        </p>
-      )}
+          <WidgetRow
+            title="Usage & Outputs"
+            subtitle="Most used, scheduled, and recent outputs"
+            storageKey="row:playbooks:usage"
+            className="mt-6"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 min-h-[560px]">
+              <div className="md:col-span-4">
+                <WidgetCard title="Most Used Playbooks" subtitle="By run count" className="h-full">
+                  <div className="space-y-2">
+                    {mostUsed.map((item, idx) => (
+                      <div key={item.id} className="p-2 rounded border border-border/40">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="text-lg font-semibold text-muted-foreground w-6">{idx + 1}</div>
+                            <div className="text-sm font-medium truncate">{item.name}</div>
+                          </div>
+                          <Badge variant="secondary" className="text-[10px] shrink-0">{item.runs} runs</Badge>
+                        </div>
+                      </div>
+                    ))}
+                    {mostUsed.length === 0 && (
+                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                        No playbooks used yet
+                      </div>
+                    )}
+                  </div>
+                </WidgetCard>
+              </div>
+
+              <div className="md:col-span-4">
+                <WidgetCard title="Scheduled Runs" subtitle="Upcoming" className="h-full">
+                  <div className="space-y-2">
+                    {scheduled.map((item) => (
+                      <div key={item.id} className="p-2 rounded border border-border/40">
+                        <div className="text-sm font-medium truncate mb-1">{item.name}</div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">{item.scheduledFor}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {scheduled.length === 0 && (
+                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                        No scheduled runs
+                      </div>
+                    )}
+                  </div>
+                </WidgetCard>
+              </div>
+
+              <div className="md:col-span-4">
+                <WidgetCard title="Recent Outputs" subtitle="Generated items" className="h-full">
+                  <div className="space-y-2">
+                    {recentOutputs.map((item) => (
+                      <div key={item.id} className="p-2 rounded border border-border/40">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-[10px]">{item.type}</Badge>
+                        </div>
+                        <div className="text-sm font-medium truncate">{item.title}</div>
+                      </div>
+                    ))}
+                    {recentOutputs.length === 0 && (
+                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                        No outputs yet
+                      </div>
+                    )}
+                  </div>
+                </WidgetCard>
+              </div>
+            </div>
+          </WidgetRow>
+
+          {isDemoEnvironment && (
+            <p className="text-[10px] text-muted-foreground mt-6">
+              Demo data only. In production, this view will show real playbook activity.
+            </p>
+          )}
         </div>
       )}
 
@@ -556,7 +586,7 @@ export default function PlaybooksPage() {
                       className={cn(
                         "text-xs capitalize",
                         selected?.status === "inactive" &&
-                          "bg-muted text-muted-foreground"
+                        "bg-muted text-muted-foreground"
                       )}
                     >
                       {selected?.status ?? "inactive"}

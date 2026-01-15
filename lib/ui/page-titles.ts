@@ -17,6 +17,7 @@ const titles: Record<string, PageTitleEntry> = {
   "/share/contacts": { title: "Share Hub" },
   "/signatures": { title: "Share Hub" },
   "/insights": { title: "Insights" },
+  "/activity": { title: "Activity" },
   "/playbooks": { title: "Playbooks" },
   "/tasks": { title: "Tasks" },
   "/calendar": { title: "Tasks" },
@@ -26,6 +27,10 @@ const titles: Record<string, PageTitleEntry> = {
 
 export function getPageTitle(pathname?: string | null): string {
   if (!pathname) return "Harmonyk";
+
+  // Explicit mappings for Insights and Activity
+  if (pathname === "/insights" || pathname.startsWith("/insights/")) return "Insights";
+  if (pathname === "/activity" || pathname.startsWith("/activity/")) return "Activity";
 
   // Normalize "Share Hub" section so topbar stays consistent across its tabs.
   // NOTE: Signatures is currently routed at /signatures, not /share/signatures.

@@ -40,6 +40,9 @@ export function SparklineCard({
   className,
   tone,
 }: SparklineCardProps) {
+  // Hooks must be called unconditionally on every render.
+  const gradientId = React.useId().replace(/:/g, "");
+
   if (points.length === 0) {
     return (
       <div className={className}>
@@ -57,7 +60,6 @@ export function SparklineCard({
   }
 
   const baseTone: WidgetTone = tone ?? inferToneFromTitle(title);
-  const gradientId = React.useId().replace(/:/g, "");
 
   const min = Math.min(...points);
   const max = Math.max(...points);

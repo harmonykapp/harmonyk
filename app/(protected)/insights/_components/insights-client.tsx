@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * LEGACY (Week 8) Insights client.
+ * NOTE: The /insights route is currently driven by app/(protected)/insights/page.tsx.
+ * If this file is no longer imported anywhere, it should be deleted to avoid confusion.
+ */
+
 // Week 8: Insights client UI
 //
 // This component:

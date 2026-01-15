@@ -11,4 +11,6 @@ export * from "./SkeletonBlock";
 export { SparklineCard } from "./SparklineCard";
 export type { SparklineCardProps } from "./SparklineCard";
 export * from "./WidgetCard";
+export { WidgetRow } from "./WidgetRow";
+export { WidgetRowSection } from "./WidgetRowSection";
 

@@ -1,6 +1,6 @@
 "use client";
 
-// Week 11 Day 3: Activity client UI v1
+// Week 11 Day 3: Activity client UI v1 (URL-sync without useSearchParams)
 //
 // This component:
 // - Uses the new GET /api/activity endpoint
@@ -13,7 +13,6 @@ import type { ActivityLogRow } from "@/lib/activity-log";
 import type { ActivityEventGroup } from "@/lib/activity-queries";
 import { phCapture } from "@/lib/posthog-client";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 type Props = {
@@ -27,14 +26,87 @@ type ActivityApiResponse =
 
 type TimeRangePreset = "24h" | "7d" | "30d";
 
+// UI supports "maestro" as the modern group key, while the API still accepts legacy "mono".
+type UiEventGroup = ActivityEventGroup | "maestro";
+
 interface ActivityFilterState {
   timeRange: TimeRangePreset;
-  groups: ActivityEventGroup[];
+  groups: UiEventGroup[];
   provider?: string;
   search?: string;
 }
 
 const DEFAULT_LIMIT = 50;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function normalizeUiGroupId(id: string): UiEventGroup | null {
+  const trimmed = id.trim();
+  if (!trimmed) return null;
+  // Back-compat: old URLs/saved state may contain "mono"
+  if (trimmed === "mono") return "maestro";
+  // Allow any existing API group ids through unchanged
+  return trimmed as UiEventGroup;
+}
+
+function toApiGroupId(group: UiEventGroup): ActivityEventGroup {
+  // Server/API still expects "mono" for Maestro group filtering.
+  return group === "maestro" ? "mono" : group;
+}
+
+function normalizeEventTypeLabel(rawEventType: string): string {
+  const canonical = rawEventType
+    .trim()
+    .toLowerCase()
+    .replace(/[.\- ]+/g, "_");
+
+  // Back-compat: old activity event types may still use "mono_*"
+  if (canonical === "mono_query" || canonical === "monoquery" || canonical === "mono_query_v1") {
+    return "Maestro Query";
+  }
+  if (canonical.startsWith("mono_") && canonical.includes("query")) {
+    return "Maestro Query";
+  }
+
+  return rawEventType
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (l: string) => l.toUpperCase());
+}
+
+function readActivitySearchParamsFromLocation(): URLSearchParams {
+  if (typeof window === "undefined") return new URLSearchParams();
+  try {
+    return new URLSearchParams(window.location.search);
+  } catch {
+    return new URLSearchParams();
+  }
+}
+
+function shallowEqualFilters(a: ActivityFilterState, b: ActivityFilterState): boolean {
+  if (a.timeRange !== b.timeRange) return false;
+  if ((a.provider ?? "") !== (b.provider ?? "")) return false;
+  if ((a.search ?? "") !== (b.search ?? "")) return false;
+  if (a.groups.length !== b.groups.length) return false;
+  // Order matters for stable URL; we preserve user order. Compare as-is.
+  for (let i = 0; i < a.groups.length; i++) {
+    if (a.groups[i] !== b.groups[i]) return false;
+  }
+  return true;
+}
+
+function buildSearchParamsFromFilters(filters: ActivityFilterState): URLSearchParams {
+  const params = new URLSearchParams();
+
+  // Only persist non-defaults / non-empty values to keep URLs clean.
+  if (filters.timeRange && filters.timeRange !== "7d") params.set("timeRange", filters.timeRange);
+  if (filters.groups.length > 0) params.set("groups", filters.groups.join(","));
+  if (filters.provider) params.set("provider", filters.provider);
+  if (filters.search) params.set("search", filters.search);
+
+  return params;
+}
 
 // Helper to convert time range preset to ISO timestamps
 function getTimeRangeBounds(preset: TimeRangePreset): { from: string; to: string } {
@@ -65,8 +137,11 @@ function getTimeRangeBounds(preset: TimeRangePreset): { from: string; to: string
 function parseFiltersFromSearch(searchParams: URLSearchParams): ActivityFilterState {
   const timeRange = (searchParams.get("timeRange") as TimeRangePreset) || "7d";
   const groupsParam = searchParams.get("groups");
-  const groups: ActivityEventGroup[] = groupsParam
-    ? (groupsParam.split(",").filter(Boolean) as ActivityEventGroup[])
+  const groups: UiEventGroup[] = groupsParam
+    ? groupsParam
+      .split(",")
+      .map((g) => normalizeUiGroupId(g))
+      .filter((g): g is UiEventGroup => g != null)
     : [];
   const provider = searchParams.get("provider") || undefined;
   const search = searchParams.get("search") || undefined;
@@ -75,13 +150,18 @@ function parseFiltersFromSearch(searchParams: URLSearchParams): ActivityFilterSt
 }
 
 export default function ActivityClient({ workspaceId, ownerId }: Props) {
-  const searchParams = useSearchParams();
   const hasTrackedPageView = useRef(false);
   const prevFiltersRef = useRef<ActivityFilterState | null>(null);
+  const hasSyncedFromUrlOnce = useRef(false);
+  const suppressNextUrlWrite = useRef(false);
 
-  const [filters, setFilters] = useState<ActivityFilterState>(() =>
-    parseFiltersFromSearch(searchParams)
-  );
+  const [filters, setFilters] = useState<ActivityFilterState>(() => {
+    // Must be SSR-safe: window may not exist during pre-render.
+    if (typeof window === "undefined") {
+      return { timeRange: "7d", groups: [], provider: undefined, search: undefined };
+    }
+    return parseFiltersFromSearch(readActivitySearchParamsFromLocation());
+  });
   const [events, setEvents] = useState<ActivityLogRow[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -90,6 +170,52 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
 
   // Memoize groups join to prevent unnecessary reruns
   const groupsKey = useMemo(() => filters.groups.join(","), [filters.groups]);
+
+  // URL -> state (initial sync + back/forward). Avoid useSearchParams() to prevent CSR bailout warnings.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncFromUrl = () => {
+      const next = parseFiltersFromSearch(readActivitySearchParamsFromLocation());
+      setFilters((prev) => {
+        if (shallowEqualFilters(prev, next)) return prev;
+        // We are applying URL-driven state, so avoid writing it straight back.
+        suppressNextUrlWrite.current = true;
+        return next;
+      });
+      hasSyncedFromUrlOnce.current = true;
+    };
+
+    // First mount sync
+    syncFromUrl();
+
+    // Back/forward
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
+  }, []);
+
+  // state -> URL (replaceState). Keeps deep-links stable; no navigation, no UI changes.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!hasSyncedFromUrlOnce.current) return;
+
+    if (suppressNextUrlWrite.current) {
+      suppressNextUrlWrite.current = false;
+      return;
+    }
+
+    try {
+      const params = buildSearchParamsFromFilters(filters);
+      const qs = params.toString();
+      const nextUrl = qs.length > 0 ? `${window.location.pathname}?${qs}` : window.location.pathname;
+      const current = window.location.pathname + window.location.search;
+      if (nextUrl !== current) {
+        window.history.replaceState({}, "", nextUrl);
+      }
+    } catch {
+      // ignore
+    }
+  }, [filters.timeRange, groupsKey, filters.provider, filters.search]);
 
   async function fetchActivity(cursor?: string, append = false) {
     setLoading(true);
@@ -102,7 +228,8 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
       params.set("from", from);
       params.set("to", to);
       if (filters.groups.length > 0) {
-        params.set("groups", filters.groups.join(","));
+        const apiGroups = filters.groups.map(toApiGroupId);
+        params.set("groups", apiGroups.join(","));
       }
       if (filters.provider) {
         params.set("provider", filters.provider);
@@ -134,9 +261,10 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
         setEvents(json.data ?? []);
       }
       setNextCursor(json.nextCursor ?? null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[ActivityClient] fetchActivity error", err);
-      setError(err?.message ?? "Failed to load activity");
+      const msg = err instanceof Error ? err.message : "Failed to load activity";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -189,7 +317,7 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
     }
   };
 
-  const toggleGroup = (group: ActivityEventGroup) => {
+  const toggleGroup = (group: UiEventGroup) => {
     setFilters((prev) => {
       const newGroups = prev.groups.includes(group)
         ? prev.groups.filter((g) => g !== group)
@@ -227,9 +355,9 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
 
   const isLoading = loading || isPending;
 
-  const eventGroups: { id: ActivityEventGroup; label: string }[] = [
+  const eventGroups: { id: UiEventGroup; label: string }[] = [
     { id: "docs", label: "Docs" },
-    { id: "mono", label: "Maestro" },
+    { id: "maestro", label: "Maestro" },
     { id: "connectors", label: "Connectors" },
     { id: "signatures", label: "Signatures" },
     { id: "system", label: "System" },
@@ -395,26 +523,43 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
                 </thead>
                 <tbody>
                   {events.map((row) => {
-                    // The API returns 'type' field, not 'event_type'
-                    const eventType = ((row as any).type || row.event_type || "unknown") as string;
-                    const context = ((row as any).context ?? row.payload ?? {}) as any;
+                    const rowMaybe = row as unknown as {
+                      type?: unknown;
+                      event_type?: unknown;
+                      context?: unknown;
+                      payload?: unknown;
+                    };
+
+                    // The API returns 'type' field, not 'event_type' (but we tolerate both).
+                    const rawEventType =
+                      typeof rowMaybe.type === "string"
+                        ? rowMaybe.type
+                        : typeof rowMaybe.event_type === "string"
+                          ? rowMaybe.event_type
+                          : typeof row.event_type === "string"
+                            ? row.event_type
+                            : "unknown";
+
+                    const context = isRecord(rowMaybe.context)
+                      ? rowMaybe.context
+                      : isRecord(rowMaybe.payload)
+                        ? rowMaybe.payload
+                        : {};
+
                     const fileName =
-                      context.file_name ??
-                      context.document_title ??
-                      context.document_name ??
+                      (typeof context.file_name === "string" && context.file_name) ||
+                      (typeof context.document_title === "string" && context.document_title) ||
+                      (typeof context.document_name === "string" && context.document_name) ||
                       "";
 
-                    // Humanize event type for display
-                    const humanizedType = eventType
-                      .replace(/_/g, " ")
-                      .replace(/\b\w/g, (l: string) => l.toUpperCase());
+                    const humanizedType = normalizeEventTypeLabel(rawEventType);
 
                     // Determine relevant links based on event data
                     const hasDocumentId = row.document_id != null;
                     const isSignatureEvent =
                       (row.source ?? "").toLowerCase().includes("signature") ||
-                      eventType.toLowerCase().includes("signature") ||
-                      eventType.toLowerCase().includes("envelope");
+                      rawEventType.toLowerCase().includes("signature") ||
+                      rawEventType.toLowerCase().includes("envelope");
                     const docId = row.document_id;
 
                     return (
@@ -434,7 +579,7 @@ export default function ActivityClient({ workspaceId, ownerId }: Props) {
                           </div>
                         </td>
                         <td className="px-3 py-2 align-top">
-                          <div className="font-medium text-xs max-w-[200px] truncate" title={eventType}>
+                          <div className="font-medium text-xs max-w-[200px] truncate" title={rawEventType}>
                             {humanizedType}
                           </div>
                         </td>

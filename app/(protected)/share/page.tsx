@@ -1,10 +1,16 @@
 "use client";
 
+// PGW2 UI polish:
+// Increase row heights so "Top Share Links" and "Breakdowns" sections can show full content
+// without clipping (no inner scrolling).
+const TOP_SHARE_LINKS_ROW_CARD_HEIGHT = "lg:h-[420px]";
+const BREAKDOWNS_ROW_CARD_HEIGHT = "lg:h-[420px]";
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, FileSignature, LayoutDashboard, Link2, Users } from 'lucide-react';
 import Link from "next/link";
-import { WidgetCard } from "@/components/widgets/WidgetCard";
+import { WidgetCard, WidgetRow } from "@/components/widgets";
 
 const isDemoEnvironment = process.env.NODE_ENV !== "production";
 
@@ -75,11 +81,17 @@ export default function SharePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <div className="md:col-span-6">
-          <WidgetCard title="Top Share Links" subtitle="Most viewed" className="h-[320px]">
+      <WidgetRow
+        title="Share performance"
+        subtitle="Links, trend, and follow-ups"
+        storageKey="row:share:performance"
+        className="mt-8"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className={`md:col-span-6 ${TOP_SHARE_LINKS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Top Share Links" subtitle="Most viewed" className="h-full">
             <div className="space-y-1">
-              {shareLinks.slice(0, 6).map((link) => (
+              {shareLinks.slice(0, 5).map((link) => (
                 <div key={link.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/40 text-xs">
                   <div className="min-w-0 flex-1">
                     <div className="font-medium truncate">{link.name}</div>
@@ -103,15 +115,25 @@ export default function SharePage() {
                   No share links yet
                 </div>
               )}
+              {shareLinks.length > 5 && (
+                <div className="pt-2">
+                  <Link
+                    href="/share/links"
+                    className="inline-flex text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    View all →
+                  </Link>
+                </div>
+              )}
             </div>
           </WidgetCard>
         </div>
 
-        <div className="md:col-span-3">
-          <WidgetCard title="Engagement Trend" subtitle="Last 30 days" className="h-[320px]">
-            <div className="h-full flex items-end justify-between gap-[2px] pb-4">
+        <div className={`md:col-span-3 ${TOP_SHARE_LINKS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Engagement Trend" subtitle="Last 30 days" className="h-full">
+            <div className="h-full flex items-end justify-between gap-[2px] pb-2">
               {ENGAGEMENT_SPARKLINE.map((value, i) => {
-                const height = (value / 100) * 220;
+                const height = (value / 100) * 180;
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center">
                     <div
@@ -125,10 +147,10 @@ export default function SharePage() {
           </WidgetCard>
         </div>
 
-        <div className="md:col-span-3">
-          <WidgetCard title="Follow-ups Due" subtitle="Action required" className="h-[320px]">
+        <div className={`md:col-span-3 ${TOP_SHARE_LINKS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Follow-ups Due" subtitle="Action required" className="h-full">
             <div className="space-y-2">
-              {followups.map((item) => (
+              {followups.slice(0, 5).map((item) => (
                 <div key={item.id} className="p-2 rounded border border-border/40">
                   <div className="text-sm font-medium truncate mb-1">{item.title}</div>
                   <div className="flex items-center justify-between gap-2">
@@ -152,16 +174,33 @@ export default function SharePage() {
                   No follow-ups
                 </div>
               )}
+              {followups.length > 5 && (
+                <div className="pt-1">
+                  <Link
+                    href="/tasks"
+                    className="inline-flex text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    View all →
+                  </Link>
+                </div>
+              )}
             </div>
           </WidgetCard>
         </div>
-      </div>
+        </div>
+      </WidgetRow>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-[70px]">
-        <div className="md:col-span-6">
-          <WidgetCard title="Recipients / Companies" subtitle="Shared with" className="h-[320px]">
+      <WidgetRow
+        title="Breakdowns"
+        subtitle="Recipients and funnel"
+        storageKey="row:share:breakdowns"
+        className="mt-10"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className={`md:col-span-6 ${BREAKDOWNS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Recipients / Companies" subtitle="Shared with" className="h-full">
             <div className="space-y-1">
-              {companies.slice(0, 6).map((company) => (
+              {companies.slice(0, 5).map((company) => (
                 <div key={company.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/40 text-xs">
                   <div className="min-w-0 flex-1">
                     <div className="font-medium truncate">{company.name}</div>
@@ -179,79 +218,93 @@ export default function SharePage() {
                   No recipients yet
                 </div>
               )}
+              {companies.length > 5 && (
+                <div className="pt-2">
+                  <Link
+                    href="/share/contacts"
+                    className="inline-flex text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    View all →
+                  </Link>
+                </div>
+              )}
             </div>
           </WidgetCard>
         </div>
 
-        <div className="md:col-span-3">
-          <WidgetCard title="Link Status Breakdown" subtitle="Distribution" className="h-[320px]">
-            <div className="h-full flex items-center justify-center">
-              <div className="relative" style={{ width: "180px", height: "180px" }}>
-                <svg viewBox="0 0 100 100" className="transform -rotate-90">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="20"
-                    className="text-emerald-400/40"
-                    strokeDasharray="160 251"
-                    strokeDashoffset="0"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="20"
-                    className="text-amber-400/40"
-                    strokeDasharray="50 251"
-                    strokeDashoffset="-160"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="20"
-                    className="text-rose-400/40"
-                    strokeDasharray="41 251"
-                    strokeDashoffset="-210"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-2 text-[10px] mt-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400/40" />
-                  <span>Active</span>
+        <div className={`md:col-span-3 ${BREAKDOWNS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Link Status Breakdown" subtitle="Distribution" className="h-full" bodyClassName="flex flex-col">
+            <div className="flex flex-col items-center justify-start">
+              <div className="shrink-0 mb-2">
+                <div className="grid grid-cols-1 gap-1.5 text-[9px] text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 whitespace-nowrap">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400/40" />
+                      <span>Active</span>
+                    </div>
+                    <span className="font-medium ml-2">64%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 whitespace-nowrap">
+                      <div className="w-2 h-2 rounded-full bg-amber-400/40" />
+                      <span>Expired</span>
+                    </div>
+                    <span className="font-medium ml-2">20%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 whitespace-nowrap">
+                      <div className="w-2 h-2 rounded-full bg-rose-400/40" />
+                      <span>Revoked</span>
+                    </div>
+                    <span className="font-medium ml-2">16%</span>
+                  </div>
                 </div>
-                <span className="font-medium">64%</span>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-amber-400/40" />
-                  <span>Expired</span>
+              <div className="mt-2 flex items-center justify-center flex-1 min-h-0">
+                <div className="relative" style={{ width: "140px", height: "140px" }}>
+                  <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="20"
+                      className="text-emerald-400/40"
+                      strokeDasharray="160 251"
+                      strokeDashoffset="0"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="20"
+                      className="text-amber-400/40"
+                      strokeDasharray="50 251"
+                      strokeDashoffset="-160"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="20"
+                      className="text-rose-400/40"
+                      strokeDasharray="41 251"
+                      strokeDashoffset="-210"
+                    />
+                  </svg>
                 </div>
-                <span className="font-medium">20%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-rose-400/40" />
-                  <span>Revoked</span>
-                </div>
-                <span className="font-medium">16%</span>
               </div>
             </div>
           </WidgetCard>
         </div>
 
-        <div className="md:col-span-3">
-          <WidgetCard title="Drop-off Points" subtitle="Conversion funnel" className="h-[320px]">
+        <div className={`md:col-span-3 ${BREAKDOWNS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Drop-off Points" subtitle="Conversion funnel" className="h-full">
             <div className="h-full flex flex-col justify-center gap-4 py-4">
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
@@ -284,7 +337,8 @@ export default function SharePage() {
             </div>
           </WidgetCard>
         </div>
-      </div>
+        </div>
+      </WidgetRow>
 
       {isDemoEnvironment && (
         <p className="text-[10px] text-muted-foreground mt-6">
