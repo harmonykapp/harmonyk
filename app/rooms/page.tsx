@@ -1,6 +1,6 @@
 // PGW4: Rooms shell (flagged)
-import { flag } from "@/lib/ui/flags";
-import Link from "next/link";
+import Link from 'next/link';
+import { flag } from '../../lib/ui/flags';
 
 export default function RoomsPage() {
   if (!flag("rooms.enabled")) {

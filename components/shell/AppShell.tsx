@@ -1,13 +1,15 @@
 'use client';
 
+import type { MonoContext } from '@/components/mono/mono-pane';
+import { MonoAssistant } from '@/components/mono/MonoAssistant';
+import { resolveProviderName } from '@/lib/llm/provider';
+import { trackEvent } from '@/lib/telemetry';
+import { useSidebar } from '@/lib/ui/sidebar-state';
+import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { flag } from '../../lib/ui/flags';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
-import { MonoAssistant } from '@/components/mono/MonoAssistant';
-import { cn } from '@/lib/utils';
-import type { MonoContext } from '@/components/mono/mono-pane';
-import { useSidebar } from '@/lib/ui/sidebar-state';
-import { flag } from '@/lib/ui/flags';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -21,6 +23,12 @@ export function AppShell({ children, monoContext }: AppShellProps) {
   const context: MonoContext = typeof monoContext === 'string'
     ? { route: monoContext || '/dashboard' }
     : monoContext || { route: '/dashboard' };
+
+  useEffect(() => {
+    // One-time boot telemetry: resolves provider from env and records it.
+    const provider = resolveProviderName();
+    trackEvent('llm_provider_selected', { provider });
+  }, []);
 
   useEffect(() => {
     const collapsible = flag('nav.sidebar.collapsible');

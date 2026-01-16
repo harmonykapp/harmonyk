@@ -1,16 +1,14 @@
-/**
- * Back-compat wrapper (PGW4).
- *
- * Some pages were wired to import `track()` from here during scaffolding.
- * To avoid duplicate telemetry implementations, this now forwards into
- * the canonical PostHog-safe wrapper in `lib/telemetry.ts`.
- */
 import { trackEvent } from "@/lib/telemetry";
-import type { TelemetryEvent, TelemetryPayload } from "@/lib/telemetry";
 
-export type EventName = TelemetryEvent;
+// Back-compat shim: map early PGW4 event names to canonical TelemetryEvent names.
+type LegacyEventName = "ui.sidebar.toggle" | "nav.rooms.open";
 
-export function track(event: EventName, props?: TelemetryPayload): void {
-  trackEvent(event, props);
+function mapLegacyEvent(event: LegacyEventName): "ui_sidebar_toggled" | "rooms_opened" {
+  if (event === "ui.sidebar.toggle") return "ui_sidebar_toggled";
+  return "rooms_opened";
+}
+
+export function track(event: LegacyEventName, props?: Record<string, unknown>) {
+  trackEvent(mapLegacyEvent(event), props);
 }
 
