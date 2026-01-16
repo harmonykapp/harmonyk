@@ -105,31 +105,33 @@ Move from prompt Q&A to **action-centric RAG**:
 1. **Google-first at GA.**  
    Only **Google Drive** and **Gmail** are live at GA. Others are visible as "Coming Soon."
 
-2. **Metadata-first ingestion.**  
+2. **Documenso is built-in (platform-managed).** Users do **not** connect Documenso. The **Integrations** page lists only **user-authorized external data sources** (Drive/Gmail/etc.).
+
+3. **Metadata-first ingestion.**  
    Fetch full content only on **Preview / Save to Vault / Send for Signature**. Everything else is metadata + links.
 
-3. **Vault-only semantics.**  
+4. **Vault-only semantics.**  
    Embeddings + semantic search apply to **Vaulted** docs; external items are keyword-indexed references until explicitly copied.
 
-4. **Human-in-the-loop.**  
+5. **Human-in-the-loop.**  
    Maestro proposes; users approve. No silent edits, permission changes, or automations.
 
-5. **Explainability + Undo.**  
+6. **Explainability + Undo.**  
    Every AI/automation shows "Why this?" and supports undo/rollback.
 
-6. **Builder-first GA.**  
+7. **Builder-first GA.**  
    GA is defined by **Contracts, Decks, and Accounts Builders** shipping usable flows for founders; everything else (Connectors, Insights, Playbooks, Tasks) exists to support those.
 
-7. **Legal-first depth.**  
+8. **Legal-first depth.**  
    Contracts Builder (legal) is the **hero** at GA; it gets the deepest UX and library investment.
 
-8. **Guided, not generic.**  
+9. **Guided, not generic.**  
    A **User Progress Narrator** and Maestro quick-start prompts guide users from first login through mature usage. No blank states.
 
-9. **Virality rides on real work.**  
-   Growth comes from contracts, templates, collaborators, and share/sign flows — not from gimmicky referral codes or forced sign-ups.
+10. **Virality rides on real work.**  
+    Growth comes from contracts, templates, collaborators, and share/sign flows — not from gimmicky referral codes or forced sign-ups.
 
-10. **Scope freeze to GA.**  
+11. **Scope freeze to GA.**  
     No new GA modules, flows, connectors, or vendors mid-build. Post-GA work lives in the PG-W1–W26 plan.
 
 ---
@@ -436,13 +438,36 @@ Maestro uses the **same state** to show 3–5 quick-start suggestions:
 
 ### Integrations (GA)
 
-- **Google Drive** (scoped folders) and **Gmail** (attachments/important links) → Vault → RAG semantics.
-- Others are "Coming Soon" (post-GA and PG plan).
+- **Integrations is an end-user connector hub.**
+  Users connect *their* external accounts so Harmonyk can scan/import and organize documents into Vault.
+
+- GA connectors:
+  - **Google Drive** (scoped folders) and **Gmail** (attachments/important links) → Vault → (post-GA) RAG semantics.
+  - Supports multiple accounts over time (e.g., multiple Gmail/Drive identities) within plan limits.
+
+- Post-GA connectors (visible as "Coming Soon"):
+  - Outlook, OneDrive, Dropbox, Box, Slack, Notion, Canva, DocSend, Docusign, etc.
+
+- **Documenso is NOT an end-user connector.**
+  - It is a **built-in** Harmonyk signature engine (platform-managed, like OpenAI).
+  - Users do not "connect Documenso"; they use **Send for Signature** and see envelope/signature status.
 
 - Integrations page:
   - Connector status tiles.
   - Sync activity timeline.
   - Basic logs view.
+  - User-facing connector management for importing/organizing documents into Vault.
+  - Signatures are built-in via Documenso (status/history only).
+
+#### Integrations page intent (end-user, not admin)
+- `/integrations` is an **end-user** page for connecting external accounts (Drive, Gmail, etc.) to:
+  - scan/import metadata,
+  - optionally copy selected items into **Vault**,
+  - classify and organize into an AI- or user-defined folder structure.
+- Post-GA: add more connectors (Notion, Dropbox, OneDrive, Outlook, etc.) as **Coming Soon** until implemented.
+- **Documenso is built-in**, not a user-connected integration:
+  - Harmonyk uses a platform Documenso API account to send/manage signatures for all users.
+  - Users do not authenticate Documenso in `/integrations`; they only view signature status/history inside Harmonyk.
 
 ---
 

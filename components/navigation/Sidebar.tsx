@@ -6,14 +6,14 @@ import {
   BarChart3,
   CheckSquare,
   ChevronDown,
+  Database,
   Hammer,
   Layers,
   LayoutDashboard,
   Play,
   Plug,
   Settings,
-  Share2,
-  Vault
+  Share2
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -44,7 +44,7 @@ const navigationDefault: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Workbench', href: '/workbench', icon: Layers },
   { name: 'Builder', href: '/builder', icon: Hammer },
-  { name: 'Vault', href: '/vault', icon: Vault },
+  { name: 'Vault', href: '/vault', icon: Database },
   { name: 'Playbooks', href: '/playbooks', icon: Play },
   { name: 'Share Hub', href: '/share', icon: Share2 },
   { name: 'Insights', href: '/insights', icon: BarChart3 },

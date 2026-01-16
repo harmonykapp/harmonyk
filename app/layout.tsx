@@ -1,8 +1,8 @@
 import { ThemeProvider } from "@/components/theme-provider";
 import { ASSISTANT_NAME, PRODUCT_NAME } from "@/lib/brand";
+import PostHogInit from "@/components/telemetry/PostHogInit";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import AnalyticsInit from "./analytics"; // PostHog init (client-safe)
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -59,8 +59,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          {/* Initializes PostHog if NEXT_PUBLIC_POSTHOG_KEY is set; no-ops otherwise */}
-          <AnalyticsInit />
+          {/* Client-only analytics init (must run globally) */}
+          <PostHogInit />
         </ThemeProvider>
       </body>
     </html>

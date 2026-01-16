@@ -1,5 +1,6 @@
 // eslint.config.mjs
 import react from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
@@ -35,6 +36,7 @@ export default [
         plugins: {
             "@typescript-eslint": tseslint.plugin,
             react,
+            "react-hooks": reactHooks,
         },
         settings: { react: { version: "detect" } },
         rules: {
@@ -43,6 +45,10 @@ export default [
             "@typescript-eslint/ban-ts-comment": "off",
             "@typescript-eslint/no-extra-semi": "off",
             "react/no-danger": "off",
+            ...(reactHooks.configs.recommended?.rules ?? {}),
+            // We enforce rules-of-hooks (real bugs) but do NOT block builds on deps nags.
+            // This repo currently has many legacy exhaustive-deps warnings and lint runs with --max-warnings=0.
+            "react-hooks/exhaustive-deps": "off",
         },
     },
 ];

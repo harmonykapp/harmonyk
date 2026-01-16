@@ -48,12 +48,6 @@ export default async function ContractsBuilderPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6">
-      <div className="mb-4">
-        <h1 className="text-2xl font-semibold">Legal Contracts</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Draft, refine, and manage clauses. Export to Word.
-        </p>
-      </div>
       <BuilderClient
         templates={templates}
         clauses={clauses}

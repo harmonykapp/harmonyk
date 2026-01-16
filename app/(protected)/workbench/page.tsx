@@ -1,11 +1,14 @@
-// Manual test: send a document for signature, then simulate a webhook (or wait for a real one).
 // Reload Workbench and confirm status badge shows Sent/Completed/etc.
 
 "use client";
 
-import TaskReminders from "@/components/tasks/TaskReminders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import DriveRecent from "@/components/workbench/DriveRecent";
+import { WidgetCard, WidgetRowSection } from "@/components/widgets";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeItem } from "@/lib/ai/analyze";
 import type { AnalyzeResult } from "@/lib/ai/schemas";
@@ -39,13 +42,7 @@ import { handleApiError } from "@/lib/handle-api-error";
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
 import { trackEvent } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
-import {
-  FileSignature,
-  FileText,
-  Filter,
-  Search,
-  Sparkles
-} from "lucide-react";
+import { ChevronDown, FileSignature, FileText, Filter, Search, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -71,10 +68,21 @@ type PlaybookSummary = {
   status: string;
 };
 
-// Safe UUID helper
-function uuid() {
-  return globalThis.crypto?.randomUUID?.()
-    ?? Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+type VaultDocCheckClient = {
+  from: (table: "document") => {
+    select: (columns: string) => {
+      eq: (column: "owner_id", value: string) => {
+        limit: (count: number) => Promise<{
+          data: Array<{ id: string }> | null;
+          error: unknown | null;
+        }>;
+      };
+    };
+  };
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 const statusColors: Record<string, string> = {
@@ -84,14 +92,51 @@ const statusColors: Record<string, string> = {
   draft: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
 };
 
+const mockFocusToday = [
+  { id: "overdue", label: "Overdue", value: 3 },
+  { id: "today", label: "Due today", value: 5 },
+  { id: "week", label: "This week", value: 12 },
+];
+
+const mockRecentlyActive = [
+  { id: "1", title: "NDA — ACME Corp", subtitle: "Edited", valueLabel: "2h ago" },
+  { id: "2", title: "MSA — VendorX", subtitle: "Reviewed", valueLabel: "4h ago" },
+  { id: "3", title: "SOW — Q4 Project", subtitle: "Signed", valueLabel: "1d ago" },
+];
+
+const mockBlockedItems = [
+  { id: "1", title: "Partner Agreement", subtitle: "Legal hold", tag: "high", valueLabel: "5d" },
+  { id: "2", title: "Vendor Contract", subtitle: "Pending approval", tag: "medium", valueLabel: "3d" },
+  { id: "3", title: "Service Agreement", subtitle: "Missing signature", tag: "medium", valueLabel: "2d" },
+];
+
+const mockStageBreakdown = [
+  { id: "draft", label: "Draft", value: 12 },
+  { id: "review", label: "Review", value: 8 },
+  { id: "approved", label: "Approved", value: 5 },
+  { id: "signed", label: "Signed", value: 3 },
+];
+
+const mockReviewQueue = [
+  { id: "1", title: "Employment Agreement", subtitle: "Contract", tag: "pending", valueLabel: "2d" },
+  { id: "2", title: "NDA Template v2", subtitle: "Template", tag: "review", valueLabel: "1d" },
+  { id: "3", title: "SOW Amendment", subtitle: "Contract", tag: "pending", valueLabel: "4h" },
+];
+
+const mockSignatureQueue = [
+  { id: "1", title: "MSA — ClientCo", subtitle: "Waiting on them", tag: "medium", valueLabel: "3d" },
+  { id: "2", title: "NDA — PartnerX", subtitle: "Waiting on me", tag: "high", valueLabel: "1d" },
+  { id: "3", title: "SOW — ProjectY", subtitle: "Waiting on them", tag: "low", valueLabel: "5h" },
+];
+
 export default function WorkbenchPage() {
   const { toast } = useToast();
   const sb = useMemo(() => getBrowserSupabaseClient(), []);
   // NOTE:
   // `next build` is currently type-checking Supabase with a Database union that
   // does not include "document"/"version" even though they exist at runtime.
-  // Use an untyped handle in this page to avoid TS overload failures.
-  const sbAny: any = sb;
+  // Use a narrow, local casting type to avoid TS overload failures without using `any`.
+  const sbDoc = sb as unknown as VaultDocCheckClient;
   const connectorsExtraEnabled = isFeatureEnabled("FEATURE_CONNECTORS_EXTRA");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -105,6 +150,7 @@ export default function WorkbenchPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isMounted, setIsMounted] = useState(false);
 
   // Signature modal state
   const [signModalOpen, setSignModalOpen] = useState(false);
@@ -115,6 +161,14 @@ export default function WorkbenchPage() {
   const [envelopeStatuses, setEnvelopeStatuses] = useState<Record<string, string | null>>({});
   const [savingToVault, setSavingToVault] = useState<string | null>(null);
   const [hasVaultDocs, setHasVaultDocs] = useState<boolean | null>(null);
+  // Workbench table density: keep a single, consistent compact mode to avoid confusing toggles.
+  const density: "compact" = "compact";
+
+  // Prevent Radix Select hydration mismatch (SSR-generated IDs vs client IDs).
+  // Render Select controls only after mount; show placeholders during SSR.
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Check if user has any documents in Vault
   useEffect(() => {
@@ -127,7 +181,7 @@ export default function WorkbenchPage() {
           return;
         }
 
-        const { data, error } = await sbAny
+        const { data, error } = await sbDoc
           .from("document")
           .select("id")
           .eq("owner_id", user.id)
@@ -239,7 +293,7 @@ export default function WorkbenchPage() {
 
     const sample: Row[] = [
       {
-        id: uuid(),
+        id: "demo:nda-acme-harmonyk",
         title: "NDA — ACME & Harmonyk",
         source: "Drive",
         kind: "application/pdf",
@@ -250,7 +304,7 @@ export default function WorkbenchPage() {
         signingStatus: null,
       },
       {
-        id: uuid(),
+        id: "demo:signed-proposal-q4",
         title: "Signed Proposal — Q4",
         source: "Gmail",
         kind: "message/rfc822",
@@ -261,7 +315,7 @@ export default function WorkbenchPage() {
         signingStatus: null,
       },
       {
-        id: uuid(),
+        id: "demo:msa-vendorx-draft-v3",
         title: "MSA — VendorX (draft v3)",
         source: "Drive",
         kind: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -276,8 +330,10 @@ export default function WorkbenchPage() {
     setRows(sample);
     setLoading(false);
 
-    if (sample.length > 0) {
-      fetchEnvelopeStatuses(sample.map((r) => r.id))
+    // Filter out demo IDs before fetching envelope statuses
+    const realItemIds = sample.filter((r) => !r.id.startsWith("demo:")).map((r) => r.id);
+    if (realItemIds.length > 0) {
+      fetchEnvelopeStatuses(realItemIds)
         .then((statuses) => {
           setRows((prevRows) => {
             if (!prevRows) return prevRows;
@@ -314,8 +370,25 @@ export default function WorkbenchPage() {
 
       if (!response.ok) {
         const status = response.status;
-        const errorText = await response.text().catch(() => "");
-        const errorMessage = errorText || response.statusText || "Failed to fetch envelope statuses";
+        // Clone response before reading to preserve body for error handling
+        const responseClone = response.clone();
+
+        let errorMessage = response.statusText || "Failed to fetch envelope statuses";
+        try {
+          const errorData = (await response.json()) as { ok?: boolean; error?: string } | null;
+          if (errorData && typeof errorData.error === "string") {
+            errorMessage = errorData.error;
+          }
+        } catch {
+          // If JSON parse fails, try to get raw text
+          try {
+            const rawText = await responseClone.text();
+            errorMessage = rawText || errorMessage;
+          } catch {
+            // Use default errorMessage
+          }
+        }
+
         handleApiError({
           status,
           errorMessage,
@@ -467,30 +540,35 @@ export default function WorkbenchPage() {
       // Clone response before reading to preserve body for error handling
       const responseClone = response.clone();
 
-      let data: any = null;
+      let data: unknown = null;
       try {
-        data = await response.json();
+        data = (await response.json()) as unknown;
       } catch (jsonError) {
         // If JSON parse fails, try to get raw body
         try {
           const rawText = await responseClone.text();
           console.warn("[workbench] Failed to parse JSON response", { rawText: rawText.substring(0, 200) });
-          data = { error: "Invalid response format", rawBody: rawText };
+          data = { error: "Invalid response format", rawBody: rawText } as unknown;
         } catch {
-          data = { error: "Failed to parse response" };
+          data = { error: "Failed to parse response" } as unknown;
         }
       }
 
-      if (!response.ok || !data?.ok) {
+      const dataOk = isRecord(data) && data["ok"] === true;
+      if (!response.ok || !dataOk) {
         const status = response.status;
-        const baseMessage = data?.error ?? "Failed to save to Vault";
-        const details = data?.details;
+        const baseMessage =
+          (isRecord(data) && typeof data["error"] === "string" ? data["error"] : undefined) ??
+          "Failed to save to Vault";
+        const details = isRecord(data) ? data["details"] : undefined;
 
         let detailsSuffix = "";
-        if (details) {
+        if (isRecord(details)) {
           const parts: string[] = [];
-          if (details.code) parts.push(`code=${details.code}`);
-          if (details.message) parts.push(details.message);
+          const code = typeof details["code"] === "string" ? details["code"] : undefined;
+          const message = typeof details["message"] === "string" ? details["message"] : undefined;
+          if (code) parts.push(`code=${code}`);
+          if (message) parts.push(message);
           if (parts.length) {
             detailsSuffix = ` (${parts.join(" - ")})`;
           }
@@ -499,7 +577,8 @@ export default function WorkbenchPage() {
         const errorMessage = `${baseMessage}${detailsSuffix}`;
 
         // Get raw body for debugging if not already captured
-        let rawBody: string | null = data?.rawBody ?? null;
+        let rawBody: string | null =
+          isRecord(data) && typeof data["rawBody"] === "string" ? data["rawBody"] : null;
         if (!rawBody) {
           try {
             rawBody = await responseClone.text();
@@ -512,7 +591,7 @@ export default function WorkbenchPage() {
           status: response.status,
           statusText: response.statusText,
           error: errorMessage,
-          details: details ?? null,
+          details: isRecord(details) ? details : (details ?? null),
           data: data ?? null,
           rawBody: rawBody ?? null,
           rowId: row.id,
@@ -787,82 +866,295 @@ export default function WorkbenchPage() {
   }, [selectedRow, playbooks, toast]);
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="p-6 space-y-4">
-          <div className="mb-4 rounded-lg border bg-background p-4">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Workbench</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Where you organize and analyze your documents and tasks.
-            </p>
+    <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="flex flex-col gap-6">
+        {/* Integration Attention Strip */}
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="text-sm font-semibold">Integrations</div>
+              <div className="text-xs text-muted-foreground">Drive needs reauth • Gmail disconnected</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="h-7 text-xs">
+                Fix Drive
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs">
+                Fix Gmail
+              </Button>
+            </div>
           </div>
+        </div>
 
-          {/* Drive Recent */}
-          <div className="mb-4">
-            <DriveRecent />
-          </div>
-
-          {/* Task Reminders */}
-          <div className="mb-4">
-            <TaskReminders />
-          </div>
-
-          {/* Empty state when no active work */}
-          {!loading && filteredRows.length === 0 && (
-            <div className="mb-4 rounded-lg border bg-card p-6 text-center">
-              <div className="space-y-4">
-                <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <FileText className="h-8 w-8 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold mb-2">No active work yet</h2>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Get started by generating a contract, deck, or saving a document to Vault.
-                  </p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    <Button asChild variant="outline">
-                      <Link href="/builder?tab=contracts">Generate a contract</Link>
-                    </Button>
-                    <Button asChild variant="outline">
-                      <Link href="/builder?tab=decks">Generate a deck</Link>
-                    </Button>
-                    <Button asChild variant="outline">
-                      <Link href="/vault">Save a document to Vault</Link>
-                    </Button>
+        {/* Insights Strip (collapsible) */}
+        <WidgetRowSection id="insightsStrip" title="Insights" subtitle="Quick signals" defaultOpen={false}>
+          {/* Widget Grid: 2 rows x 3 columns (no nested scrollbars) */}
+          <div className="space-y-4">
+            {/* Row 1 */}
+            <div className="grid gap-4 lg:grid-cols-12">
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard title="My Focus Today" density="compact" className="h-full" bodyClassName="!pt-0 !pb-2">
+                  <div className="space-y-3 -mt-1">
+                    <div className="space-y-2">
+                      {mockFocusToday.map((segment) => (
+                        <div key={segment.id} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{segment.label}</span>
+                          <span className="font-medium">{segment.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="flex h-2 w-full">
+                        {mockFocusToday.map((segment, idx) => {
+                          const total = mockFocusToday.reduce((acc, s) => acc + s.value, 0);
+                          const pct = (segment.value / total) * 100;
+                          const colors = ["bg-blue-400/40", "bg-orange-400/40", "bg-purple-400/40"];
+                          return (
+                            <div
+                              key={segment.id}
+                              className={colors[idx] || "bg-foreground/40"}
+                              style={{ width: `${pct}%` }}
+                              title={`${segment.label}: ${segment.value}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
+                </WidgetCard>
+              </div>
+
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard
+                  title="Recently Active Docs"
+                  density="compact"
+                  className="h-full"
+                  bodyClassName="!pt-0 !pb-2"
+                  rightSlot={
+                    <Link href="#" className="text-xs text-muted-foreground hover:text-foreground">
+                      View all →
+                    </Link>
+                  }
+                >
+                  <div className="space-y-1.5 -mt-1">
+                    {mockRecentlyActive.map((item) => (
+                      <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium truncate">{item.title}</div>
+                            <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </WidgetCard>
+              </div>
+
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard
+                  title="Blocked Items"
+                  density="compact"
+                  className="h-full"
+                  bodyClassName="!pt-0 !pb-2"
+                  rightSlot={
+                    <Link href="#" className="text-xs text-muted-foreground hover:text-foreground">
+                      View all →
+                    </Link>
+                  }
+                >
+                  <div className="space-y-1.5 -mt-1">
+                    {mockBlockedItems.map((item) => (
+                      <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium truncate">{item.title}</div>
+                              <Badge variant="outline" className={cn(
+                                "text-[10px] px-1.5 py-0",
+                                item.tag === "high" && "border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300",
+                                item.tag === "medium" && "border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-300"
+                              )}>
+                                {item.tag}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </WidgetCard>
+              </div>
+            </div>
+
+            {/* Row 2 */}
+            <div className="grid gap-4 lg:grid-cols-12">
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard title="Stage Breakdown" subtitle="Documents by status" density="compact" className="h-full" bodyClassName="!pt-0 !pb-2">
+                  <div className="space-y-3 -mt-1">
+                    <div className="space-y-2">
+                      {mockStageBreakdown.map((segment) => (
+                        <div key={segment.id} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{segment.label}</span>
+                          <span className="font-medium">{segment.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="flex h-2 w-full">
+                        {mockStageBreakdown.map((segment, idx) => {
+                          const total = mockStageBreakdown.reduce((acc, s) => acc + s.value, 0);
+                          const pct = (segment.value / total) * 100;
+                          const colors = ["bg-slate-400/30", "bg-blue-400/40", "bg-emerald-400/40", "bg-teal-400/40"];
+                          return (
+                            <div
+                              key={segment.id}
+                              className={colors[idx] || "bg-foreground/40"}
+                              style={{ width: `${pct}%` }}
+                              title={`${segment.label}: ${segment.value}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </WidgetCard>
+              </div>
+
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard
+                  title="Review Queue"
+                  density="compact"
+                  className="h-full"
+                  bodyClassName="!pt-0 !pb-2"
+                  rightSlot={
+                    <Link href="#" className="text-xs text-muted-foreground hover:text-foreground">
+                      View all →
+                    </Link>
+                  }
+                >
+                  <div className="space-y-1.5 -mt-1">
+                    {mockReviewQueue.map((item) => (
+                      <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium truncate">{item.title}</div>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border/60 bg-muted">
+                                {item.tag}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </WidgetCard>
+              </div>
+
+              <div className="lg:col-span-4 lg:h-[280px]">
+                <WidgetCard
+                  title="Signature Queue"
+                  density="compact"
+                  className="h-full"
+                  bodyClassName="!pt-0 !pb-2"
+                  rightSlot={
+                    <Link href="#" className="text-xs text-muted-foreground hover:text-foreground">
+                      View all →
+                    </Link>
+                  }
+                >
+                  <div className="space-y-1.5 -mt-1">
+                    {mockSignatureQueue.map((item) => (
+                      <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium truncate">{item.title}</div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                              <Badge variant="outline" className={cn(
+                                "text-[10px] px-1.5 py-0",
+                                item.tag === "high" && "border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300",
+                                item.tag === "medium" && "border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-300",
+                                item.tag === "low" && "border-green-500/20 bg-green-500/10 text-green-800 dark:text-green-300"
+                              )}>
+                                {item.tag}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </WidgetCard>
+              </div>
+            </div>
+          </div>
+        </WidgetRowSection>
+
+        {/* Empty state when no active work */}
+        {!loading && filteredRows.length === 0 && (
+          <div className="mb-4 rounded-lg border bg-card p-6 text-center">
+            <div className="space-y-4">
+              <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <FileText className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold mb-2">No active work yet</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Get started by generating a contract, deck, or saving a document to Vault.
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Button asChild variant="outline">
+                    <Link href="/builder?tab=contracts">Generate a contract</Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/builder?tab=decks">Generate a deck</Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/vault">Save a document to Vault</Link>
+                  </Button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Demo NDA empty state */}
-          {hasVaultDocs === false && !loading && filteredRows.length > 0 && (
-            <div className="mb-4 rounded-lg border border-dashed bg-muted/40 p-4 text-sm">
-              <h2 className="font-medium">Demo NDA (sample only)</h2>
-              <p className="mt-1 text-muted-foreground">
-                You don&apos;t have any documents in your Vault yet. For this Beta, you can
-                still test Workbench using a sample NDA.
-              </p>
-              <p className="mt-2 text-xs text-muted-foreground">
-                This is a demo document only. Real workflows will use your own documents
-                from Vault or Google Drive.
-              </p>
-            </div>
-          )}
+        {/* Demo NDA empty state */}
+        {hasVaultDocs === false && !loading && filteredRows.length > 0 && (
+          <div className="mb-4 rounded-lg border border-dashed bg-muted/40 p-4 text-sm">
+            <h2 className="font-medium">Demo NDA (sample only)</h2>
+            <p className="mt-1 text-muted-foreground">
+              You don&apos;t have any documents in your Vault yet. For this Beta, you can
+              still test Workbench using a sample NDA.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              This is a demo document only. Real workflows will use your own documents
+              from Vault or Google Drive.
+            </p>
+          </div>
+        )}
 
-          <div className="flex gap-3 items-center">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search documents..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+        <div className="flex gap-3 items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter this list…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
 
+          {isMounted ? (
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Source" />
               </SelectTrigger>
               <SelectContent>
@@ -871,9 +1163,16 @@ export default function WorkbenchPage() {
                 <SelectItem value="gmail">Gmail</SelectItem>
               </SelectContent>
             </Select>
+          ) : (
+            <div
+              aria-hidden="true"
+              className="h-10 w-[150px] rounded-md border border-input bg-background"
+            />
+          )}
 
+          {isMounted ? (
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -882,285 +1181,330 @@ export default function WorkbenchPage() {
                 <SelectItem value="signed">Signed</SelectItem>
               </SelectContent>
             </Select>
+          ) : (
+            <div
+              aria-hidden="true"
+              className="h-10 w-[150px] rounded-md border border-input bg-background"
+            />
+          )}
 
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
+          <Button variant="outline" size="icon">
+            <Filter className="h-4 w-4" />
+          </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRunPlaybookFromSelection}
-              disabled={runPlaybookPending || !selectedRow}
-              className="ml-1"
-            >
-              {runPlaybookPending ? "Running…" : "Run Playbook (dry-run)"}
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRunPlaybookFromSelection}
+            disabled={runPlaybookPending || !selectedRow}
+          >
+            {runPlaybookPending ? "Running…" : "Run Playbook"}
+          </Button>
         </div>
-      </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        <div className={cn('flex-1 overflow-auto', selectedRow && 'max-w-[60%]')}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Kind</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Modified</TableHead>
-                <TableHead>Signing</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    Loading…
-                  </TableCell>
-                </TableRow>
-              ) : filteredRows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    No items yet
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredRows.map((r) => {
-                  const status = r.signingStatus ?? envelopeStatuses[r.id] ?? null;
-                  const statusLabel = status ? status.toUpperCase() : null;
-                  const canSendForSignature = !!r.hasVaultDocument;
+        {/* Documents area: single scrollbar (AppShell). Keep content in the same spacing rhythm as the header/filters. */}
+        <div className="pb-8">
+          <div className={cn("flex gap-4", selectedRow && "items-start")}>
+            <div className={cn("flex-1 min-w-0 pr-6", selectedRow && "max-w-[60%]")}>
+              <div className="w-full overflow-x-auto">
+                <Table className="w-full min-w-[980px] table-fixed">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[36%]">Name</TableHead>
+                      <TableHead className="w-[9%]">Source</TableHead>
+                      <TableHead className="w-[9%]">Kind</TableHead>
+                      <TableHead className="w-[9%]">Owner</TableHead>
+                      <TableHead className="w-[14%]">Modified</TableHead>
+                      <TableHead className="w-[9%]">Signing</TableHead>
+                      <TableHead className="w-[14%] text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          Loading…
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredRows.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          No items yet
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredRows.map((r) => {
+                        const status = r.signingStatus ?? envelopeStatuses[r.id] ?? null;
+                        const statusLabel = status ? status.toUpperCase() : null;
+                        const canSendForSignature = !!r.hasVaultDocument;
 
-                  return (
-                    <TableRow
-                      key={r.id}
-                      className={cn(
-                        'cursor-pointer',
-                        selectedRow?.id === r.id && 'bg-accent'
-                      )}
-                      onClick={() => setSel(r)}
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
+                        return (
+                          <TableRow
+                            key={r.id}
+                            className={cn(
+                              "cursor-pointer",
+                              selectedRow?.id === r.id && "bg-accent",
+                              "py-1"
+                            )}
+                            onClick={() => setSel(r)}
+                          >
+                            <TableCell className={cn("font-medium align-top", "py-1")}>
+                              <div className="flex items-start gap-3 min-w-0">
+                                {/* icon */}
+                                <FileText className={cn("text-muted-foreground shrink-0", "h-3 w-3")} />
+                                <div className="min-w-0">
+                                  <div className={cn("font-medium truncate", "text-sm")}>{r.title}</div>
+                                  {r.preview && (
+                                    <div className={cn("text-muted-foreground truncate", "text-[10px] mt-0.5")} title={r.preview}>
+                                      {r.preview}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className={cn("py-1")}>
+                              <Badge variant="outline">{r.source}</Badge>
+                            </TableCell>
+                            {/* Kind column: half the width it used to effectively take, and truncate long MIME types */}
+                            <TableCell className={cn("text-muted-foreground", "py-1 text-xs")}>
+                              <span className="block truncate">
+                                {r.kind ?? "—"}
+                              </span>
+                            </TableCell>
+                            <TableCell className={cn("py-1 text-xs")}>
+                              <span className="block truncate">{r.owner ?? "—"}</span>
+                            </TableCell>
+                            <TableCell className={cn("text-muted-foreground", "py-1 text-xs")}>
+                              <span className="block truncate">{r.modified ?? "—"}</span>
+                            </TableCell>
+                            <TableCell>
+                              {statusLabel ? (() => {
+                                const rawStatus = status ?? undefined;
+                                const statusKey = rawStatus?.toLowerCase();
+                                const badgeClass =
+                                  statusKey && statusKey in statusColors
+                                    ? statusColors[statusKey]
+                                    : '';
+                                return (
+                                  <Badge className={badgeClass} variant="secondary">
+                                    {statusLabel}
+                                  </Badge>
+                                );
+                              })() : (
+                                <span className="text-xs text-muted-foreground">Not sent</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => onAnalyze(r)}
+                                  disabled={analyzing && sel?.id === r.id}
+                                >
+                                  {analyzing && sel?.id === r.id ? "Analyzing…" : "Analyze"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => onSaveToVault(r)}
+                                  disabled={savingToVault === r.id || r.hasVaultDocument}
+                                  title={r.hasVaultDocument ? "Already saved to Vault" : undefined}
+                                >
+                                  {savingToVault === r.id ? "Saving…" : r.hasVaultDocument ? "Saved" : "Save"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => onOpenSignModal(r)}
+                                  disabled={!canSendForSignature || sending}
+                                  title={!canSendForSignature ? "Save this document to Vault before sending for signature." : undefined}
+                                >
+                                  <FileSignature className="h-3 w-3 mr-1" />
+                                  Sign
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            {selectedRow ? (
+              <div className="w-[40%] border-l bg-card">
+                <div className="p-6 space-y-6">
+                  <div>
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="space-y-1 flex-1">
+                        <h2 className="text-xl font-semibold">{selectedRow.title}</h2>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedRow.source} • {selectedRow.kind || "—"}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSel(null);
+                          setResult(null);
+                        }}
+                      >
+                        ×
+                      </Button>
+                    </div>
+
+                    <Collapsible defaultOpen={true}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full text-left font-medium mb-2">
+                        <span>Details</span>
+                        <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="space-y-3 text-sm">
                           <div>
-                            <div>{r.title}</div>
-                            {r.preview && (
-                              <div className="text-xs text-muted-foreground truncate max-w-[400px]" title={r.preview}>
-                                {r.preview}
+                            <span className="font-medium">Source</span>
+                            <p className="text-muted-foreground mt-1">
+                              {selectedRow.source}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span className="font-medium">Owner</span>
+                            <p className="text-muted-foreground mt-1">
+                              {selectedRow.owner ?? "—"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span className="font-medium">Last Modified</span>
+                            <p className="text-muted-foreground mt-1">
+                              {selectedRow.modified ?? "—"}
+                            </p>
+                          </div>
+
+                          {selectedRow.preview && (
+                            <div>
+                              <span className="font-medium">Preview</span>
+                              <p className="text-muted-foreground mt-1">
+                                {selectedRow.preview}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+
+                  {/* AI Analysis Section */}
+                  {(result || analyzeError || analyzing) && (
+                    <Collapsible defaultOpen={true}>
+                      <div className="border-t pt-6">
+                        <CollapsibleTrigger className="flex items-center gap-2 w-full text-left mb-3">
+                          <Sparkles className="h-4 w-4 text-mono" />
+                          <h3 className="font-medium">AI Analysis</h3>
+                          <ChevronDown className="h-4 w-4 ml-auto transition-transform data-[state=open]:rotate-180" />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="space-y-3 text-sm">
+                            {analyzing && (
+                              <p className="text-muted-foreground">Running AI…</p>
+                            )}
+                            {analyzeError && (
+                              <div className="text-destructive">
+                                AI error: {analyzeError}
+                              </div>
+                            )}
+                            {result && (
+                              <div className="space-y-4">
+                                <div>
+                                  <div className="text-xs font-medium text-muted-foreground mb-1">Summary</div>
+                                  <div>{result.summary ?? "—"}</div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <div className="text-xs font-medium text-muted-foreground mb-1">Entities</div>
+                                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                      {(result.entities ?? []).map((e, i) => (
+                                        <li key={i}>
+                                          <strong>{e.label}:</strong> {e.value}
+                                        </li>
+                                      ))}
+                                      {(result.entities?.length ?? 0) === 0 && <li>—</li>}
+                                    </ul>
+                                  </div>
+                                  <div>
+                                    <div className="text-xs font-medium text-muted-foreground mb-1">Dates</div>
+                                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                      {(result.dates ?? []).map((d, i) => (
+                                        <li key={i}>{d}</li>
+                                      ))}
+                                      {(result.dates?.length ?? 0) === 0 && <li>—</li>}
+                                    </ul>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <div className="text-xs font-medium text-muted-foreground mb-1">Next Action</div>
+                                  <div>{result.nextAction ?? "—"}</div>
+                                </div>
                               </div>
                             )}
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{r.source}</Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{r.kind ?? "—"}</TableCell>
-                      <TableCell>{r.owner ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{r.modified ?? "—"}</TableCell>
-                      <TableCell>
-                        {statusLabel ? (() => {
-                          const rawStatus = status ?? undefined;
-                          const statusKey = rawStatus?.toLowerCase();
-                          const badgeClass =
-                            statusKey && statusKey in statusColors
-                              ? statusColors[statusKey]
-                              : '';
-                          return (
-                            <Badge className={badgeClass} variant="secondary">
-                              {statusLabel}
-                            </Badge>
-                          );
-                        })() : (
-                          <span className="text-xs text-muted-foreground">Not sent</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onAnalyze(r)}
-                            disabled={analyzing && sel?.id === r.id}
-                          >
-                            {analyzing && sel?.id === r.id ? "Analyzing…" : "Analyze"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onSaveToVault(r)}
-                            disabled={savingToVault === r.id || r.hasVaultDocument}
-                            title={r.hasVaultDocument ? "Already saved to Vault" : undefined}
-                          >
-                            {savingToVault === r.id ? "Saving…" : r.hasVaultDocument ? "Saved" : "Save to Vault"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onOpenSignModal(r)}
-                            disabled={!canSendForSignature || sending}
-                            title={!canSendForSignature ? "Save this document to Vault before sending for signature." : undefined}
-                          >
-                            <FileSignature className="h-3 w-3 mr-1" />
-                            Sign
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {selectedRow && (
-          <div className="w-[40%] border-l bg-card overflow-auto">
-            <div className="p-6 space-y-6">
-              <div>
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="space-y-1 flex-1">
-                    <h2 className="text-xl font-semibold">{selectedRow.title}</h2>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedRow.source} • {selectedRow.kind || "—"}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setSel(null);
-                      setResult(null);
-                    }}
-                  >
-                    ×
-                  </Button>
-                </div>
-
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <span className="font-medium">Source</span>
-                    <p className="text-muted-foreground mt-1">
-                      {selectedRow.source}
-                    </p>
-                  </div>
-
-                  <div>
-                    <span className="font-medium">Owner</span>
-                    <p className="text-muted-foreground mt-1">
-                      {selectedRow.owner ?? "—"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <span className="font-medium">Last Modified</span>
-                    <p className="text-muted-foreground mt-1">
-                      {selectedRow.modified ?? "—"}
-                    </p>
-                  </div>
-
-                  {selectedRow.preview && (
-                    <div>
-                      <span className="font-medium">Preview</span>
-                      <p className="text-muted-foreground mt-1">
-                        {selectedRow.preview}
-                      </p>
-                    </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
                   )}
+
+                  <Collapsible defaultOpen={true}>
+                    <div className="border-t pt-6 space-y-2">
+                      <CollapsibleTrigger className="flex items-center justify-between w-full text-left mb-3">
+                        <h3 className="font-medium">Quick Actions</h3>
+                        <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="space-y-2">
+                          <Button
+                            className="w-full justify-start"
+                            variant="outline"
+                            onClick={() => onAnalyze(selectedRow)}
+                            disabled={analyzing && sel?.id === selectedRow.id}
+                          >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Analyze with Maestro
+                          </Button>
+                          <Button
+                            className="w-full justify-start"
+                            variant="outline"
+                            onClick={() => onSaveToVault(selectedRow)}
+                            disabled={savingToVault === selectedRow.id || selectedRow.hasVaultDocument}
+                          >
+                            {selectedRow.hasVaultDocument ? "✓ Saved to Vault" : "Save to Vault"}
+                          </Button>
+                          <Button
+                            className="w-full justify-start"
+                            variant="outline"
+                            onClick={() => onOpenSignModal(selectedRow)}
+                            disabled={!selectedRow.hasVaultDocument || sending}
+                          >
+                            <FileSignature className="h-4 w-4 mr-2" />
+                            Send for Signature
+                          </Button>
+                        </div>
+                      </CollapsibleContent>
+                    </div>
+                  </Collapsible>
                 </div>
               </div>
-
-              {/* AI Analysis Section */}
-              {(result || analyzeError || analyzing) && (
-                <div className="border-t pt-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="h-4 w-4 text-mono" />
-                    <h3 className="font-medium">AI Analysis</h3>
-                  </div>
-                  <div className="space-y-3 text-sm">
-                    {analyzing && (
-                      <p className="text-muted-foreground">Running AI…</p>
-                    )}
-                    {analyzeError && (
-                      <div className="text-destructive">
-                        AI error: {analyzeError}
-                      </div>
-                    )}
-                    {result && (
-                      <div className="space-y-4">
-                        <div>
-                          <div className="text-xs font-medium text-muted-foreground mb-1">Summary</div>
-                          <div>{result.summary ?? "—"}</div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <div className="text-xs font-medium text-muted-foreground mb-1">Entities</div>
-                            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                              {(result.entities ?? []).map((e, i) => (
-                                <li key={i}>
-                                  <strong>{e.label}:</strong> {e.value}
-                                </li>
-                              ))}
-                              {(result.entities?.length ?? 0) === 0 && <li>—</li>}
-                            </ul>
-                          </div>
-                          <div>
-                            <div className="text-xs font-medium text-muted-foreground mb-1">Dates</div>
-                            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                              {(result.dates ?? []).map((d, i) => (
-                                <li key={i}>{d}</li>
-                              ))}
-                              {(result.dates?.length ?? 0) === 0 && <li>—</li>}
-                            </ul>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="text-xs font-medium text-muted-foreground mb-1">Next Action</div>
-                          <div>{result.nextAction ?? "—"}</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="border-t pt-6 space-y-2">
-                <h3 className="font-medium mb-3">Quick Actions</h3>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  onClick={() => onAnalyze(selectedRow)}
-                  disabled={analyzing && sel?.id === selectedRow.id}
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Analyze with Maestro
-                </Button>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  onClick={() => onSaveToVault(selectedRow)}
-                  disabled={savingToVault === selectedRow.id || selectedRow.hasVaultDocument}
-                >
-                  {selectedRow.hasVaultDocument ? "✓ Saved to Vault" : "Save to Vault"}
-                </Button>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  onClick={() => onOpenSignModal(selectedRow)}
-                  disabled={!selectedRow.hasVaultDocument || sending}
-                >
-                  <FileSignature className="h-4 w-4 mr-2" />
-                  Send for Signature
-                </Button>
-              </div>
-            </div>
+            ) : null}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Send for signature modal */}

@@ -1,5 +1,9 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { WidgetCard, WidgetRowSection } from "@/components/widgets";
+import { AlertCircle, CheckCircle2, Clock, Database, Mail, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type LoadStatus = "idle" | "loading" | "ok" | "error";
@@ -28,6 +32,34 @@ type GmailStatusResponse = {
 
 const CONNECTED_SOURCE_LIMIT = 10;
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function parseJsonMaybe(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function getErrorMessage(data: unknown): string | null {
+  if (!isObject(data)) return null;
+  const message = data["message"];
+  if (typeof message === "string" && message.trim().length > 0) return message;
+  const error = data["error"];
+  if (typeof error === "string" && error.trim().length > 0) return error;
+  return null;
+}
+
+function getAuthUrl(data: unknown): string | null {
+  if (!isObject(data)) return null;
+  const authUrl = data["authUrl"];
+  if (typeof authUrl === "string" && authUrl.trim().length > 0) return authUrl;
+  return null;
+}
+
 function formatDateTime(iso: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -41,13 +73,29 @@ function formatDateTime(iso: string | null): string | null {
   });
 }
 
+function formatTimeAgo(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return formatDateTime(iso);
+}
+
 function formatErrorSnippet(msg: string | null): string | null {
   if (!msg) return null;
-  // Try to strip noisy JSON tail if present.
   const firstLine = msg.split("\n")[0];
   const base = firstLine.length > 0 ? firstLine : msg;
   const trimmed = base.trim();
-  const limit = 180;
+  const limit = 80;
   if (trimmed.length <= limit) return trimmed;
   return trimmed.slice(0, limit - 3) + "...";
 }
@@ -78,19 +126,19 @@ export default function IntegrationsPage() {
     try {
       const res = await fetch("/api/connectors/drive/status");
       const text = await res.text();
-      let data: any = {};
-
-      try {
-        data = JSON.parse(text);
-      } catch {
-        // keep raw text for debugging
-      }
+      const data = parseJsonMaybe(text);
 
       if (!res.ok) {
         setLoadStatus("error");
         setLoadError(
-          data?.message ?? data?.error ?? `Failed to load status: ${res.status} ${text}`,
+          getErrorMessage(data) ?? `Failed to load status: ${res.status} ${text}`,
         );
+        return;
+      }
+
+      if (!isObject(data)) {
+        setLoadStatus("error");
+        setLoadError(`Failed to load status: ${res.status} Invalid JSON payload`);
         return;
       }
 
@@ -115,20 +163,19 @@ export default function IntegrationsPage() {
     try {
       const res = await fetch("/api/connectors/gmail/status");
       const text = await res.text();
-      let data: any = {};
-      try {
-        data = JSON.parse(text);
-      } catch {
-        // keep raw text
-      }
+      const data = parseJsonMaybe(text);
 
       if (!res.ok) {
         setGmailLoadStatus("error");
         setGmailLoadError(
-          data?.message ??
-          data?.error ??
-          `Failed to load Gmail status: ${res.status} ${text}`,
+          getErrorMessage(data) ?? `Failed to load Gmail status: ${res.status} ${text}`,
         );
+        return;
+      }
+
+      if (!isObject(data)) {
+        setGmailLoadStatus("error");
+        setGmailLoadError(`Failed to load Gmail status: ${res.status} Invalid JSON payload`);
         return;
       }
 
@@ -155,25 +202,26 @@ export default function IntegrationsPage() {
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => null)) as unknown;
 
       if (!res.ok) {
         setConnectStatus("error");
         setConnectMessage(
-          data?.error ??
+          getErrorMessage(data) ??
           `Connect request failed with status ${res.status} – see logs for details.`,
         );
         return;
       }
 
-      if (!data?.authUrl) {
+      const authUrl = getAuthUrl(data);
+      if (!authUrl) {
         setConnectStatus("error");
         setConnectMessage("No authUrl returned from Drive connect endpoint.");
         return;
       }
 
       setConnectStatus("redirecting");
-      window.location.href = data.authUrl as string;
+      window.location.href = authUrl;
     } catch (err) {
       setConnectStatus("error");
       setConnectMessage(
@@ -196,20 +244,12 @@ export default function IntegrationsPage() {
       });
 
       const text = await res.text();
-      let data: any = {};
-
-      try {
-        data = JSON.parse(text);
-      } catch {
-        // leave as raw text
-      }
+      const data = parseJsonMaybe(text);
 
       if (!res.ok) {
         setSyncStatus("error");
         setSyncMessage(
-          data?.message ??
-          data?.error ??
-          `Import failed with status ${res.status}: ${text}`,
+          getErrorMessage(data) ?? `Import failed with status ${res.status}: ${text}`,
         );
         // Reload status so last_error is visible
         void refreshDriveStatus();
@@ -217,7 +257,8 @@ export default function IntegrationsPage() {
       }
 
       setSyncStatus("ok");
-      const fileCount = typeof data?.file_count === "number" ? data.file_count : "unknown";
+      const fileCount =
+        isObject(data) && typeof data["file_count"] === "number" ? data["file_count"] : "unknown";
       setSyncMessage(`Import completed. file_count = ${fileCount}`);
       // Reload status to update last_sync_time / file_count
       void refreshDriveStatus();
@@ -245,25 +286,26 @@ export default function IntegrationsPage() {
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => null)) as unknown;
 
       if (!res.ok) {
         setGmailConnectStatus("error");
         setGmailConnectMessage(
-          data?.error ??
+          getErrorMessage(data) ??
           `Gmail connect failed with status ${res.status} – see logs for details.`,
         );
         return;
       }
 
-      if (!data?.authUrl) {
+      const authUrl = getAuthUrl(data);
+      if (!authUrl) {
         setGmailConnectStatus("error");
         setGmailConnectMessage("No authUrl returned from Gmail connect endpoint.");
         return;
       }
 
       setGmailConnectStatus("redirecting");
-      window.location.href = data.authUrl as string;
+      window.location.href = authUrl;
     } catch (err) {
       setGmailConnectStatus("error");
       setGmailConnectMessage(
@@ -286,20 +328,12 @@ export default function IntegrationsPage() {
       });
 
       const text = await res.text();
-      let data: any = {};
-
-      try {
-        data = JSON.parse(text);
-      } catch {
-        // leave as raw text
-      }
+      const data = parseJsonMaybe(text);
 
       if (!res.ok) {
         setGmailSyncStatus("error");
         setGmailSyncMessage(
-          data?.message ??
-          data?.error ??
-          `Gmail import failed with status ${res.status}: ${text}`,
+          getErrorMessage(data) ?? `Gmail import failed with status ${res.status}: ${text}`,
         );
         void refreshGmailStatus();
         return;
@@ -307,7 +341,7 @@ export default function IntegrationsPage() {
 
       setGmailSyncStatus("ok");
       const count =
-        typeof data?.message_count === "number" ? data.message_count : "unknown";
+        isObject(data) && typeof data["message_count"] === "number" ? data["message_count"] : "unknown";
       setGmailSyncMessage(`Import completed. message_count = ${count}`);
       void refreshGmailStatus();
     } catch (err) {
@@ -335,294 +369,470 @@ export default function IntegrationsPage() {
     CONNECTED_SOURCE_LIMIT - connectedSources,
   );
 
+  const actionItems = [
+    ...(driveStatus?.last_error ? [{
+      id: "drive-error",
+      type: "error" as const,
+      source: "Google Drive",
+      message: formatErrorSnippet(driveStatus.last_error),
+      time: driveStatus.last_error_time,
+    }] : []),
+    ...(gmailStatus?.last_error ? [{
+      id: "gmail-error",
+      type: "error" as const,
+      source: "Gmail",
+      message: formatErrorSnippet(gmailStatus.last_error),
+      time: gmailStatus.last_error_time,
+    }] : []),
+    ...(!driveConnected ? [{
+      id: "drive-disconnected",
+      type: "warning" as const,
+      source: "Google Drive",
+      message: "Not connected. Connect to start syncing files.",
+      time: null,
+    }] : []),
+    ...(!gmailConnected ? [{
+      id: "gmail-disconnected",
+      type: "warning" as const,
+      source: "Gmail",
+      message: "Not connected. Connect to start syncing email metadata.",
+      time: null,
+    }] : []),
+  ];
+
+  const recentSyncActivity = [
+    ...(driveStatus?.last_sync_time ? [{
+      id: "drive-sync",
+      source: "Google Drive",
+      action: "Sync completed",
+      time: driveStatus.last_sync_time,
+      details: `${driveStatus.last_sync_file_count ?? 0} items`,
+      success: true,
+    }] : []),
+    ...(gmailStatus?.last_sync_time ? [{
+      id: "gmail-sync",
+      source: "Gmail",
+      action: "Sync completed",
+      time: gmailStatus.last_sync_time,
+      details: `${gmailStatus.last_sync_message_count ?? 0} messages`,
+      success: true,
+    }] : []),
+  ].sort((a, b) => {
+    const timeA = new Date(a.time || 0).getTime();
+    const timeB = new Date(b.time || 0).getTime();
+    return timeB - timeA;
+  });
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      <header className="mb-2">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Integrations</h1>
-            <p className="mt-1 text-sm text-neutral-400">
-              Connect Harmonyk to your external tools. Drive imports can be synced on demand.
-            </p>
-            <p className="mt-1 text-xs text-neutral-500">
-              Pro plan: up to {CONNECTED_SOURCE_LIMIT} connected sources.{" "}
-              <span className="font-mono">
-                {connectedSources}/{CONNECTED_SOURCE_LIMIT} used
-              </span>
-              {remainingSources > 0 && (
-                <span className="ml-1">
-                  · {remainingSources} remaining
-                </span>
+    <div className="p-6 max-w-[1600px] mx-auto">
+      <WidgetRowSection
+        id="connectors"
+        title="Data Sources"
+        subtitle="Connect your accounts to import and organize documents into Vault"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="md:col-span-6">
+            <WidgetCard
+              title="Google Drive"
+              subtitle="Docs, Sheets, Slides, PDFs"
+              className="h-[280px]"
+            >
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between mb-3">
+                  <Database className="h-5 w-5 text-blue-500/60" />
+                  <Badge
+                    variant={
+                      loadStatus === "loading"
+                        ? "outline"
+                        : driveConnected
+                          ? "secondary"
+                          : "outline"
+                    }
+                    className={
+                      loadStatus === "loading"
+                        ? ""
+                        : driveConnected
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800"
+                          : ""
+                    }
+                  >
+                    {loadStatus === "loading"
+                      ? "Checking..."
+                      : driveConnected
+                        ? "Connected"
+                        : "Disconnected"}
+                  </Badge>
+                </div>
+
+                <div className="text-xs text-muted-foreground mb-4 flex-1">
+                  {driveStatus?.last_sync_time ? (
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3 w-3" />
+                      <span>Last sync: {formatTimeAgo(driveStatus.last_sync_time)}</span>
+                      {typeof driveStatus.last_sync_file_count === "number" && (
+                        <span className="text-muted-foreground/60">
+                          · {driveStatus.last_sync_file_count} items
+                        </span>
+                      )}
+                    </div>
+                  ) : driveConnected ? (
+                    <div className="text-muted-foreground/60">No syncs yet</div>
+                  ) : (
+                    <div className="text-muted-foreground/60">Connect to start syncing</div>
+                  )}
+
+                  {driveStatus?.last_error && (
+                    <div className="mt-2 text-[11px] text-rose-600 dark:text-rose-400 font-mono">
+                      {formatErrorSnippet(driveStatus.last_error)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2 mt-auto">
+                  {!driveConnected ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleConnect}
+                      disabled={connectStatus === "loading" || connectStatus === "redirecting"}
+                      className="w-full"
+                    >
+                      {connectStatus === "redirecting" ? "Redirecting..." : "Connect"}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSync}
+                        disabled={syncStatus === "running"}
+                        className="w-full"
+                      >
+                        {syncStatus === "running" ? "Syncing..." : "Sync Now"}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleConnect}
+                        disabled={connectStatus === "loading" || connectStatus === "redirecting"}
+                        className="w-full text-xs"
+                      >
+                        Reconnect
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </WidgetCard>
+          </div>
+
+          <div className="md:col-span-6">
+            <WidgetCard
+              title="Gmail"
+              subtitle="Email metadata & attachments"
+              className="h-[280px]"
+            >
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between mb-3">
+                  <Mail className="h-5 w-5 text-red-500/60" />
+                  <Badge
+                    variant={
+                      gmailLoadStatus === "loading"
+                        ? "outline"
+                        : gmailConnected
+                          ? "secondary"
+                          : "outline"
+                    }
+                    className={
+                      gmailLoadStatus === "loading"
+                        ? ""
+                        : gmailConnected
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800"
+                          : ""
+                    }
+                  >
+                    {gmailLoadStatus === "loading"
+                      ? "Checking..."
+                      : gmailConnected
+                        ? "Connected"
+                        : "Disconnected"}
+                  </Badge>
+                </div>
+
+                <div className="text-xs text-muted-foreground mb-4 flex-1">
+                  {gmailStatus?.last_sync_time ? (
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3 w-3" />
+                      <span>Last sync: {formatTimeAgo(gmailStatus.last_sync_time)}</span>
+                      {typeof gmailStatus.last_sync_message_count === "number" && (
+                        <span className="text-muted-foreground/60">
+                          · {gmailStatus.last_sync_message_count} msgs
+                        </span>
+                      )}
+                    </div>
+                  ) : gmailConnected ? (
+                    <div className="text-muted-foreground/60">No syncs yet</div>
+                  ) : (
+                    <div className="text-muted-foreground/60">Connect to start syncing</div>
+                  )}
+
+                  {gmailStatus?.last_error && (
+                    <div className="mt-2 text-[11px] text-rose-600 dark:text-rose-400 font-mono">
+                      {formatErrorSnippet(gmailStatus.last_error)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2 mt-auto">
+                  {!gmailConnected ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleGmailConnect}
+                      disabled={
+                        gmailConnectStatus === "loading" ||
+                        gmailConnectStatus === "redirecting"
+                      }
+                      className="w-full"
+                    >
+                      {gmailConnectStatus === "redirecting" ? "Redirecting..." : "Connect"}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleGmailSync}
+                        disabled={gmailSyncStatus === "running"}
+                        className="w-full"
+                      >
+                        {gmailSyncStatus === "running" ? "Syncing..." : "Sync Now"}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleGmailConnect}
+                        disabled={
+                          gmailConnectStatus === "loading" ||
+                          gmailConnectStatus === "redirecting"
+                        }
+                        className="w-full text-xs"
+                      >
+                        Reconnect
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </WidgetCard>
+          </div>
+        </div>
+      </WidgetRowSection>
+
+      <WidgetRowSection id="activity" title="Activity & Status" subtitle="Action required and recent sync activity" className="mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="md:col-span-6">
+            <WidgetCard title="Action Required" subtitle={`${actionItems.length} items`} className="h-[280px]">
+              {actionItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-500/60 mb-2" />
+                  <div className="text-sm font-medium">All systems healthy</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    No issues detected with your integrations
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {actionItems.slice(0, 5).map((item) => (
+                    <div
+                      key={item.id}
+                      className={`p-2 rounded border text-xs ${item.type === "error"
+                        ? "border-rose-200 bg-rose-50/50 dark:border-rose-800 dark:bg-rose-950/20"
+                        : "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
+                        }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <AlertCircle
+                          className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${item.type === "error" ? "text-rose-600" : "text-amber-600"
+                            }`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium">{item.source}</div>
+                          <div className="text-muted-foreground mt-0.5 break-words">
+                            {item.message}
+                          </div>
+                          {item.time && (
+                            <div className="text-[10px] text-muted-foreground/60 mt-1">
+                              {formatTimeAgo(item.time)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {actionItems.length > 5 && (
+                    <div className="text-xs text-muted-foreground text-center pt-2">
+                      +{actionItems.length - 5} more
+                    </div>
+                  )}
+                </div>
               )}
-            </p>
-          </div>
-          <a
-            href="/activity?groups=connectors"
-            className="inline-flex items-center rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-50 hover:bg-neutral-800 transition"
-          >
-            View connector activity
-          </a>
-        </div>
-      </header>
-
-      <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="mb-3 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold">Google Drive</h2>
-            <p className="mt-1 text-xs text-neutral-500">
-              Import Docs, Sheets, Slides, and PDFs into Harmonyk&apos;s metadata index
-              for analysis and workflows. Each sync pulls a recent slice of your Drive
-              within safe limits so you can test connectors without hammering your
-              account.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${loadStatus === "loading"
-                ? "bg-neutral-800 text-neutral-300"
-                : driveConnected
-                  ? "bg-emerald-900/60 text-emerald-300"
-                  : "bg-neutral-800 text-neutral-400"
-                }`}
-            >
-              {loadStatus === "loading"
-                ? "Checking…"
-                : driveConnected
-                  ? "Connected"
-                  : "Not connected"}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleConnect}
-            disabled={connectStatus === "loading" || connectStatus === "redirecting"}
-            className="inline-flex items-center rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-50 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {driveConnected ? "Reconnect Google Drive" : "Connect Google Drive"}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSync}
-            disabled={!driveConnected || syncStatus === "running"}
-            className="inline-flex items-center rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-50 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {syncStatus === "idle" && "Sync now"}
-            {syncStatus === "running" && "Syncing…"}
-            {syncStatus === "ok" && "Sync again"}
-            {syncStatus === "error" && "Retry sync"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              window.location.href = "/integrations/dev-drive-test";
-            }}
-            className="inline-flex items-center rounded-md border border-neutral-800 bg-neutral-950 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:bg-neutral-900"
-          >
-            Open dev test page
-          </button>
-        </div>
-
-        <div className="mt-4 grid gap-3 text-xs text-neutral-400 sm:grid-cols-2">
-          <div>
-            <div className="font-medium text-neutral-300">Last sync</div>
-            {driveStatus?.last_sync_time ? (
-              <div className="mt-0.5">
-                <span className="font-mono">
-                  {formatDateTime(driveStatus.last_sync_time)}
-                </span>
-                {typeof driveStatus.last_sync_file_count === "number" && (
-                  <span className="ml-1 text-neutral-500">
-                    · {driveStatus.last_sync_file_count} items
-                  </span>
-                )}
-              </div>
-            ) : driveConnected ? (
-              <div className="mt-0.5 text-neutral-500">
-                Connected, but no completed syncs yet.
-              </div>
-            ) : (
-              <div className="mt-0.5 text-neutral-500">
-                Connect Google Drive to start syncing files.
-              </div>
-            )}
+            </WidgetCard>
           </div>
 
-          <div>
-            <div className="font-medium text-neutral-300">Last error</div>
-            {driveStatus?.last_error ? (
-              <div className="mt-0.5">
-                <div className="font-mono text-[11px] text-red-300">
-                  {formatErrorSnippet(driveStatus.last_error)}
+          <div className="md:col-span-6">
+            <WidgetCard title="Recent Sync Activity" subtitle="Last 8 jobs" className="h-[280px]">
+              {recentSyncActivity.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <Clock className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                  <div className="text-sm text-muted-foreground">No sync activity yet</div>
+                  <div className="text-xs text-muted-foreground/60 mt-1">
+                    Connect a data source to see activity
+                  </div>
                 </div>
-                {driveStatus.last_error_time && (
-                  <div className="mt-0.5 text-[11px] text-neutral-500">
-                    at{" "}
-                    <span className="font-mono">
-                      {formatDateTime(driveStatus.last_error_time)}
-                    </span>
+              ) : (
+                <div className="space-y-2">
+                  {recentSyncActivity.slice(0, 8).map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="flex items-start gap-2 p-2 rounded border border-border/40 text-xs"
+                    >
+                      <div className="shrink-0 mt-0.5">
+                        {activity.success ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                        ) : (
+                          <AlertCircle className="h-3.5 w-3.5 text-rose-500" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">{activity.source}</div>
+                        <div className="text-muted-foreground">{activity.action}</div>
+                        {activity.details && (
+                          <div className="text-muted-foreground/60 text-[11px] mt-0.5">
+                            {activity.details}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground/60 shrink-0">
+                        {formatTimeAgo(activity.time)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </WidgetCard>
+          </div>
+        </div>
+      </WidgetRowSection>
+
+      <WidgetRowSection id="accounts" title="Connected Accounts" subtitle="Accounts, permissions, and data sources" className="mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="md:col-span-4">
+            <WidgetCard title="Connected Accounts" subtitle={`${connectedSources} active`} className="h-[240px]">
+              <div className="space-y-2">
+                {driveConnected && (
+                  <div className="flex items-center justify-between p-2 rounded border border-border/40 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Database className="h-3.5 w-3.5 text-blue-500/60" />
+                      <span className="font-medium">Google Drive</span>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20">
+                      Active
+                    </Badge>
+                  </div>
+                )}
+                {gmailConnected && (
+                  <div className="flex items-center justify-between p-2 rounded border border-border/40 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-3.5 w-3.5 text-red-500/60" />
+                      <span className="font-medium">Gmail</span>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20">
+                      Active
+                    </Badge>
+                  </div>
+                )}
+                {!driveConnected && !gmailConnected && (
+                  <div className="text-xs text-muted-foreground text-center py-8">
+                    No connected accounts
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="mt-0.5 text-neutral-500">No recent errors.</div>
-            )}
+            </WidgetCard>
           </div>
-        </div>
 
-        <div className="mt-3 text-[11px] text-neutral-500">
-          Status: <span className="font-mono">{loadStatus}</span>{" "}
-          {loadError && (
-            <span className="ml-1 font-mono text-red-400">({loadError})</span>
-          )}
-          {syncMessage && (
-            <div
-              className={`mt-1 break-words font-mono text-[11px] ${syncStatus === "ok" ? "text-emerald-400" : "text-red-400"
-                }`}
-            >
-              {syncMessage}
-            </div>
-          )}
-          {connectMessage && (
-            <div className="mt-1 break-words font-mono text-[11px] text-red-400">
-              {connectMessage}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Gmail connector */}
-      <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="mb-3 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold">Gmail</h2>
-            <p className="mt-1 text-xs text-neutral-500">
-              Import email + attachment metadata for contract-related threads. Harmonyk
-              only stores headers and attachment metadata, not email bodies, and each
-              sync only fetches a small recent batch of messages to keep things safe and
-              predictable during the beta.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${gmailLoadStatus === "loading"
-                ? "bg-neutral-800 text-neutral-300"
-                : gmailConnected
-                  ? "bg-emerald-900/60 text-emerald-300"
-                  : "bg-neutral-800 text-neutral-400"
-                }`}
-            >
-              {gmailLoadStatus === "loading"
-                ? "Checking…"
-                : gmailConnected
-                  ? "Connected"
-                  : "Not connected"}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleGmailConnect}
-            disabled={
-              gmailConnectStatus === "loading" ||
-              gmailConnectStatus === "redirecting"
-            }
-            className="inline-flex items-center rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-50 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {gmailConnected ? "Reconnect Gmail" : "Connect Gmail"}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleGmailSync}
-            disabled={!gmailConnected || gmailSyncStatus === "running"}
-            className="inline-flex items-center rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-50 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {gmailSyncStatus === "idle" && "Sync now"}
-            {gmailSyncStatus === "running" && "Syncing…"}
-            {gmailSyncStatus === "ok" && "Sync again"}
-            {gmailSyncStatus === "error" && "Retry sync"}
-          </button>
-        </div>
-
-        <div className="mt-4 grid gap-3 text-xs text-neutral-400 sm:grid-cols-2">
-          <div>
-            <div className="font-medium text-neutral-300">Last sync</div>
-            {gmailStatus?.last_sync_time ? (
-              <div className="mt-0.5">
-                <span className="font-mono">
-                  {formatDateTime(gmailStatus.last_sync_time)}
-                </span>
-                {typeof gmailStatus.last_sync_message_count === "number" && (
-                  <span className="ml-1 text-neutral-500">
-                    · {gmailStatus.last_sync_message_count} messages
-                  </span>
+          <div className="md:col-span-4">
+            <WidgetCard title="Permissions" subtitle="OAuth scopes" className="h-[240px]">
+              <div className="space-y-2">
+                {driveConnected && (
+                  <div className="p-2 rounded border border-border/40 text-xs">
+                    <div className="font-medium mb-1">Google Drive</div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Shield className="h-3 w-3" />
+                      <span className="text-[11px]">Read-only access</span>
+                    </div>
+                  </div>
                 )}
-              </div>
-            ) : gmailConnected ? (
-              <div className="mt-0.5 text-neutral-500">
-                Connected, but no completed syncs yet.
-              </div>
-            ) : (
-              <div className="mt-0.5 text-neutral-500">
-                Connect Gmail to start syncing metadata.
-              </div>
-            )}
-          </div>
-
-          <div>
-            <div className="font-medium text-neutral-300">Last error</div>
-            {gmailStatus?.last_error ? (
-              <div className="mt-0.5">
-                <div className="font-mono text-[11px] text-red-300">
-                  {formatErrorSnippet(gmailStatus.last_error)}
-                </div>
-                {gmailStatus.last_error_time && (
-                  <div className="mt-0.5 text-[11px] text-neutral-500">
-                    at{" "}
-                    <span className="font-mono">
-                      {formatDateTime(gmailStatus.last_error_time)}
-                    </span>
+                {gmailConnected && (
+                  <div className="p-2 rounded border border-border/40 text-xs">
+                    <div className="font-medium mb-1">Gmail</div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Shield className="h-3 w-3" />
+                      <span className="text-[11px]">Read-only metadata</span>
+                    </div>
+                  </div>
+                )}
+                {!driveConnected && !gmailConnected && (
+                  <div className="text-xs text-muted-foreground text-center py-8">
+                    No permissions granted
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="mt-0.5 text-neutral-500">No recent errors.</div>
-            )}
+            </WidgetCard>
+          </div>
+
+          <div className="md:col-span-4">
+            <WidgetCard title="Data Sources" subtitle="Available slots" className="h-[240px]">
+              <div className="flex flex-col h-full">
+                <div className="text-2xl font-bold mb-1">
+                  {connectedSources} / {CONNECTED_SOURCE_LIMIT}
+                </div>
+                <div className="text-xs text-muted-foreground mb-4">
+                  Connected data sources
+                </div>
+                <div className="text-xs text-muted-foreground/70">
+                  {remainingSources} slots remaining
+                </div>
+                <div className="flex-1" />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    window.location.href = "/activity?groups=connectors";
+                  }}
+                  className="w-full text-xs"
+                >
+                  View Activity Log
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    window.location.href = "/integrations/dev-drive-test";
+                  }}
+                  className="w-full text-xs mt-2"
+                >
+                  Dev Test Page
+                </Button>
+              </div>
+            </WidgetCard>
           </div>
         </div>
-
-        <div className="mt-3 text-[11px] text-neutral-500">
-          Status: <span className="font-mono">{gmailLoadStatus}</span>{" "}
-          {gmailLoadError && (
-            <span className="ml-1 font-mono text-red-400">({gmailLoadError})</span>
-          )}
-          {gmailSyncMessage && (
-            <div
-              className={`mt-1 break-words font-mono text-[11px] ${gmailSyncStatus === "ok" ? "text-emerald-400" : "text-red-400"
-                }`}
-            >
-              {gmailSyncMessage}
-            </div>
-          )}
-          {gmailConnectMessage && (
-            <div className="mt-1 break-words font-mono text-[11px] text-red-400">
-              {gmailConnectMessage}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Future connectors */}
-      <section className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-4 text-xs text-neutral-500">
-        Additional connectors will appear here in later weeks.
-      </section>
+      </WidgetRowSection>
     </div>
   );
 }

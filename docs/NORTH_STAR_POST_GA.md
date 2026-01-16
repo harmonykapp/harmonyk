@@ -1,8 +1,13 @@
 # Harmonyk North Star (Post-GA) — SSOT
 
 ## Post-GA UI + Maestro Direction Update
-Updated: 2025-12-20
+Updated: 2025-12-20  
 Scope: Post-GA definition + PGW1–PGW26 alignment + UI/AI philosophy shift
+
+Canonical implementation artifacts:
+- `docs/USER_PROGRESS_NARRATOR.md`
+- `lib/user-progress.ts`
+- `lib/__tests__/user-progress.test.ts`
 
 ---
 
@@ -27,6 +32,11 @@ Rule: **Prompt window stays available, but is never required** for the main work
 
 Harmonyk stays document-first by enforcing page intent:
 
+### Integrations (user connectors only)
+- Integrations is for **user-owned, user-authorized external data sources** (Drive/Gmail/etc.) used to import/classify/organize into Vault.
+- **Documenso is platform-managed (built-in)** and must **not** appear as a user connector.
+- If we show signature status/health, it belongs under a platform/system/admin surface (or internal ops), not end-user Integrations.
+
 ### Dashboard (state of business)
 - High-level summary of doc/deal state, risk, signatures, activity, ingestion.
 - Always includes a state-aware **Dashboard Hero** (User Progress Narrator) to avoid a blank dashboard.
@@ -44,6 +54,31 @@ Harmonyk stays document-first by enforcing page intent:
 - Explorer/control first.
 - Light health/status tiles allowed.
 - Deep analytics belong in Insights.
+
+### Integrations page (end-user connectors)
+- `/integrations` is for **end-users** to connect their external accounts (Drive, Gmail, etc.) so Harmonyk can:
+  - ingest **metadata-first** references,
+  - import/copy selected files into **Vault** when the user chooses,
+  - classify and organize into Vault folders.
+- Third-party connectors beyond Google are added post-GA as "Coming Soon" until implemented.
+- **Documenso is built-in** (platform-managed). It must not appear as a user-auth connector.
+
+Operational-page intent guardrails:
+- **Integrations** = end-user connectors to external systems (Drive/Gmail/Notion/Outlook/Dropbox/etc)
+  for import → classify → organize into Vault. It supports multiple connected accounts per user/org
+  within plan limits.
+- **Platform-managed vendors are not "Integrations."**
+  - Documenso (signatures) and OpenAI (LLM) are **built-in** platform services.
+  - Users should never be asked to "connect" or configure these as if they are external accounts.
+
+#### Integrations (end-user connector hub)
+- `/integrations` is an end-user page for connecting and managing external accounts (Drive/Gmail at GA; more post-GA).
+- Purpose: scan/import metadata and optional content, classify, and **organize into Vault** with a user-designed folder structure.
+- It supports multiple connected accounts per provider over time (e.g., multiple Gmail/Drive accounts), within plan limits.
+
+#### Signatures (built-in)
+- Documenso is a built-in vendor integration used by Harmonyk for all users.
+- Users do not "connect Documenso"; they only manage envelopes/status/history in-app.
 
 ---
 

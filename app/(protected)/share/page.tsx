@@ -1,288 +1,54 @@
 "use client";
 
+// PGW2 UI polish:
+// Increase row heights so "Top Share Links" and "Breakdowns" sections can show full content
+// without clipping (no inner scrolling).
+const TOP_SHARE_LINKS_ROW_CARD_HEIGHT = "lg:h-[420px]";
+const BREAKDOWNS_ROW_CARD_HEIGHT = "lg:h-[420px]";
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { useToast } from "@/hooks/use-toast";
-import { isFeatureEnabled } from "@/lib/feature-flags";
-import { Copy, Eye, FileSignature, LayoutDashboard, Link2, Lock, Trash2, Users } from 'lucide-react';
+import { Eye, FileSignature, LayoutDashboard, Link2, Users } from 'lucide-react';
 import Link from "next/link";
-import { useState } from "react";
+import { WidgetCard, WidgetRow } from "@/components/widgets";
 
-type SharePermission = "view" | "comment" | "edit";
-
-type ShareProtection = {
-  passcodeEnabled: boolean;
-  watermarkEnabled: boolean;
-  expiresAt: string | null;  // ISO
-};
-
-type ShareStats = {
-  views: number;
-  downloads: number;
-  lastViewedAt: string | null; // ISO
-};
-
-type ShareLinkSummary = {
-  id: string;
-  docTitle: string;
-  createdAt: string;  // ISO
-  createdBy: string;  // simple string for now (e.g. "You")
-  permission: SharePermission;
-  protection: ShareProtection;
-  stats: ShareStats;
-};
-
-const DEMO_SHARE_LINKS: ShareLinkSummary[] = [
-  {
-    id: "share-001",
-    docTitle: "Partnership Agreement - Acme Corp",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-    createdBy: "You",
-    permission: "view",
-    protection: {
-      passcodeEnabled: true,
-      watermarkEnabled: true,
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-    },
-    stats: {
-      views: 12,
-      downloads: 3,
-      lastViewedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-    },
-  },
-  {
-    id: "share-002",
-    docTitle: "Q4 Financial Report - Draft",
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
-    createdBy: "You",
-    permission: "edit",
-    protection: {
-      passcodeEnabled: false,
-      watermarkEnabled: false,
-      expiresAt: null,
-    },
-    stats: {
-      views: 8,
-      downloads: 1,
-      lastViewedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-    },
-  },
-  {
-    id: "share-003",
-    docTitle: "Product Roadmap 2024",
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
-    createdBy: "You",
-    permission: "comment",
-    protection: {
-      passcodeEnabled: false,
-      watermarkEnabled: true,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-    },
-    stats: {
-      views: 45,
-      downloads: 12,
-      lastViewedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-    },
-  },
-  {
-    id: "share-004",
-    docTitle: "NDA - Mutual Confidentiality",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-    createdBy: "You",
-    permission: "view",
-    protection: {
-      passcodeEnabled: true,
-      watermarkEnabled: false,
-      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days from now
-    },
-    stats: {
-      views: 3,
-      downloads: 0,
-      lastViewedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
-    },
-  },
-];
-
-// GA behaviour:
-// - In production, we currently do not surface real share links here.
-// - This page acts as a Share Center shell; management is a post-GA enhancement.
 const isDemoEnvironment = process.env.NODE_ENV !== "production";
 
-// Free plan cap: up to 10 active share links.
-// Starter/Pro/Teams are effectively unlimited; this text is just surfacing
-// the model, not enforcing anything yet.
-const FREE_SHARE_LINK_LIMIT = 10;
+const DEMO_SHARE_LINKS = [
+  { id: "1", name: "Partnership Agreement - Acme", docType: "Contract", views: 42, lastView: "2h ago", status: "active" },
+  { id: "2", name: "Q4 Pitch Deck v3", docType: "Deck", views: 38, lastView: "5h ago", status: "active" },
+  { id: "3", name: "NDA - Mutual Confidentiality", docType: "Contract", views: 24, lastView: "1d ago", status: "active" },
+  { id: "4", name: "Product Roadmap 2024", docType: "Deck", views: 19, lastView: "2d ago", status: "expired" },
+  { id: "5", name: "Financial Pack Nov 2024", docType: "Financial", views: 15, lastView: "3d ago", status: "active" },
+  { id: "6", name: "MSA - Beta Customer", docType: "Contract", views: 12, lastView: "4d ago", status: "revoked" },
+];
 
-function formatDate(date: Date): string {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = months[date.getMonth()];
-  const day = date.getDate();
-  const year = date.getFullYear();
-  return `${month} ${day}, ${year}`;
-}
+const DEMO_COMPANIES = [
+  { id: "1", name: "Acme Corp", docsShared: 8, lastActivity: "2h ago" },
+  { id: "2", name: "Beta Labs", docsShared: 6, lastActivity: "5h ago" },
+  { id: "3", name: "Gamma Industries", docsShared: 5, lastActivity: "1d ago" },
+  { id: "4", name: "Delta Ventures", docsShared: 4, lastActivity: "2d ago" },
+  { id: "5", name: "Epsilon Partners", docsShared: 3, lastActivity: "3d ago" },
+  { id: "6", name: "Zeta Holdings", docsShared: 2, lastActivity: "5d ago" },
+];
 
-function formatTimeAgo(isoString: string | null): string {
-  if (!isoString) return "Never";
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+const DEMO_FOLLOWUPS = [
+  { id: "1", title: "Partnership Agreement - Acme", dueDate: "Today", priority: "high" },
+  { id: "2", title: "Q4 Pitch Deck v3", dueDate: "Tomorrow", priority: "medium" },
+  { id: "3", title: "NDA - Beta Labs", dueDate: "In 2 days", priority: "medium" },
+  { id: "4", title: "MSA Review", dueDate: "In 5 days", priority: "low" },
+];
 
-  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
-  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
-  return formatDate(date);
-}
-
-function formatExpiresAt(isoString: string | null): string {
-  if (!isoString) return "Never";
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffMs = date.getTime() - now.getTime();
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffDays < 0) return "Expired";
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Tomorrow";
-  if (diffDays < 7) return `In ${diffDays} days`;
-  return formatDate(date);
-}
-
-function getPermissionLabel(permission: SharePermission): string {
-  switch (permission) {
-    case "view":
-      return "View Only";
-    case "comment":
-      return "View & Comment";
-    case "edit":
-      return "Edit";
-  }
-}
-
-function getProtectionLabel(protection: ShareProtection): string {
-  const parts: string[] = [];
-  if (protection.passcodeEnabled) parts.push("Password");
-  if (protection.watermarkEnabled) parts.push("Watermark");
-  return parts.length > 0 ? parts.join(", ") : "None";
-}
+const ENGAGEMENT_SPARKLINE = [12, 18, 15, 22, 28, 24, 30, 35, 32, 38, 42, 40, 45, 48, 52, 55, 50, 58, 62, 60, 65, 68, 72, 70, 75, 78, 82, 80, 85, 88];
 
 export default function SharePage() {
-  const { toast } = useToast();
-
-  const [shareLinks, setShareLinks] = useState<ShareLinkSummary[]>(() =>
-    isDemoEnvironment ? DEMO_SHARE_LINKS : []
-  );
-  const shareActionsEnabled = isFeatureEnabled("FEATURE_SHARE_ACTIONS");
-  const totalViews = shareLinks.reduce((sum, link) => sum + link.stats.views, 0);
-  const protectedCount = shareLinks.filter(
-    (link) => link.protection.passcodeEnabled || link.protection.watermarkEnabled
-  ).length;
-  const activeLinks = shareLinks.length;
-
-  function buildShareUrl(link: ShareLinkSummary): string {
-    // Public share slug; in GA this will map to the real share route.
-    const path = `/s/${link.id}`;
-    if (typeof window === "undefined") return path;
-    return `${window.location.origin}${path}`;
-  }
-
-  function handleOpenLink(link: ShareLinkSummary) {
-    if (!shareActionsEnabled) {
-      toast({
-        title: "Share actions coming soon",
-        description: "Link management will be fully wired after GA. For now, use document-level share & signature flows.",
-      });
-      return;
-    }
-
-    const url = buildShareUrl(link);
-    window.open(url, "_blank", "noopener,noreferrer");
-    toast({
-      title: "Share link opened",
-      description: "We opened the shared view in a new tab.",
-    });
-  }
-
-  async function handleCopyLink(link: ShareLinkSummary) {
-    if (!shareActionsEnabled) {
-      toast({
-        title: "Share actions coming soon",
-        description: "Copy and revoke will be fully wired after GA. For now, use document-level share & signature flows.",
-      });
-      return;
-    }
-
-    const url = buildShareUrl(link);
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url);
-      }
-      toast({
-        title: "Link copied",
-        description: "Share URL copied to your clipboard.",
-      });
-    } catch {
-      toast({
-        title: "Could not copy link",
-        description: "Please copy the link manually from your browser.",
-        variant: "destructive",
-      });
-    }
-  }
-
-  function handleRevokeLink(link: ShareLinkSummary) {
-    if (!shareActionsEnabled) {
-      toast({
-        title: "Share actions coming soon",
-        description: "Bulk revoke and fine-grained controls will be added post-GA.",
-      });
-      return;
-    }
-
-    // Demo-only revoke behaviour: update local state so the UI reflects the change.
-    setShareLinks((prev) => prev.filter((l) => l.id !== link.id));
-    toast({
-      title: "Share link revoked",
-      description: "This change is local to this demo environment.",
-    });
-  }
+  const shareLinks = isDemoEnvironment ? DEMO_SHARE_LINKS : [];
+  const companies = isDemoEnvironment ? DEMO_COMPANIES : [];
+  const followups = isDemoEnvironment ? DEMO_FOLLOWUPS : [];
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      {/* Heading + tagline */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Share Hub</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Right documents. Right people. Right now.
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Free plan: up to {FREE_SHARE_LINK_LIMIT} active share links. Starter, Pro, and Teams
-          plans have effectively unlimited share links.
-        </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {isDemoEnvironment ? (
-            <>You currently have{" "}
-              <span className="font-mono">{activeLinks}</span> active link
-              {activeLinks === 1 ? "" : "s"} in this demo environment.</>
-          ) : (
-            <>Share link management from this page is a post-GA enhancement. Existing share and signature flows remain available from Builder and Vault.</>
-          )}
-        </p>
-      </div>
-
-      {/* Top tabs: Overview / Share Links / Signatures / Contacts */}
-      <div className="w-fit">
+    <div className="p-6 max-w-[1600px] mx-auto">
+      <div className="w-fit mb-6">
         <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
           <Link
             href="/share"
@@ -315,161 +81,270 @@ export default function SharePage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Active Links</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{shareLinks.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Currently active</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Views</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalViews}</div>
-            <p className="text-xs text-muted-foreground mt-1">Across all links</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Protected Links</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{protectedCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Password or watermark</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Guest Signups</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">8</div>
-            <p className="text-xs text-muted-foreground mt-1">From shared links</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card id="links">
-        <CardHeader>
-          <CardTitle>Active Share Links</CardTitle>
-          <CardDescription>
-            Manage and monitor your shared document links
-          </CardDescription>
-          {!shareActionsEnabled && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Advanced share workflows (bulk revoke, guest accounts, deep analytics) are coming soon.
-            </p>
-          )}
-        </CardHeader>
-        <CardContent>
-          {shareLinks.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Link2 className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No share links yet</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                {isDemoEnvironment
-                  ? "Create a secure link to share documents with passcodes, watermarks, and expiry."
-                  : "Share link management from this dashboard will be added after GA. For now, use document-level share and signature flows."}
-              </p>
-              <Button>
-                <Link2 className="h-4 w-4 mr-2" />
-                Create a share link
-              </Button>
+      <WidgetRow
+        title="Share performance"
+        subtitle="Links, trend, and follow-ups"
+        storageKey="row:share:performance"
+        className="mt-8"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className={`md:col-span-6 ${TOP_SHARE_LINKS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Top Share Links" subtitle="Most viewed" className="h-full">
+            <div className="space-y-1">
+              {shareLinks.slice(0, 5).map((link) => (
+                <div key={link.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/40 text-xs">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate">{link.name}</div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] shrink-0">{link.docType}</Badge>
+                  <div className="flex items-center gap-1 text-muted-foreground shrink-0">
+                    <Eye className="h-3 w-3" />
+                    {link.views}
+                  </div>
+                  <div className="text-muted-foreground shrink-0 w-12">{link.lastView}</div>
+                  <Badge
+                    variant={link.status === "active" ? "secondary" : "outline"}
+                    className="text-[10px] shrink-0"
+                  >
+                    {link.status}
+                  </Badge>
+                </div>
+              ))}
+              {shareLinks.length === 0 && (
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                  No share links yet
+                </div>
+              )}
+              {shareLinks.length > 5 && (
+                <div className="pt-2">
+                  <Link
+                    href="/share/links"
+                    className="inline-flex text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    View all →
+                  </Link>
+                </div>
+              )}
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Document</TableHead>
-                  <TableHead>Permission</TableHead>
-                  <TableHead>Protection</TableHead>
-                  <TableHead>Views</TableHead>
-                  <TableHead>Last Viewed</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {shareLinks.map((link) => (
-                  <TableRow key={link.id}>
-                    <TableCell className="font-medium max-w-xs">
-                      <div className="truncate">{link.docTitle}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{getPermissionLabel(link.permission)}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {getProtectionLabel(link.protection) !== "None" ? (
-                        <Badge variant="secondary" className="gap-1">
-                          <Lock className="h-3 w-3" />
-                          {getProtectionLabel(link.protection)}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">None</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3 text-muted-foreground" />
-                        {link.stats.views}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatTimeAgo(link.stats.lastViewedAt)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatExpiresAt(link.protection.expiresAt)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Open link"
-                          type="button"
-                          onClick={() => handleOpenLink(link)}
-                        >
-                          <Link2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Copy link"
-                          type="button"
-                          onClick={() => {
-                            void handleCopyLink(link);
-                          }}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Revoke"
-                          type="button"
-                          onClick={() => handleRevokeLink(link)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+          </WidgetCard>
+        </div>
+
+        <div className={`md:col-span-3 ${TOP_SHARE_LINKS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Engagement Trend" subtitle="Last 30 days" className="h-full">
+            <div className="h-full flex items-end justify-between gap-[2px] pb-2">
+              {ENGAGEMENT_SPARKLINE.map((value, i) => {
+                const height = (value / 100) * 180;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center">
+                    <div
+                      className="w-full bg-emerald-400/40 rounded-t"
+                      style={{ height: `${height}px` }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </WidgetCard>
+        </div>
+
+        <div className={`md:col-span-3 ${TOP_SHARE_LINKS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Follow-ups Due" subtitle="Action required" className="h-full">
+            <div className="space-y-2">
+              {followups.slice(0, 5).map((item) => (
+                <div key={item.id} className="p-2 rounded border border-border/40">
+                  <div className="text-sm font-medium truncate mb-1">{item.title}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge
+                      variant="outline"
+                      className={
+                        item.priority === "high"
+                          ? "text-[10px] bg-rose-50 border-rose-400/40 text-rose-700 dark:bg-rose-950/20"
+                          : item.priority === "medium"
+                          ? "text-[10px] bg-amber-50 border-amber-400/40 text-amber-700 dark:bg-amber-950/20"
+                          : "text-[10px]"
+                      }
+                    >
+                      {item.dueDate}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+              {followups.length === 0 && (
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                  No follow-ups
+                </div>
+              )}
+              {followups.length > 5 && (
+                <div className="pt-1">
+                  <Link
+                    href="/tasks"
+                    className="inline-flex text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    View all →
+                  </Link>
+                </div>
+              )}
+            </div>
+          </WidgetCard>
+        </div>
+        </div>
+      </WidgetRow>
+
+      <WidgetRow
+        title="Breakdowns"
+        subtitle="Recipients and funnel"
+        storageKey="row:share:breakdowns"
+        className="mt-10"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className={`md:col-span-6 ${BREAKDOWNS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Recipients / Companies" subtitle="Shared with" className="h-full">
+            <div className="space-y-1">
+              {companies.slice(0, 5).map((company) => (
+                <div key={company.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/40 text-xs">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate">{company.name}</div>
+                  </div>
+                  <div className="text-muted-foreground shrink-0">
+                    {company.docsShared} docs
+                  </div>
+                  <div className="text-muted-foreground shrink-0 w-16">
+                    {company.lastActivity}
+                  </div>
+                </div>
+              ))}
+              {companies.length === 0 && (
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                  No recipients yet
+                </div>
+              )}
+              {companies.length > 5 && (
+                <div className="pt-2">
+                  <Link
+                    href="/share/contacts"
+                    className="inline-flex text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    View all →
+                  </Link>
+                </div>
+              )}
+            </div>
+          </WidgetCard>
+        </div>
+
+        <div className={`md:col-span-3 ${BREAKDOWNS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Link Status Breakdown" subtitle="Distribution" className="h-full" bodyClassName="flex flex-col">
+            <div className="flex flex-col items-center justify-start">
+              <div className="shrink-0 mb-2">
+                <div className="grid grid-cols-1 gap-1.5 text-[9px] text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 whitespace-nowrap">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400/40" />
+                      <span>Active</span>
+                    </div>
+                    <span className="font-medium ml-2">64%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 whitespace-nowrap">
+                      <div className="w-2 h-2 rounded-full bg-amber-400/40" />
+                      <span>Expired</span>
+                    </div>
+                    <span className="font-medium ml-2">20%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 whitespace-nowrap">
+                      <div className="w-2 h-2 rounded-full bg-rose-400/40" />
+                      <span>Revoked</span>
+                    </div>
+                    <span className="font-medium ml-2">16%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 flex items-center justify-center flex-1 min-h-0">
+                <div className="relative" style={{ width: "140px", height: "140px" }}>
+                  <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="20"
+                      className="text-emerald-400/40"
+                      strokeDasharray="160 251"
+                      strokeDashoffset="0"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="20"
+                      className="text-amber-400/40"
+                      strokeDasharray="50 251"
+                      strokeDashoffset="-160"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="20"
+                      className="text-rose-400/40"
+                      strokeDasharray="41 251"
+                      strokeDashoffset="-210"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </WidgetCard>
+        </div>
+
+        <div className={`md:col-span-3 ${BREAKDOWNS_ROW_CARD_HEIGHT}`}>
+          <WidgetCard title="Drop-off Points" subtitle="Conversion funnel" className="h-full">
+            <div className="h-full flex flex-col justify-center gap-4 py-4">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Opened</span>
+                  <span className="font-medium">156</span>
+                </div>
+                <div className="h-6 bg-emerald-400/40 rounded" style={{ width: "100%" }} />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Viewed</span>
+                  <span className="font-medium">124</span>
+                </div>
+                <div className="h-6 bg-blue-400/40 rounded" style={{ width: "79%" }} />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Replied</span>
+                  <span className="font-medium">68</span>
+                </div>
+                <div className="h-6 bg-amber-400/40 rounded" style={{ width: "44%" }} />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Signed</span>
+                  <span className="font-medium">42</span>
+                </div>
+                <div className="h-6 bg-slate-400/30 rounded" style={{ width: "27%" }} />
+              </div>
+            </div>
+          </WidgetCard>
+        </div>
+        </div>
+      </WidgetRow>
+
+      {isDemoEnvironment && (
+        <p className="text-[10px] text-muted-foreground mt-6">
+          Demo data only. In production, this view will show real share analytics.
+        </p>
+      )}
     </div>
   );
 }

@@ -1,5 +1,4 @@
 "use client";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { FilterChipsRowSelectable as FilterChipsRow, type FilterChipItem } from "@/components/widgets/FilterChipsRowSelectable";
 import { TEMPLATES } from "@/data/templates";
 import { useToast } from "@/hooks/use-toast";
 import { isFeatureEnabled, isRagEnabled } from "@/lib/feature-flags";
@@ -25,6 +24,7 @@ import { cn } from "@/lib/utils";
 import {
   Archive,
   Brain,
+  ChevronDown,
   Clock,
   Download,
   Eye,
@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 // sha256 helper for passcode hashing
 async function sha256Hex(text: string) {
@@ -56,6 +56,7 @@ type Row = {
   id: string;
   title: string;
   kind?: string | null;
+  status?: string | null;
   templateId?: string | null;
   org_id?: string | null;
   created_at: string;
@@ -96,15 +97,31 @@ type TrainResponse = {
   error?: string;
 };
 
-const folders = [
-  { icon: Star, label: 'Starred', count: 0, color: 'text-yellow-600' },
-  { icon: Clock, label: 'Recent', count: 0, color: 'text-blue-600' },
-  { icon: Users, label: 'Shared with me', count: 0, color: 'text-green-600' },
-  { icon: FileSignature, label: 'Signed Documents', count: 0, color: 'text-purple-600' },
-  { icon: Archive, label: 'Archived', count: 0, color: 'text-gray-600' },
-];
+const folderDefs: Array<{
+  id: "starred" | "recent" | "shared" | "signed" | "archived";
+  icon: typeof Star;
+  label: string;
+  color: string;
+}> = [
+    { id: "starred", icon: Star, label: "Starred", color: "text-yellow-600" },
+    { id: "recent", icon: Clock, label: "Recent", color: "text-blue-600" },
+    { id: "shared", icon: Users, label: "Shared with me", color: "text-green-600" },
+    { id: "signed", icon: FileSignature, label: "Signed Documents", color: "text-purple-600" },
+    { id: "archived", icon: Archive, label: "Archived", color: "text-gray-600" },
+  ];
 
-export default function VaultPage() {
+function readVaultQueryFromLocation(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return (params.get("q") ?? "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function VaultPageInner() {
+  const [quickFilter, setQuickFilter] = useState<string>("all");
   const vaultExperimental = isFeatureEnabled("FEATURE_VAULT_EXPERIMENTAL_ACTIONS");
   const ragEnabled = isRagEnabled();
   const { toast } = useToast();
@@ -116,6 +133,7 @@ export default function VaultPage() {
   // This does NOT change runtime behavior — it only bypasses incorrect type unions.
   const sbAny: any = sb;
   const router = useRouter();
+  const lastAppliedQueryRef = useRef<string>("");
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -135,6 +153,152 @@ export default function VaultPage() {
     TEMPLATES.forEach((template) => map.set(template.id, template.name));
     return map;
   }, []);
+
+  const RECENT_DAYS = 14;
+
+  const matchesQuickFilter = (row: Row, filter: string): boolean => {
+    if (filter === "all") return true;
+
+    const status = (row.status ?? "").toLowerCase();
+    const title = (row.title ?? "").toLowerCase();
+
+    const isRecent = (() => {
+      const iso = row.updated_at ?? row.created_at;
+      const t = new Date(iso).getTime();
+      if (!Number.isFinite(t)) return false;
+      const cutoff = Date.now() - RECENT_DAYS * 24 * 60 * 60 * 1000;
+      return t >= cutoff;
+    })();
+
+    switch (filter) {
+      case "archived":
+        return status === "archived";
+      case "signed":
+        return (
+          status === "signed" ||
+          status === "executed" ||
+          status === "completed" ||
+          title.includes("signed")
+        );
+      case "shared":
+        return status === "shared" || title.includes("shared");
+      case "starred":
+        return status === "starred" || title.includes("⭐");
+      case "recent":
+        return isRecent;
+      default:
+        return true;
+    }
+  };
+
+  const countsByFilter = useMemo(() => {
+    const base = rows ?? [];
+    const counts: Record<string, number> = {
+      all: base.length,
+      starred: 0,
+      recent: 0,
+      shared: 0,
+      signed: 0,
+      archived: 0,
+    };
+
+    for (const r of base) {
+      if (matchesQuickFilter(r, "starred")) counts.starred += 1;
+      if (matchesQuickFilter(r, "recent")) counts.recent += 1;
+      if (matchesQuickFilter(r, "shared")) counts.shared += 1;
+      if (matchesQuickFilter(r, "signed")) counts.signed += 1;
+      if (matchesQuickFilter(r, "archived")) counts.archived += 1;
+    }
+
+    return counts;
+  }, [rows]);
+
+  const quickFilters: FilterChipItem[] = useMemo(() => {
+    return [
+      { id: "all", label: "All", count: countsByFilter.all },
+      { id: "starred", label: "Starred", count: countsByFilter.starred },
+      { id: "recent", label: "Recent", count: countsByFilter.recent },
+      { id: "shared", label: "Shared", count: countsByFilter.shared },
+      { id: "signed", label: "Signed", count: countsByFilter.signed },
+      { id: "archived", label: "Archived", count: countsByFilter.archived },
+    ];
+  }, [countsByFilter]);
+
+  const folderItems = useMemo(() => {
+    return folderDefs.map((f) => ({
+      ...f,
+      count: countsByFilter[f.id] ?? 0,
+    }));
+  }, [countsByFilter]);
+
+  // Keep Vault search in sync with the URL (/vault?q=...).
+  // IMPORTANT: Do NOT use useSearchParams() here, because it can trigger CSR bailout warnings in Next build.
+  useEffect(() => {
+    const q = readVaultQueryFromLocation();
+    lastAppliedQueryRef.current = q;
+    setSearchQuery(q);
+  }, []);
+
+  // Back/forward navigation updates searchQuery (popstate).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onPopState = () => {
+      const q = readVaultQueryFromLocation();
+      if (q === lastAppliedQueryRef.current) return;
+      lastAppliedQueryRef.current = q;
+      setSearchQuery(q);
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  // When user types in Vault search, keep the URL up to date (replaceState, no extra navigation).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const desired = searchQuery.trim();
+    const current = readVaultQueryFromLocation();
+
+    // Avoid loops and unnecessary history churn.
+    if (desired === current) return;
+
+    try {
+      const url = new URL(window.location.href);
+      const params = url.searchParams;
+
+      if (desired) {
+        params.set("q", desired);
+      } else {
+        params.delete("q");
+      }
+
+      const nextSearch = params.toString();
+      const nextUrl = `${url.pathname}${nextSearch ? `?${nextSearch}` : ""}`;
+      window.history.replaceState({}, "", nextUrl);
+      lastAppliedQueryRef.current = desired;
+    } catch {
+      // If URL parsing fails, do nothing (search still works locally).
+    }
+  }, [searchQuery]);
+
+  const visibleRows = useMemo(() => {
+    const base = rows ?? [];
+    const q = searchQuery.trim().toLowerCase();
+
+    return base.filter((row) => {
+      if (!matchesQuickFilter(row, quickFilter)) return false;
+      if (!q) return true;
+      return (row.title ?? "").toLowerCase().includes(q);
+    });
+  }, [rows, quickFilter, searchQuery]);
+
+  useEffect(() => {
+    if (!selectedDoc) return;
+    const stillVisible = visibleRows.some((r) => r.id === selectedDoc);
+    if (!stillVisible) setSelectedDoc(null);
+  }, [visibleRows, selectedDoc]);
 
   // 1) Load current user ASAP
   useEffect(() => {
@@ -266,6 +430,7 @@ export default function VaultPage() {
           title: d.title,
           org_id: (d as any).org_id ?? null,
           kind: d.kind ?? null,
+          status: (d as any).status ?? null,
           templateId: null,
           created_at: d.created_at,
           updated_at: meta.updatedAt ?? d.created_at,
@@ -1021,13 +1186,7 @@ export default function VaultPage() {
 
   const actionsDisabled = !userReady || !userId;
 
-  // Filter rows based on search
-  const filteredRows = rows?.filter((row) => {
-    if (!searchQuery) return true;
-    return row.title.toLowerCase().includes(searchQuery.toLowerCase());
-  }) ?? [];
-
-  const selectedDocument = selectedDoc ? filteredRows.find((doc) => doc.id === selectedDoc) : null;
+  const selectedDocument = selectedDoc ? visibleRows.find((doc) => doc.id === selectedDoc) : null;
 
   useEffect(() => {
     if (!vaultExperimental || !ragEnabled) return;
@@ -1041,44 +1200,42 @@ export default function VaultPage() {
   if (rows === null && !loading && !err) {
     return (
       <div className="h-full flex flex-col">
-        {/* Heading + tagline */}
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-4 border-b">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vault</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Find docs by categories, tags, people, or activity.
-            </p>
+        <div className="px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="grid grid-cols-[16rem,1fr] items-start">
+            <div>
+              <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+                <Link
+                  href="/vault"
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-background text-foreground shadow-sm"
+                >
+                  My Files
+                </Link>
+                <Link
+                  href="/builder/draft"
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  My Drafts
+                </Link>
+              </div>
+            </div>
+
+            <div className="px-6">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold text-muted-foreground">All documents</h2>
+                  <p className="mt-1 text-muted-foreground">Loading your documents…</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link href="/builder">
+                    <Button>New from Builder</Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Top tabs (My Files / My Drafts) — second tab links to Workbench drafts */}
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
-            <Link
-              href="/vault"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-background text-foreground shadow-sm"
-            >
-              My Files
-            </Link>
-            <Link
-              href="/builder/draft"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              My Drafts
-            </Link>
-          </div>
-        </div>
-        <div className="border-b p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold text-muted-foreground">All documents</h2>
-              <p className="text-muted-foreground mt-1">Loading your documents…</p>
-            </div>
-            <Link href="/builder">
-              <Button>New from Builder</Button>
-            </Link>
-          </div>
-        </div>
+        <div className="border-b" />
         <div className="flex-1 flex items-center justify-center">
           <p className="text-muted-foreground">Loading your documents…</p>
         </div>
@@ -1088,35 +1245,49 @@ export default function VaultPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Heading + tagline */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-4 border-b">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vault</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Find docs by categories, tags, people, or activity.
-          </p>
-        </div>
-      </div>
-
       {/* Top tabs (My Files / My Drafts) — second tab links to Workbench drafts */}
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
-          <Link
-            href="/vault"
-            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-background text-foreground shadow-sm"
-          >
-            My Files
-          </Link>
-          <Link
-            href="/builder/draft"
-            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            My Drafts
-          </Link>
+      <div className="px-4 sm:px-6 lg:px-8 pt-4">
+        <div className="grid grid-cols-[16rem,1fr] items-start">
+          <div>
+            <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+              <Link
+                href="/vault"
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-background text-foreground shadow-sm"
+              >
+                My Files
+              </Link>
+              <Link
+                href="/builder/draft"
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                My Drafts
+              </Link>
+            </div>
+          </div>
+
+          <div className="px-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-muted-foreground">All documents</h2>
+                <p className="mt-1 text-muted-foreground">
+                  {loading ? "Loading…" : `${visibleRows.length} documents`}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Link href="/activity">
+                  <Button variant="outline" size="sm">View activity</Button>
+                </Link>
+                <Link href="/builder">
+                  <Button>New from Builder</Button>
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="h-full flex">
-        <div className="w-64 border-r bg-sidebar overflow-auto">
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-64 shrink-0 border-r bg-sidebar overflow-y-auto overflow-x-hidden">
           <div className="p-4 border-b">
             <Link href="/builder">
               <Button className="w-full">
@@ -1138,12 +1309,17 @@ export default function VaultPage() {
             </div>
 
             <div className="space-y-1">
-              {folders.map((folder) => {
+              {folderItems.map((folder) => {
                 const Icon = folder.icon;
                 return (
                   <button
                     key={folder.label}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-active/50 transition-colors text-sm"
+                    onClick={() => setQuickFilter(folder.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm",
+                      "hover:bg-sidebar-active/50",
+                      quickFilter === folder.id && "bg-sidebar-active/60"
+                    )}
                   >
                     <Icon className={`h-4 w-4 ${folder.color}`} />
                     <span className="flex-1 text-left">{folder.label}</span>
@@ -1156,23 +1332,29 @@ export default function VaultPage() {
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="border-b p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold text-muted-foreground">All documents</h2>
-                <p className="text-muted-foreground mt-1">
-                  {loading ? "Loading…" : `${filteredRows.length} documents`}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link href="/activity">
-                  <Button variant="outline" size="sm">View activity</Button>
-                </Link>
-                <Link href="/builder">
-                  <Button>New from Builder</Button>
-                </Link>
+          <div className="border-b px-6 pb-4 pt-5">
+            {/* Desktop quick filters (left-aligned under the title) */}
+            <div className="hidden md:block">
+              <div className="overflow-x-auto">
+                <FilterChipsRow
+                  items={quickFilters}
+                  value={quickFilter}
+                  onChange={setQuickFilter}
+                  className="justify-start flex-nowrap w-max"
+                  aria-label="Vault quick filters"
+                />
               </div>
             </div>
+          </div>
+
+          {/* Mobile quick filters row */}
+          <div className="px-6 pb-4 md:hidden">
+            <FilterChipsRow
+              items={quickFilters}
+              value={quickFilter}
+              onChange={setQuickFilter}
+              aria-label="Vault quick filters"
+            />
           </div>
 
           {loading && (
@@ -1187,7 +1369,7 @@ export default function VaultPage() {
             </div>
           )}
 
-          {!loading && !err && filteredRows.length === 0 && (
+          {!loading && !err && visibleRows.length === 0 && (
             <div className="flex-1 flex items-center justify-center">
               <Card className="p-8 text-center max-w-md">
                 <div className="space-y-4">
@@ -1216,11 +1398,11 @@ export default function VaultPage() {
             </div>
           )}
 
-          {!loading && !err && filteredRows.length > 0 && (
+          {!loading && !err && visibleRows.length > 0 && (
             <div className="flex-1 flex overflow-hidden">
               <div className={cn('flex-1 overflow-auto p-6', selectedDoc && 'max-w-[60%]')}>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredRows.map((doc) => (
+                  {visibleRows.map((doc) => (
                     <Card
                       key={doc.id}
                       className={cn(
@@ -1290,95 +1472,114 @@ export default function VaultPage() {
 
               {selectedDocument && (
                 <div className="w-[40%] border-l bg-card overflow-auto">
-                  <div className="p-6 space-y-6">
-                    <div>
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        <div className="space-y-1 flex-1">
-                          <h2 className="text-xl font-semibold">{selectedDocument.title}</h2>
-                          <div className="flex items-center gap-2">
-                            {selectedDocument.kind === "deck" && (
-                              <Badge variant="secondary" className="text-xs">
-                                {(() => {
-                                  const deckType = selectedDocument.latestVersion?.content
-                                    ? (() => {
-                                      const metadataMatch = selectedDocument.latestVersion.content.match(/<!-- MONO_DECK_METADATA:({.*?}) -->/);
-                                      if (metadataMatch) {
-                                        try {
-                                          const metadata = JSON.parse(metadataMatch[1]) as { deck_type?: string };
-                                          if (metadata.deck_type === "fundraising") return "Fundraising";
-                                          if (metadata.deck_type === "investor_update") return "Investor Update";
-                                        } catch {
-                                          // Ignore
-                                        }
+                  <div className="p-6 space-y-4">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-lg font-semibold leading-snug line-clamp-2">
+                          {selectedDocument.title}
+                        </h2>
+                        <div className="mt-1 flex items-center gap-2">
+                          {selectedDocument.kind === "deck" && (
+                            <Badge variant="secondary" className="text-xs">
+                              {(() => {
+                                const deckType = selectedDocument.latestVersion?.content
+                                  ? (() => {
+                                    const metadataMatch =
+                                      selectedDocument.latestVersion.content.match(
+                                        /<!-- MONO_DECK_METADATA:({.*?}) -->/
+                                      );
+                                    if (metadataMatch) {
+                                      try {
+                                        const metadata = JSON.parse(metadataMatch[1]) as { deck_type?: string };
+                                        if (metadata.deck_type === "fundraising") return "Fundraising";
+                                        if (metadata.deck_type === "investor_update") return "Investor Update";
+                                      } catch {
+                                        // Ignore
                                       }
-                                      return "Deck";
-                                    })()
-                                    : "Deck";
-                                  return `Deck: ${deckType}`;
-                                })()}
-                              </Badge>
-                            )}
-                            {selectedDocument.templateId && (
-                              <span className="text-sm text-muted-foreground">
-                                {templateNameMap.get(selectedDocument.templateId) ?? "—"}
-                              </span>
-                            )}
-                            {!selectedDocument.kind && !selectedDocument.templateId && (
-                              <span className="text-sm text-muted-foreground">—</span>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setSelectedDoc(null)}
-                        >
-                          ×
-                        </Button>
-                      </div>
-
-                      <div className="space-y-3 text-sm">
-                        <div>
-                          <span className="font-medium">Last Modified</span>
-                          <p className="text-muted-foreground mt-1">
-                            {new Date(selectedDocument.updated_at).toLocaleString()}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="font-medium">Versions</span>
-                          <p className="text-muted-foreground mt-1">
-                            {selectedDocument.versionCount} versions available
-                          </p>
+                                    }
+                                    return "Deck";
+                                  })()
+                                  : "Deck";
+                                return `Deck: ${deckType}`;
+                              })()}
+                            </Badge>
+                          )}
+                          {selectedDocument.templateId && (
+                            <span className="text-sm text-muted-foreground truncate">
+                              {templateNameMap.get(selectedDocument.templateId) ?? "—"}
+                            </span>
+                          )}
+                          {!selectedDocument.kind && !selectedDocument.templateId && (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
                         </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setSelectedDoc(null)}
+                        aria-label="Close details"
+                      >
+                        ×
+                      </Button>
                     </div>
 
-                    <div className="border-t pt-6">
-                      <h3 className="font-medium mb-3">Version History</h3>
-                      <ScrollArea className="h-[200px]">
-                        <div className="space-y-3">
+                    {/* Collapsible Version Details (default collapsed) */}
+                    <details className="group rounded-lg border bg-background/50">
+                      <summary className="cursor-pointer list-none px-3 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm font-medium">Version history</span>
+                            <span className="text-xs text-muted-foreground">
+                              v{selectedDocument.versionCount || 1}
+                            </span>
+                          </div>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                        </div>
+                      </summary>
+                      <div className="px-3 pb-3 pt-1 space-y-3 text-sm">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-xs font-medium text-muted-foreground">Last modified</div>
+                            <div className="mt-1 text-sm">
+                              {new Date(selectedDocument.updated_at).toLocaleString()}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-medium text-muted-foreground">Versions</div>
+                            <div className="mt-1 text-sm">
+                              {selectedDocument.versionCount} available
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t pt-3">
+                          <div className="text-xs font-medium text-muted-foreground mb-2">Latest</div>
                           <div className="flex gap-3">
                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-xs font-semibold">
-                              v{selectedDocument.versionCount}
+                              v{selectedDocument.versionCount || 1}
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">Latest</span>
+                                <span className="text-sm font-medium">Current version</span>
                                 <span className="text-xs text-muted-foreground">
                                   {new Date(selectedDocument.updated_at).toLocaleDateString()}
                                 </span>
                               </div>
                               <p className="text-sm text-muted-foreground mt-0.5">
-                                Current version
+                                Latest saved version
                               </p>
                             </div>
                           </div>
                         </div>
-                      </ScrollArea>
-                    </div>
+                      </div>
+                    </details>
 
-                    <div className="border-t pt-6 space-y-2">
-                      <h3 className="font-medium mb-3">Actions</h3>
+                    {/* Actions (kept high on the panel, no extra scrolling needed) */}
+                    <div className="space-y-2">
+                      <h3 className="font-medium">Actions</h3>
                       {vaultExperimental && ragEnabled && (
                         <div className="space-y-2 mb-1">
                           <div className="flex items-center justify-between gap-2">
@@ -1683,5 +1884,19 @@ export default function VaultPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VaultPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-full flex items-center justify-center">
+          <p className="text-muted-foreground">Loading…</p>
+        </div>
+      }
+    >
+      <VaultPageInner />
+    </Suspense>
   );
 }

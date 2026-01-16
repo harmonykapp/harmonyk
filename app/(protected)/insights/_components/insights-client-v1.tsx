@@ -431,7 +431,7 @@ export default function InsightsClientV1({ data, error }: Props) {
                   No decks found yet – generate one from the Decks Builder.
                 </div>
               ) : (
-                <div className="max-h-56 overflow-y-auto">
+                <div className="px-0">
                   <table className="min-w-full text-[11px]">
                     <thead>
                       <tr className="border-b">
@@ -447,7 +447,7 @@ export default function InsightsClientV1({ data, error }: Props) {
                       </tr>
                     </thead>
                     <tbody>
-                      {decks.recent_decks.map((deck) => (
+                      {decks.recent_decks.slice(0, 5).map((deck) => (
                         <tr
                           key={deck.id}
                           className="border-t hover:bg-muted/50 transition-colors"
@@ -480,6 +480,21 @@ export default function InsightsClientV1({ data, error }: Props) {
                       ))}
                     </tbody>
                   </table>
+
+                  {decks.recent_decks.length > 5 ? (
+                    <div className="border-t px-3 py-2">
+                      <button
+                        type="button"
+                        className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                        onClick={() => {
+                          phCapture("insights_decks_view_all_clicked", {});
+                          window.location.href = "/vault?type=decks";
+                        }}
+                      >
+                        View all →
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>

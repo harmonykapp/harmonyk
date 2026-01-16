@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { WidgetCard } from "@/components/widgets/WidgetCard";
 import {
   Select,
   SelectContent,
@@ -316,6 +317,51 @@ export default function TasksPage() {
     return new Date(t.due_at) < new Date();
   });
 
+  const dueTodayTasks = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return openTasks.filter((t) => {
+      if (!t.due_at) return false;
+      const due = new Date(t.due_at);
+      return due >= today && due < tomorrow;
+    });
+  }, [openTasks]);
+
+  const completedLast7Days = useMemo(() => {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    return doneTasks.filter((t) => {
+      const updated = new Date(t.updated_at);
+      return updated >= sevenDaysAgo;
+    });
+  }, [doneTasks]);
+
+  const upcomingDeadlines = useMemo(() => {
+    const now = new Date();
+    return openTasks
+      .filter((t) => t.due_at && new Date(t.due_at) > now)
+      .sort((a, b) => {
+        if (!a.due_at) return 1;
+        if (!b.due_at) return -1;
+        return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
+      })
+      .slice(0, 5);
+  }, [openTasks]);
+
+  const waitingBlockedTasks = useMemo(() => {
+    return openTasks
+      .filter((t) =>
+        t.title.toLowerCase().includes("waiting") ||
+        t.title.toLowerCase().includes("blocked") ||
+        t.title.toLowerCase().includes("pending")
+      )
+      .slice(0, 5);
+  }, [openTasks]);
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return null;
     try {
@@ -357,16 +403,7 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
-      {/* Heading + tagline */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Task Hub</h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1">
-          Schedule your important tasks, get reminders.
-        </p>
-      </div>
-
-      {/* Top tabs (Overview / Calendar) */}
+    <div className="p-6 max-w-[1600px] mx-auto space-y-4">
       <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
         <a
           href="/tasks"
@@ -435,84 +472,179 @@ export default function TasksPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 sm:gap-6 grid-cols-2 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xs sm:text-sm font-medium">Open</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{openTasks.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Pending tasks</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xs sm:text-sm font-medium">Completed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{doneTasks.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Finished tasks</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xs sm:text-sm font-medium">Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{filteredTasks.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">All tasks</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xs sm:text-sm font-medium">Overdue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{overdueTasks.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Requires attention</p>
-          </CardContent>
-        </Card>
+      {/* Row 1: Four S KPI cards (150px height) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div className="md:col-span-3" style={{ height: "150px" }}>
+          <WidgetCard title="Open" className="h-full">
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="text-2xl font-semibold tracking-tight">{openTasks.length}</div>
+              <div className="text-xs text-muted-foreground mt-1">Pending tasks</div>
+            </div>
+          </WidgetCard>
+        </div>
+        <div className="md:col-span-3" style={{ height: "150px" }}>
+          <WidgetCard title="Due Today" className="h-full">
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="text-2xl font-semibold tracking-tight">{dueTodayTasks.length}</div>
+              <div className="text-xs text-muted-foreground mt-1">Tasks due today</div>
+            </div>
+          </WidgetCard>
+        </div>
+        <div className="md:col-span-3" style={{ height: "150px" }}>
+          <WidgetCard title="Overdue" className="h-full">
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="text-2xl font-semibold tracking-tight">{overdueTasks.length}</div>
+              <div className="text-xs text-muted-foreground mt-1">Requires attention</div>
+            </div>
+          </WidgetCard>
+        </div>
+        <div className="md:col-span-3" style={{ height: "150px" }}>
+          <WidgetCard title="Completed (7d)" className="h-full">
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="text-2xl font-semibold tracking-tight">{completedLast7Days.length}</div>
+              <div className="text-xs text-muted-foreground mt-1">Last 7 days</div>
+            </div>
+          </WidgetCard>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Add New Task</CardTitle>
-          <CardDescription>Create a new task manually</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+      {/* Row 2: L + M + M widgets (280px height) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div className="md:col-span-6" style={{ height: "280px" }}>
+          <WidgetCard title="My Focus Today" subtitle="Top 5 priority tasks" footer={<button className="text-xs hover:underline">View all →</button>}>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Task Title</label>
-              <Input
-                placeholder="Task title..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    createTask();
-                  }
-                }}
-                className="w-full"
-              />
+              {openTasks.slice(0, 5).map((task) => (
+                <div key={task.id} className="flex items-start justify-between gap-2 p-2 rounded border border-border/40">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium truncate">{task.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {task.due_at ? formatDate(task.due_at) : "No due date"}
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px] shrink-0">{sourceLabels[task.source]}</Badge>
+                </div>
+              ))}
+              {openTasks.length === 0 && (
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                  No open tasks
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Due Date (optional)</label>
-              <Input
-                type="datetime-local"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full"
-              />
-            </div>
-          </div>
-          <Button onClick={createTask} disabled={!title.trim()} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Task
-          </Button>
-        </CardContent>
-      </Card>
+          </WidgetCard>
+        </div>
 
-      <Card>
+        <div className="md:col-span-3" style={{ height: "280px" }}>
+          <WidgetCard title="Upcoming Deadlines" subtitle="Next 5 due" footer={<button className="text-xs hover:underline">View all →</button>}>
+            <div className="space-y-2">
+              {upcomingDeadlines.map((task) => (
+                <div key={task.id} className="p-2 rounded border border-border/40">
+                  <div className="text-sm font-medium truncate">{task.title}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {task.due_at ? formatDate(task.due_at) : "—"}
+                  </div>
+                </div>
+              ))}
+              {upcomingDeadlines.length === 0 && (
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                  No upcoming deadlines
+                </div>
+              )}
+            </div>
+          </WidgetCard>
+        </div>
+
+        <div className="md:col-span-3" style={{ height: "280px" }}>
+          <WidgetCard title="Waiting/Blocked" subtitle="Pending items" footer={<button className="text-xs hover:underline">View all →</button>}>
+            <div className="space-y-2">
+              {waitingBlockedTasks.map((task) => (
+                <div key={task.id} className="p-2 rounded border border-border/40">
+                  <div className="text-sm font-medium truncate">{task.title}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {task.source ? sourceLabels[task.source] : "—"}
+                  </div>
+                </div>
+              ))}
+              {waitingBlockedTasks.length === 0 && (
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                  No blocked tasks
+                </div>
+              )}
+            </div>
+          </WidgetCard>
+        </div>
+      </div>
+
+      {/* Row 3: L completion trend + Add Task form */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div className="md:col-span-6" style={{ height: "280px" }}>
+          <WidgetCard title="Completion Trend" subtitle="Last 14 days">
+            <div className="h-full flex items-end justify-between gap-1 pb-4">
+              {(() => {
+                const days = Array.from({ length: 14 }, (_, i) => {
+                  const dayStart = Date.now() - (13 - i) * 24 * 60 * 60 * 1000;
+                  const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+                  const count = doneTasks.filter((t) => {
+                    const updated = new Date(t.updated_at).getTime();
+                    return updated >= dayStart && updated < dayEnd;
+                  }).length;
+                  return count;
+                });
+                const maxCount = Math.max(...days, 1);
+
+                return days.map((count, idx) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-1">
+                    <div
+                      className="w-full bg-emerald-400/40 rounded-t"
+                      style={{ height: `${(count / maxCount) * 140}px`, minHeight: count > 0 ? "4px" : "0" }}
+                    />
+                  </div>
+                ));
+              })()}
+            </div>
+          </WidgetCard>
+        </div>
+
+        <div className="md:col-span-6" style={{ height: "280px" }}>
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Add New Task</CardTitle>
+              <CardDescription className="text-xs">Create a new task manually</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Task Title</label>
+                <Input
+                  placeholder="Task title..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      createTask();
+                    }
+                  }}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Due Date (optional)</label>
+                <Input
+                  type="datetime-local"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <Button onClick={createTask} disabled={!title.trim()} className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Task
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Tasks Table */}
+      <Card className="mt-4">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
