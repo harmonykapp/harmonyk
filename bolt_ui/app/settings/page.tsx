@@ -11,7 +11,7 @@ import { Bell, CreditCard, Plug, Shield, User, Users } from 'lucide-react';
 
 export default function SettingsPage() {
   return (
-    <AppShell monoContext="dashboard">
+    <AppShell monoContext="/settings">
       <div className="p-8 max-w-[1200px] mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>

@@ -104,7 +104,7 @@ export default function WorkbenchPage() {
   const selectedDocument = mockDocuments.find((doc) => doc.id === selectedDoc);
 
   return (
-    <AppShell monoContext="workbench">
+    <AppShell monoContext="/workbench">
       <div className="h-full flex flex-col">
         <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="p-6 space-y-4">

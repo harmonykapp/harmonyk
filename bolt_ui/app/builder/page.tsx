@@ -56,7 +56,7 @@ export default function BuilderPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <AppShell monoContext="builder">
+    <AppShell monoContext="/builder">
       <div className="h-full flex">
         <div className="w-80 border-r bg-sidebar overflow-auto">
           <div className="p-4 border-b space-y-3">

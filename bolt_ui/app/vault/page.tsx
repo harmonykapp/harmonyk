@@ -96,7 +96,7 @@ export default function VaultPage() {
   const selectedDocument = documents.find((doc) => doc.id === selectedDoc);
 
   return (
-    <AppShell monoContext="vault">
+    <AppShell monoContext="/vault">
       <div className="h-full flex">
         <div className="w-64 border-r bg-sidebar overflow-auto">
           <div className="p-4 border-b">

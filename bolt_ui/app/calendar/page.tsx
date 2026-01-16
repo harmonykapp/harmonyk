@@ -49,7 +49,7 @@ const thisWeekEvents = [
 
 export default function CalendarPage() {
   return (
-    <AppShell monoContext="dashboard">
+    <AppShell monoContext="/calendar">
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>

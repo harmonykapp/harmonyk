@@ -104,7 +104,7 @@ export default function TasksPage() {
   const completedTasks = taskList.filter((t) => t.completed);
 
   return (
-    <AppShell monoContext="dashboard">
+    <AppShell monoContext="/tasks">
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>

@@ -98,7 +98,7 @@ const activityFeed = [
 
 export default function ActivityPage() {
   return (
-    <AppShell monoContext="dashboard">
+    <AppShell monoContext="/activity">
       <div className="p-8 max-w-[1200px] mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Activity Log</h1>
