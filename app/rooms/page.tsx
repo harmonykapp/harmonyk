@@ -1,5 +1,5 @@
 // PGW4: Rooms shell (flagged)
-import { flag } from "@/lib/flags";
+import { flag } from "@/lib/ui/flags";
 import Link from "next/link";
 
 export default function RoomsPage() {

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MonoAssistant } from '@/components/mono/MonoAssistant';
 import { cn } from '@/lib/utils';
 import type { MonoContext } from '@/components/mono/mono-pane';
 import { useSidebar } from '@/lib/ui/sidebar-state';
+import { flag } from '@/lib/ui/flags';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -20,6 +21,34 @@ export function AppShell({ children, monoContext }: AppShellProps) {
   const context: MonoContext = typeof monoContext === 'string'
     ? { route: monoContext || '/dashboard' }
     : monoContext || { route: '/dashboard' };
+
+  useEffect(() => {
+    const collapsible = flag('nav.sidebar.collapsible');
+    if (!collapsible) return;
+
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const isEditable =
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select' ||
+        target?.isContentEditable === true;
+
+      if (isEditable) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        toggle();
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+    };
+  }, [toggle]);
 
   return (
     <div className="h-screen flex overflow-hidden" suppressHydrationWarning>

@@ -13,19 +13,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { flag } from '@/lib/flags';
 import { tokens } from '@/lib/ui/tokens';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import {
   BarChart3,
-  Building2,
   CheckSquare,
   ChevronLeft,
   ChevronRight,
   Database,
   Gauge,
   Hammer,
+  LayoutGrid,
   Layers,
   Menu,
   Play,
@@ -36,7 +35,8 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { trackEvent } from '@/lib/telemetry';
 
 type NavigationItem = {
   name: string;
@@ -45,12 +45,11 @@ type NavigationItem = {
 };
 
 function buildNavigation(): NavigationItem[] {
-  const roomsEnabled = flag('ff.rooms_route') && flag('rooms.enabled');
-  const base: NavigationItem[] = [
+  return [
     { name: 'Dashboard', href: '/dashboard', icon: Gauge },
     { name: 'Tasks', href: '/tasks', icon: CheckSquare },
     { name: 'Workbench', href: '/workbench', icon: Layers },
-    ...(roomsEnabled ? [{ name: 'Rooms', href: '/rooms', icon: Building2 }] : []),
+    { name: 'Rooms', href: '/rooms', icon: LayoutGrid },
     { name: 'Vault', href: '/vault', icon: Database },
     { name: 'Builder', href: '/builder', icon: Hammer },
     { name: 'Share Hub', href: '/share', icon: Share2 },
@@ -59,7 +58,6 @@ function buildNavigation(): NavigationItem[] {
     { name: 'Integrations', href: '/integrations', icon: Plug },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
-  return base;
 }
 
 interface SidebarProps {
@@ -70,16 +68,26 @@ interface SidebarProps {
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const sidebarV2 = flag('ff.sidebar_v2');
-  const collapsible = sidebarV2 && flag('nav.sidebar.collapsible');
-  const isCollapsed = collapsible ? collapsed : false;
-  const handleToggle = collapsible ? onToggle : undefined;
+  const isCollapsed = collapsed;
+  const handleToggle = onToggle;
   const navigation = buildNavigation();
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    trackEvent('nav_opened', { device: 'mobile' });
+  }, [mobileOpen]);
+
+  const handleToggleClick = () => {
+    if (!handleToggle) return;
+    const nextCollapsed = !isCollapsed;
+    trackEvent('ui_sidebar_toggled', { collapsed: nextCollapsed });
+    handleToggle();
+  };
 
   const renderNavItem = (item: NavigationItem, isMobile = false) => {
     const isShareHubRoute =
-      item.href === "/share" &&
-      (pathname === "/share" || pathname?.startsWith("/share/") || pathname === "/signatures" || pathname?.startsWith("/signatures/"));
+      item.href === '/share' &&
+      (pathname === '/share' || pathname?.startsWith('/share/') || pathname === '/signatures' || pathname?.startsWith('/signatures/'));
 
     const isActive = isShareHubRoute || pathname === item.href || pathname?.startsWith(item.href + '/');
     const Icon = item.icon;
@@ -141,6 +149,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         size="icon"
         className="lg:hidden fixed top-4 left-4 z-50"
         onClick={() => setMobileOpen(true)}
+        aria-label="Open navigation"
       >
         <Menu style={{ width: tokens.iconSize.lg, height: tokens.iconSize.lg }} />
       </Button>
@@ -223,19 +232,20 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             </div>
           </nav>
 
-          {handleToggle && (
+          {typeof handleToggle === 'function' && (
             <div className="border-t" style={{ padding: tokens.spacing[3] }}>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleToggle}
+                    onClick={handleToggleClick}
                     className={cn(
                       'w-full transition-all duration-200',
                       isCollapsed ? 'justify-center px-3 py-2.5' : 'justify-start px-3 py-2.5'
                     )}
                     aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    aria-pressed={isCollapsed}
                   >
                     {isCollapsed ? (
                       <ChevronRight style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
