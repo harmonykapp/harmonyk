@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,7 +25,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -35,6 +35,21 @@ interface SidebarProps {
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileOpenerRef = useRef<HTMLButtonElement | null>(null);
+
+  const handleMobileOpenChange = (open: boolean) => {
+    setMobileOpen(open);
+    if (!open) {
+      // Return focus to the opener for keyboard/a11y friendliness.
+      requestAnimationFrame(() => {
+        mobileOpenerRef.current?.focus();
+      });
+    }
+  };
+
+  const handleMobileOpenClick = () => {
+    setMobileOpen(true);
+  };
   const isCollapsed = collapsed;
   const handleToggle = onToggle;
   const navigation = getSidebarNavigation().filter((item) => item.enabled !== false);
@@ -117,8 +132,11 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         variant="ghost"
         size="icon"
         className="lg:hidden fixed top-4 left-4 z-50"
-        onClick={() => setMobileOpen(true)}
+        onClick={handleMobileOpenClick}
         aria-label="Open navigation"
+        aria-expanded={mobileOpen}
+        aria-controls="mobile-nav-drawer"
+        ref={mobileOpenerRef}
       >
         <Menu style={{ width: tokens.iconSize.lg, height: tokens.iconSize.lg }} />
       </Button>
@@ -235,8 +253,8 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         </TooltipProvider>
       </aside>
 
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-64 p-0">
+      <Sheet open={mobileOpen} onOpenChange={handleMobileOpenChange}>
+        <SheetContent id="mobile-nav-drawer" side="left" className="w-64 p-0" aria-label="Navigation drawer">
           <SheetHeader
             className="border-b px-6"
             style={{
@@ -247,6 +265,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             }}
           >
             <SheetTitle>
+              <span className="sr-only">Navigation</span>
               <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="relative -top-px">
                 <Image
                   src="/brand/harmonyk-logo-horizontal.png"
