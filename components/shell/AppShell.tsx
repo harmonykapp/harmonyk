@@ -6,6 +6,7 @@ import { Topbar } from './Topbar';
 import { MonoAssistant } from '@/components/mono/MonoAssistant';
 import { cn } from '@/lib/utils';
 import type { MonoContext } from '@/components/mono/mono-pane';
+import { useSidebar } from '@/lib/ui/sidebar-state';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -14,7 +15,7 @@ interface AppShellProps {
 
 export function AppShell({ children, monoContext }: AppShellProps) {
   const [monoOpen, setMonoOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { collapsed, toggle } = useSidebar();
 
   const context: MonoContext = typeof monoContext === 'string'
     ? { route: monoContext || '/dashboard' }
@@ -22,7 +23,7 @@ export function AppShell({ children, monoContext }: AppShellProps) {
 
   return (
     <div className="h-screen flex overflow-hidden" suppressHydrationWarning>
-      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+      <Sidebar collapsed={collapsed} onToggle={toggle} />
 
       <div className="flex-1 flex flex-col min-w-0" suppressHydrationWarning>
         <Topbar onMonoToggle={() => setMonoOpen(!monoOpen)} monoOpen={monoOpen} />

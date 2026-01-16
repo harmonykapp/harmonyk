@@ -1,6 +1,14 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 type SidebarState = {
   collapsed: boolean;
@@ -12,17 +20,30 @@ const SidebarContext = createContext<SidebarState | undefined>(undefined);
 const STORAGE_KEY = "ui:sidebarCollapsed";
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : false;
-    } catch {
-      return false;
-    }
-  });
+  // Deterministic SSR default to avoid hydration mismatch:
+  // Server renders expanded; client reads storage after mount.
+  const [collapsed, setCollapsed] = useState<boolean>(false);
+  const hasHydratedRef = useRef(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw != null) {
+        const parsed: unknown = JSON.parse(raw);
+        if (typeof parsed === "boolean") {
+          setCollapsed(parsed);
+        }
+      }
+    } catch {
+      // ignore storage/parse issues
+    } finally {
+      hasHydratedRef.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydratedRef.current) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(collapsed));
     } catch {

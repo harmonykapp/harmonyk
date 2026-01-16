@@ -1,10 +1,25 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { flag } from '@/lib/flags';
 import { tokens } from '@/lib/ui/tokens';
+import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import {
   BarChart3,
+  Building2,
   CheckSquare,
   ChevronLeft,
   ChevronRight,
@@ -22,19 +37,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 type NavigationItem = {
   name: string;
@@ -42,18 +44,23 @@ type NavigationItem = {
   icon: LucideIcon;
 };
 
-const navigationDefault: NavigationItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: Gauge },
-  { name: 'Workbench', href: '/workbench', icon: Layers },
-  { name: 'Builder', href: '/builder', icon: Hammer },
-  { name: 'Vault', href: '/vault', icon: Database },
-  { name: 'Playbooks', href: '/playbooks', icon: Play },
-  { name: 'Share Hub', href: '/share', icon: Share2 },
-  { name: 'Insights', href: '/insights', icon: BarChart3 },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-  { name: 'Integrations', href: '/integrations', icon: Plug },
-  { name: 'Settings', href: '/settings', icon: Settings },
-];
+function buildNavigation(): NavigationItem[] {
+  const roomsEnabled = flag('ff.rooms_route') && flag('rooms.enabled');
+  const base: NavigationItem[] = [
+    { name: 'Dashboard', href: '/dashboard', icon: Gauge },
+    { name: 'Tasks', href: '/tasks', icon: CheckSquare },
+    { name: 'Workbench', href: '/workbench', icon: Layers },
+    ...(roomsEnabled ? [{ name: 'Rooms', href: '/rooms', icon: Building2 }] : []),
+    { name: 'Vault', href: '/vault', icon: Database },
+    { name: 'Builder', href: '/builder', icon: Hammer },
+    { name: 'Share Hub', href: '/share', icon: Share2 },
+    { name: 'Playbooks', href: '/playbooks', icon: Play },
+    { name: 'Insights', href: '/insights', icon: BarChart3 },
+    { name: 'Integrations', href: '/integrations', icon: Plug },
+    { name: 'Settings', href: '/settings', icon: Settings },
+  ];
+  return base;
+}
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -63,6 +70,11 @@ interface SidebarProps {
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const sidebarV2 = flag('ff.sidebar_v2');
+  const collapsible = sidebarV2 && flag('nav.sidebar.collapsible');
+  const isCollapsed = collapsible ? collapsed : false;
+  const handleToggle = collapsible ? onToggle : undefined;
+  const navigation = buildNavigation();
 
   const renderNavItem = (item: NavigationItem, isMobile = false) => {
     const isShareHubRoute =
@@ -79,7 +91,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         onClick={isMobile ? () => setMobileOpen(false) : undefined}
         className={cn(
           'flex items-center rounded-lg text-sm transition-all relative',
-          collapsed && !isMobile ? 'justify-center px-3 py-2.5' : 'gap-3 px-3 py-2.5',
+          isCollapsed && !isMobile ? 'justify-center px-3 py-2.5' : 'gap-3 px-3 py-2.5',
           isActive
             ? 'bg-sidebar-active text-primary font-semibold'
             : 'text-sidebar-foreground hover:bg-sidebar-active/50 hover:text-sidebar-foreground font-medium'
@@ -102,11 +114,11 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }}
           className="flex-shrink-0"
         />
-        {(!collapsed || isMobile) && <span>{item.name}</span>}
+        {(!isCollapsed || isMobile) && <span>{item.name}</span>}
       </Link>
     );
 
-    if (collapsed && !isMobile) {
+    if (isCollapsed && !isMobile) {
       return (
         <Tooltip key={item.name} delayDuration={0}>
           <TooltipTrigger asChild>
@@ -139,22 +151,22 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         )}
         style={{
           height: '100vh',
-          width: collapsed ? tokens.layout.sidebarWidthCollapsed : tokens.layout.sidebarWidthExpanded,
+          width: isCollapsed ? tokens.layout.sidebarWidthCollapsed : tokens.layout.sidebarWidthExpanded,
         }}
         suppressHydrationWarning
       >
         <div
           className={cn(
             'border-b flex items-center transition-all duration-200',
-            collapsed ? 'justify-center' : ''
+            isCollapsed ? 'justify-center' : ''
           )}
           style={{
             height: tokens.layout.topbarHeight,
-            padding: collapsed ? tokens.spacing[3] : `${tokens.spacing[4]} ${tokens.spacing[3]}`,
+            padding: isCollapsed ? tokens.spacing[3] : `${tokens.spacing[4]} ${tokens.spacing[3]}`,
           }}
           suppressHydrationWarning
         >
-          {!collapsed && (
+          {!isCollapsed && (
             <Link href="/dashboard" className="flex items-center group pl-1 relative -top-px" suppressHydrationWarning>
               <Image
                 src="/brand/harmonyk-logo-horizontal.png"
@@ -176,7 +188,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
               />
             </Link>
           )}
-          {collapsed && (
+          {isCollapsed && (
             <Link href="/dashboard" className="flex items-center justify-center w-full relative -top-px" suppressHydrationWarning>
               <Image
                 src="/brand/harmonyk-logo-horizontal_icononly.png"
@@ -207,25 +219,25 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             suppressHydrationWarning
           >
             <div className="space-y-1">
-              {navigationDefault.map((item) => renderNavItem(item, false))}
+              {navigation.map((item) => renderNavItem(item, false))}
             </div>
           </nav>
 
-          {onToggle && (
+          {handleToggle && (
             <div className="border-t" style={{ padding: tokens.spacing[3] }}>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={onToggle}
+                    onClick={handleToggle}
                     className={cn(
                       'w-full transition-all duration-200',
-                      collapsed ? 'justify-center px-3 py-2.5' : 'justify-start px-3 py-2.5'
+                      isCollapsed ? 'justify-center px-3 py-2.5' : 'justify-start px-3 py-2.5'
                     )}
-                    aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                   >
-                    {collapsed ? (
+                    {isCollapsed ? (
                       <ChevronRight style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
                     ) : (
                       <>
@@ -236,7 +248,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right" sideOffset={8}>
-                  <p>{collapsed ? 'Expand sidebar' : 'Collapse sidebar'}</p>
+                  <p>{isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -284,7 +296,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             }}
           >
             <div className="space-y-1">
-              {navigationDefault.map((item) => renderNavItem(item, true))}
+              {navigation.map((item) => renderNavItem(item, true))}
             </div>
           </nav>
         </SheetContent>
