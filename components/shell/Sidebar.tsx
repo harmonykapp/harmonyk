@@ -131,7 +131,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden fixed top-4 left-4 z-50"
+        className="lg:hidden fixed top-3 left-4 z-50"
         onClick={handleMobileOpenClick}
         aria-label="Open navigation"
         aria-expanded={mobileOpen}
