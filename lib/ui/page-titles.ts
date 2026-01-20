@@ -29,6 +29,7 @@ export function getPageTitle(pathname?: string | null): string {
   if (!pathname) return "Harmonyk";
 
   // Explicit mappings for Insights and Activity
+  if (pathname === "/rooms" || pathname.startsWith("/rooms/")) return "Rooms";
   if (pathname === "/insights" || pathname.startsWith("/insights/")) return "Insights";
   if (pathname === "/activity" || pathname.startsWith("/activity/")) return "Activity";
 

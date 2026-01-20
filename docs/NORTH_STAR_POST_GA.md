@@ -71,6 +71,53 @@ Typed tool contracts (stubs acceptable first):
 
 Order: implement read-only retrieval first. Write actions come later with guardrails.
 
+### MCP tool spine stubs (PGW4 Day 6)
+Harmonyk will adopt an MCP-style “tool spine” to keep AI actions auditable, least-privilege, and swappable across providers.
+
+#### Tool contracts (typed; read-only first)
+Defined in: `lib/mcp/tools.ts`
+
+Vault:
+- `vault.list(folderId?, limit?, cursor?)` → list items
+- `vault.get(id)` → item metadata (and later: signed URL / bytes via server)
+- `vault.search(query, limit?)` → search results
+- `vault.suggest_name(originalName, hint?)` → naming helper (pure function; no writes)
+- `vault.move(id, toFolderId)` → write action (behind approvals + dry-run first)
+
+DB:
+- `db.query(sql, params?)` → **restricted**. Only allowlisted queries/templates in implementation.
+
+RAG:
+- `rag.retrieve(query, topK?)` → retrieve evidence chunks (Vault-only semantic index)
+
+Events / Telemetry:
+- `events.log(name, props?)` → append-only event logging (never blocks product flows)
+
+#### Guardrails (requirements)
+1) **Least privilege**
+   - Tools run server-side; client calls via API routes.
+   - Each tool is scoped by actor/workspace and an allowlist of operations.
+
+2) **Approvals + dry-run**
+   - Any write tool must support `dryRun` and return a preview of changes.
+   - Writes require explicit user approval (UI prompt) before execution.
+
+3) **Audit + receipts**
+   - Every tool call logs: tool name, actor, workspace, inputs (redacted), outcome, duration, and a stable requestId.
+   - Errors are captured but must not break core UX.
+
+4) **Deterministic defaults**
+   - No non-deterministic IDs in server-rendered UI.
+   - Avoid hydration mismatch by deferring client-only state to `useEffect`.
+
+5) **Rollback posture**
+   - Prefer reversible operations (move vs delete).
+   - For destructive actions, require extra confirmation and keep tombstones where possible.
+
+6) **Provider optionality**
+   - Tool contracts remain stable even if LLM provider changes.
+   - Provider selection is config-driven; no refactors required to swap.
+
 ## 7) LLM Provider Optionality
 - OpenAI is the default provider.
 - Claude and Gemini are optional via config/env; no refactor required to switch.
