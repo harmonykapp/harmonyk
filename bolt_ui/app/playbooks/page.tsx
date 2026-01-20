@@ -1,4 +1,4 @@
-import { AppShell } from '@/components/AppShell';
+import { AppShell } from '@/components/shell/AppShell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,7 @@ const myPlaybooks = [
 
 export default function PlaybooksPage() {
   return (
-    <AppShell monoContext="dashboard">
+    <AppShell monoContext="/playbooks">
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>

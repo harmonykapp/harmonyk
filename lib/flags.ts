@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
 /**
  * Feature flag registry for Harmonyk (PGW1 foundation).
  *

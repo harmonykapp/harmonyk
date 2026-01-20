@@ -1,6 +1,7 @@
 'use client';
 
 import { AppShell } from "@/components/shell/AppShell";
+import { SidebarProvider } from "@/lib/ui/sidebar-state";
 import type { MonoContext } from "@/components/mono/mono-pane";
 import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 import { usePathname } from "next/navigation";
@@ -16,10 +17,12 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <AppShell monoContext={monoContext}>
-      {children}
-      <Toaster />
-      <ShadcnToaster />
-    </AppShell>
+    <SidebarProvider>
+      <AppShell monoContext={monoContext}>
+        {children}
+        <Toaster />
+        <ShadcnToaster />
+      </AppShell>
+    </SidebarProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { AppShell } from '@/components/AppShell';
+import { AppShell } from '@/components/shell/AppShell';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { Bell, CreditCard, Plug, Shield, User, Users } from 'lucide-react';
 
 export default function SettingsPage() {
   return (
-    <AppShell monoContext="dashboard">
+    <AppShell monoContext="/settings">
       <div className="p-8 max-w-[1200px] mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>

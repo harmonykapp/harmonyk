@@ -255,14 +255,6 @@ export default function PlaybooksPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 space-y-6">
-      {/* Page heading (consistent with other protected pages) */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Playbooks</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Automations, runs, and outcomes across your document workflows.
-        </p>
-      </div>
-
       <div suppressHydrationWarning>
         {tabsHydrationReady ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

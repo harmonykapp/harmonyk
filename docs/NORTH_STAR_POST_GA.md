@@ -28,7 +28,69 @@ Rule: **Prompt window stays available, but is never required** for the main work
 
 ---
 
-## 2) Mandatory UI surface separation (no drift)
+## 2) Workflow-first Navigation (Locked)
+Exact left-nav order:
+1) Dashboard
+2) Tasks
+3) Workbench
+4) Rooms
+5) Vault
+6) Builder
+7) Share Hub
+8) Playbooks
+9) Insights
+10) Integrations
+11) Settings
+
+## 3) Rooms (Locked)
+- Rooms are top-level deal / project / company hubs.
+- Each Room auto-aggregates docs, evidence, timeline, and actions.
+- Rooms are NOT part of Playbooks.
+
+## 4) Tasks (Locked)
+- Tasks is a doc-driven action queue (views, signatures, approvals, renewals, filing, playbook steps).
+- Tasks is not a generic CRM task list.
+
+## 5) Evidence-first RAG (Vault-only semantic index posture)
+Timeline (locked):
+- PGW5: define chunk + citation contract
+- PGW6: implement first real `rag.retrieve()` (read-only) with citations
+- PGW7–PGW8: template corpus + library ingestion (normalize/chunk/tag/version + golden query sets)
+- PGW9–PGW14: expand corpus with Builders, large-doc handling
+- PGW15–PGW17: connector-driven corpus growth
+- PGW19–PGW20: evals/observability/regressions ("no lies", no permission leaks)
+
+## 6) Tool Spine (MCP-style, stubs first)
+Typed tool contracts (stubs acceptable first):
+- `vault.list`, `vault.get`, `vault.search`
+- `vault.suggest_name`
+- `vault.move`
+- `db.query`
+- `rag.retrieve`
+- `events.log`
+
+Order: implement read-only retrieval first. Write actions come later with guardrails.
+
+## 7) LLM Provider Optionality
+- OpenAI is the default provider.
+- Claude and Gemini are optional via config/env; no refactor required to switch.
+- Later: job-based routing (cheap vs premium; writing vs coding; vision/graphics).
+
+## 8) Guardrails are mandatory
+Required guardrails (esp. 2-way connectors and write tools):
+- least-privilege scopes
+- allowlists
+- approval gates
+- dry-run previews
+- rate limits
+- audit logs
+- rollback
+
+## 9) Mobile (Locked)
+- PGW4: mobile nav + responsive shell.
+- PGW6–PGW8: mobile usable for search/view/share/approve/sign/quick actions.
+
+## 10) Mandatory UI surface separation (no drift)
 
 Harmonyk stays document-first by enforcing page intent:
 
@@ -82,7 +144,7 @@ Operational-page intent guardrails:
 
 ---
 
-## 3) Concrete product feature additions (v1)
+## 11) Concrete product feature additions (v1)
 ### A) User Progress Narrator (Dashboard + Maestro Quick Starts)
 Per-user `UserProgressState` drives:
 - Dashboard hero ("Welcome {firstName}… next best step")
@@ -132,7 +194,7 @@ Maestro proposes/executes and **reminds**.
 
 ---
 
-## 4) High-ROI viral loops (low complexity only)
+## 12) High-ROI viral loops (low complexity only)
 1) **Free Collaborator Role** (view/comment/suggest only)
 2) **Keep a copy in your Vault** (recipient CTA after viewing/signing)
 3) **Clone this template for yourself** (share page CTA)
@@ -146,7 +208,7 @@ Instrumentation events (canonical):
 
 ---
 
-## 5) RAG + template strategy (impacted by new UI)
+## 13) RAG + template strategy (impacted by new UI)
 We are moving from prompt-based Q&A to **action-centric RAG**.
 Retrieval must support actions with:
 - Evidence (Vault content + citations)
@@ -168,7 +230,7 @@ Templates must carry operational metadata:
 
 ---
 
-## 6) PGW1–PGW26 plan alignment (high level)
+## 14) PGW1–PGW26 plan alignment (high level)
 
 ### PGW1 — Foundation (complete)
 - Stabilisation + schema correctness + core reliability (auth/share/vault)
@@ -187,10 +249,18 @@ PGW2 acceptance criteria:
 - Viral CTAs are behind flags and never block view/sign.
 - No regressions: share → sign → save flows pass smoke.
 
-### PGW3–PGW6 — Operator-grade Maestro
+### PGW3 — Operator-grade Maestro
 - Action taxonomy + execution previews ("Maestro sidecar")
 - Reminder system v1 (modes + guardrails + stop conditions)
 - Action-centric RAG scaffolding (Action Context Pack) + template operational metadata
+
+### PGW4–PGW26 summary (updates locked)
+- PGW4: Sidebar v2 + mobile nav + Rooms + optionality plumbing
+- PGW5: Dashboard widgets + chunk/citation contract
+- PGW6: Workbench + Tasks + first `rag.retrieve()`
+- PGW7–8: Vault intelligence + template corpus + hybrid hooks
+- PGW15–17: connector framework + packs
+- PGW19–20: 2-way actions with guardrails + evals/observability
 
 ### PGW7–PGW26 — Scale + Depth
 - Expand connectors, deepen Workbench/Insights, reliability hardening, A/B refine action ranking,
@@ -198,7 +268,7 @@ PGW2 acceptance criteria:
 
 ---
 
-## 7) Ultimate Post-GA definition
+## 15) Ultimate Post-GA definition
 Harmonyk is a **document-first operating system** with Maestro as an operator:
 - UI surfaces predictive signals
 - offers simple choices

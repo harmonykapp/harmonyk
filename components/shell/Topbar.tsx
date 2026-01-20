@@ -154,7 +154,7 @@ export function Topbar({ onMonoToggle, monoOpen }: TopbarProps) {
   return (
     <TooltipProvider delayDuration={200}>
       <div
-        className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-6 gap-4 sticky top-0 z-30"
+        className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center pr-6 pl-14 lg:px-6 gap-4 sticky top-0 z-30"
         style={{ height: tokens.layout.topbarHeight }}
         suppressHydrationWarning
       >
