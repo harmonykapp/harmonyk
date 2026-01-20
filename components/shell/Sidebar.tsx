@@ -254,19 +254,25 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={handleMobileOpenChange}>
-        <SheetContent id="mobile-nav-drawer" side="left" className="w-64 p-0" aria-label="Navigation drawer">
-          <SheetHeader
-            className="border-b px-6"
-            style={{
-              height: tokens.layout.topbarHeight,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
+        <SheetContent
+          id="mobile-nav-drawer"
+          side="left"
+          className="w-64 p-0 flex flex-col"
+          aria-label="Navigation drawer"
+        >
+          <SheetHeader className="border-b px-3 pt-10 pb-4">
             <SheetTitle>
               <span className="sr-only">Navigation</span>
-              <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="relative -top-px">
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-start"
+                style={{
+                  // Nudge the logo to align with nav icon column in the hamburger menu.
+                  // (+8px right, -12px up)
+                  transform: 'translate(8px, -12px)',
+                }}
+              >
                 <Image
                   src="/brand/harmonyk-logo-horizontal.png"
                   alt="Harmonyk"
@@ -287,10 +293,9 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             </SheetTitle>
           </SheetHeader>
           <nav
-            className="overflow-y-auto"
+            className="flex-1 overflow-y-auto"
             style={{
               padding: tokens.spacing[3],
-              height: `calc(100vh - ${tokens.layout.topbarHeight})`,
             }}
           >
             <div className="space-y-1">
