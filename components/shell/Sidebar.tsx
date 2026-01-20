@@ -1,27 +1,5 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
-import { tokens } from '@/lib/ui/tokens';
-import type { LucideIcon } from 'lucide-react';
-import {
-  BarChart3,
-  CheckSquare,
-  ChevronLeft,
-  ChevronRight,
-  Database,
-  Gauge,
-  Hammer,
-  Layers,
-  Menu,
-  Play,
-  Plug,
-  Settings,
-  Share2,
-} from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -35,25 +13,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-
-type NavigationItem = {
-  name: string;
-  href: string;
-  icon: LucideIcon;
-};
-
-const navigationDefault: NavigationItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: Gauge },
-  { name: 'Workbench', href: '/workbench', icon: Layers },
-  { name: 'Builder', href: '/builder', icon: Hammer },
-  { name: 'Vault', href: '/vault', icon: Database },
-  { name: 'Playbooks', href: '/playbooks', icon: Play },
-  { name: 'Share Hub', href: '/share', icon: Share2 },
-  { name: 'Insights', href: '/insights', icon: BarChart3 },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-  { name: 'Integrations', href: '/integrations', icon: Plug },
-  { name: 'Settings', href: '/settings', icon: Settings },
-];
+import { trackEvent } from '@/lib/telemetry';
+import { getSidebarNavigation, isNavItemActive, type NavItem } from '@/lib/ui/navigation';
+import { tokens } from '@/lib/ui/tokens';
+import { cn } from '@/lib/utils';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -63,13 +35,51 @@ interface SidebarProps {
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileOpenerRef = useRef<HTMLButtonElement | null>(null);
 
-  const renderNavItem = (item: NavigationItem, isMobile = false) => {
-    const isShareHubRoute =
-      item.href === "/share" &&
-      (pathname === "/share" || pathname?.startsWith("/share/") || pathname === "/signatures" || pathname?.startsWith("/signatures/"));
+  const handleMobileOpenChange = (open: boolean) => {
+    setMobileOpen(open);
+    if (!open) {
+      // Return focus to the opener for keyboard/a11y friendliness.
+      requestAnimationFrame(() => {
+        mobileOpenerRef.current?.focus();
+      });
+    }
+  };
 
-    const isActive = isShareHubRoute || pathname === item.href || pathname?.startsWith(item.href + '/');
+  const handleMobileOpenClick = () => {
+    setMobileOpen(true);
+  };
+  const isCollapsed = collapsed;
+  const handleToggle = onToggle;
+  const navigation = getSidebarNavigation().filter((item) => item.enabled !== false);
+
+  useEffect(() => {
+    // Fire once when sidebar mounts, but only when in desktop breakpoint.
+    try {
+      if (typeof window === 'undefined') return;
+      const isDesktop = window.matchMedia?.('(min-width: 1024px)')?.matches ?? false;
+      if (!isDesktop) return;
+      trackEvent('nav_opened', { device: 'desktop' });
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    trackEvent('nav_opened', { device: 'mobile' });
+  }, [mobileOpen]);
+
+  const handleToggleClick = () => {
+    if (!handleToggle) return;
+    const nextCollapsed = !isCollapsed;
+    trackEvent('ui_sidebar_toggled', { collapsed: nextCollapsed });
+    handleToggle();
+  };
+
+  const renderNavItem = (item: NavItem, isMobile = false) => {
+    const isActive = isNavItemActive(item, pathname);
     const Icon = item.icon;
 
     const linkContent = (
@@ -79,20 +89,14 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         onClick={isMobile ? () => setMobileOpen(false) : undefined}
         className={cn(
           'flex items-center rounded-lg text-sm transition-all relative',
-          collapsed && !isMobile ? 'justify-center px-3 py-2.5' : 'gap-3 px-3 py-2.5',
+          isCollapsed && !isMobile ? 'justify-center px-3 py-2.5' : 'gap-3 px-3 py-2.5',
           isActive
             ? 'bg-sidebar-active text-primary font-semibold'
             : 'text-sidebar-foreground hover:bg-sidebar-active/50 hover:text-sidebar-foreground font-medium'
         )}
         suppressHydrationWarning
       >
-        {isActive && !isMobile && (
-          <span
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 bg-primary rounded-r-full"
-            style={{ height: '60%' }}
-          />
-        )}
-        {isActive && isMobile && (
+        {isActive && (
           <span
             className="absolute left-0 top-1/2 -translate-y-1/2 w-1 bg-primary rounded-r-full"
             style={{ height: '60%' }}
@@ -102,11 +106,11 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }}
           className="flex-shrink-0"
         />
-        {(!collapsed || isMobile) && <span>{item.name}</span>}
+        {(!isCollapsed || isMobile) && <span>{item.name}</span>}
       </Link>
     );
 
-    if (collapsed && !isMobile) {
+    if (isCollapsed && !isMobile) {
       return (
         <Tooltip key={item.name} delayDuration={0}>
           <TooltipTrigger asChild>
@@ -127,8 +131,12 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden fixed top-4 left-4 z-50"
-        onClick={() => setMobileOpen(true)}
+        className="lg:hidden fixed top-3 left-4 z-50"
+        onClick={handleMobileOpenClick}
+        aria-label="Open navigation"
+        aria-expanded={mobileOpen}
+        aria-controls="mobile-nav-drawer"
+        ref={mobileOpenerRef}
       >
         <Menu style={{ width: tokens.iconSize.lg, height: tokens.iconSize.lg }} />
       </Button>
@@ -139,22 +147,22 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         )}
         style={{
           height: '100vh',
-          width: collapsed ? tokens.layout.sidebarWidthCollapsed : tokens.layout.sidebarWidthExpanded,
+          width: isCollapsed ? tokens.layout.sidebarWidthCollapsed : tokens.layout.sidebarWidthExpanded,
         }}
         suppressHydrationWarning
       >
         <div
           className={cn(
             'border-b flex items-center transition-all duration-200',
-            collapsed ? 'justify-center' : ''
+            isCollapsed ? 'justify-center' : ''
           )}
           style={{
             height: tokens.layout.topbarHeight,
-            padding: collapsed ? tokens.spacing[3] : `${tokens.spacing[4]} ${tokens.spacing[3]}`,
+            padding: isCollapsed ? tokens.spacing[3] : `${tokens.spacing[4]} ${tokens.spacing[3]}`,
           }}
           suppressHydrationWarning
         >
-          {!collapsed && (
+          {!isCollapsed && (
             <Link href="/dashboard" className="flex items-center group pl-1 relative -top-px" suppressHydrationWarning>
               <Image
                 src="/brand/harmonyk-logo-horizontal.png"
@@ -176,7 +184,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
               />
             </Link>
           )}
-          {collapsed && (
+          {isCollapsed && (
             <Link href="/dashboard" className="flex items-center justify-center w-full relative -top-px" suppressHydrationWarning>
               <Image
                 src="/brand/harmonyk-logo-horizontal_icononly.png"
@@ -207,25 +215,26 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             suppressHydrationWarning
           >
             <div className="space-y-1">
-              {navigationDefault.map((item) => renderNavItem(item, false))}
+              {navigation.map((item) => renderNavItem(item, false))}
             </div>
           </nav>
 
-          {onToggle && (
+          {typeof handleToggle === 'function' && (
             <div className="border-t" style={{ padding: tokens.spacing[3] }}>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={onToggle}
+                    onClick={handleToggleClick}
                     className={cn(
                       'w-full transition-all duration-200',
-                      collapsed ? 'justify-center px-3 py-2.5' : 'justify-start px-3 py-2.5'
+                      isCollapsed ? 'justify-center px-3 py-2.5' : 'justify-start px-3 py-2.5'
                     )}
-                    aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    aria-pressed={isCollapsed}
                   >
-                    {collapsed ? (
+                    {isCollapsed ? (
                       <ChevronRight style={{ width: tokens.iconSize.md, height: tokens.iconSize.md }} />
                     ) : (
                       <>
@@ -236,7 +245,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right" sideOffset={8}>
-                  <p>{collapsed ? 'Expand sidebar' : 'Collapse sidebar'}</p>
+                  <p>{isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -244,19 +253,26 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         </TooltipProvider>
       </aside>
 
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-64 p-0">
-          <SheetHeader
-            className="border-b px-6"
-            style={{
-              height: tokens.layout.topbarHeight,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
+      <Sheet open={mobileOpen} onOpenChange={handleMobileOpenChange}>
+        <SheetContent
+          id="mobile-nav-drawer"
+          side="left"
+          className="w-64 p-0 flex flex-col"
+          aria-label="Navigation drawer"
+        >
+          <SheetHeader className="border-b px-3 pt-10 pb-4">
             <SheetTitle>
-              <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="relative -top-px">
+              <span className="sr-only">Navigation</span>
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-start"
+                style={{
+                  // Nudge the logo to align with nav icon column in the hamburger menu.
+                  // (+8px right, -12px up)
+                  transform: 'translate(8px, -12px)',
+                }}
+              >
                 <Image
                   src="/brand/harmonyk-logo-horizontal.png"
                   alt="Harmonyk"
@@ -277,14 +293,13 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             </SheetTitle>
           </SheetHeader>
           <nav
-            className="overflow-y-auto"
+            className="flex-1 overflow-y-auto"
             style={{
               padding: tokens.spacing[3],
-              height: `calc(100vh - ${tokens.layout.topbarHeight})`,
             }}
           >
             <div className="space-y-1">
-              {navigationDefault.map((item) => renderNavItem(item, true))}
+              {navigation.map((item) => renderNavItem(item, true))}
             </div>
           </nav>
         </SheetContent>

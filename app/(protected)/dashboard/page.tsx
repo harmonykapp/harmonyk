@@ -19,6 +19,7 @@ import {
   mockSignatureLoad,
 } from "@/lib/mock/widgets";
 import { getUserProgressNarration, type UserProgressSignals } from "@/lib/user-progress";
+import { track } from "@/lib/telemetry/events";
 import Link from "next/link";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -36,6 +37,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let cancelled = false;
+    track("ui.sidebar.toggle", { boot: true });
     (async () => {
       try {
         const response = await fetch("/api/onboarding/status", {

@@ -1,4 +1,4 @@
-import { AppShell } from '@/components/AppShell';
+import { AppShell } from '@/components/shell/AppShell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,7 +71,7 @@ export default function SignaturesPage() {
   const completedCount = envelopes.filter((e) => e.status === 'Completed').length;
 
   return (
-    <AppShell monoContext="dashboard">
+    <AppShell monoContext="/signatures">
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>

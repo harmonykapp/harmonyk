@@ -1,10 +1,10 @@
 "use client";
 
-import * as React from "react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
+import * as React from "react";
 
 type Props = {
   title: string;
@@ -27,8 +27,14 @@ export function WidgetRow({
   defaultOpen = true,
   children,
 }: Props) {
-  // CRITICAL: Initial state must ALWAYS be defaultOpen (server + first client render)
-  // This ensures server and client render the same initial tree, preventing hydration mismatch.
+  // Hydration hygiene:
+  // Radix uses generated ids for aria-controls/content and SVG ids in children can also diverge
+  // if the server/client render order differs slightly. Render a deterministic shell first,
+  // then mount the real Collapsible after hydration.
+  const [hydrated, setHydrated] = React.useState(false);
+  React.useEffect(() => setHydrated(true), []);
+
+  // Deterministic initial open state (server + first client render)
   const [open, setOpen] = React.useState<boolean>(defaultOpen);
 
   // Load from localStorage AFTER mount (prevents hydration mismatch)
@@ -57,39 +63,59 @@ export function WidgetRow({
     setOpen(next);
   };
 
+  const header = (
+    <div className="flex items-center gap-2">
+      <div className="min-w-0">
+        <div className="text-sm font-medium">{title}</div>
+        {subtitle ? (
+          <div className="text-xs text-muted-foreground">{subtitle}</div>
+        ) : null}
+      </div>
+    </div>
+  );
+
   return (
     <section className={cn("mt-10", className)}>
-      <Collapsible open={open} onOpenChange={handleOpenChange}>
-        <div className="flex items-center gap-2">
-          <div className="min-w-0">
-            <div className="text-sm font-medium">{title}</div>
-            {subtitle ? (
-              <div className="text-xs text-muted-foreground">{subtitle}</div>
-            ) : null}
+      {!hydrated ? (
+        // Deterministic SSR/first paint: avoid Radix generated ids and any child SVG ids.
+        // Keep spacing stable so the page doesn't jump.
+        <div>
+          {header}
+          <div className="pt-4" />
+        </div>
+      ) : (
+        <Collapsible open={open} onOpenChange={handleOpenChange}>
+          <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">{title}</div>
+              {subtitle ? (
+                <div className="text-xs text-muted-foreground">{subtitle}</div>
+              ) : null}
+            </div>
+
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+              >
+                <ChevronDown
+                  className={cn(
+                    "mr-1 h-4 w-4 transition-transform",
+                    open ? "rotate-180" : "rotate-0",
+                  )}
+                />
+                {open ? "Collapse" : "Expand"}
+              </Button>
+            </CollapsibleTrigger>
           </div>
 
-          <CollapsibleTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
-            >
-              <ChevronDown
-                className={cn(
-                  "mr-1 h-4 w-4 transition-transform",
-                  open ? "rotate-180" : "rotate-0",
-                )}
-              />
-              {open ? "Collapse" : "Expand"}
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-
-        <CollapsibleContent className="pt-4">
-          {children}
-        </CollapsibleContent>
-      </Collapsible>
+          <CollapsibleContent className="pt-4">
+            {children}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
     </section>
   );
 }

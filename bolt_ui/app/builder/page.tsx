@@ -1,6 +1,6 @@
 'use client';
 
-import { AppShell } from '@/components/AppShell';
+import { AppShell } from '@/components/shell/AppShell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,7 +56,7 @@ export default function BuilderPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <AppShell monoContext="builder">
+    <AppShell monoContext="/builder">
       <div className="h-full flex">
         <div className="w-80 border-r bg-sidebar overflow-auto">
           <div className="p-4 border-b space-y-3">
