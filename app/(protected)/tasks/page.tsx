@@ -375,21 +375,6 @@ export default function TasksPage() {
     }
   };
 
-  const formatDateTime = (dateString: string | null) => {
-    if (!dateString) return null;
-    try {
-      return new Date(dateString).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      });
-    } catch {
-      return null;
-    }
-  };
-
   const sourceLabels: Record<Task["source"], string> = {
     activity: "Activity",
     mono: "Maestro",
@@ -403,7 +388,7 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-4">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
       <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
         <a
           href="/tasks"
@@ -426,7 +411,7 @@ export default function TasksPage() {
       {error && (
         <Card className="border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-red-700 dark:text-red-300">
+            <CardTitle className="text-base font-semibold text-red-700 dark:text-red-300">
               Unable to Load Tasks
             </CardTitle>
           </CardHeader>
@@ -695,7 +680,7 @@ export default function TasksPage() {
           ) : filteredTasks.length === 0 ? (
             <div className="text-center py-12">
               <CheckSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
+              <h3 className="text-base font-semibold mb-2">
                 {statusFilter === "done" ? "No completed tasks yet" : "No tasks yet"}
               </h3>
               <p className="text-muted-foreground mb-4">

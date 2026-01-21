@@ -45,8 +45,8 @@ export function DashboardHero({ narration, progressState }: DashboardHeroProps) 
             <p
               className="text-muted-foreground"
               style={{
-                fontSize: tokens.fontSize.sm,
-                lineHeight: tokens.lineHeight.sm,
+                fontSize: tokens.fontSize.xs,
+                lineHeight: tokens.lineHeight.xs,
               }}
             >
               {narration.description}

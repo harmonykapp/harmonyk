@@ -7,7 +7,6 @@ const TOP_SHARE_LINKS_ROW_CARD_HEIGHT = "lg:h-[420px]";
 const BREAKDOWNS_ROW_CARD_HEIGHT = "lg:h-[420px]";
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Eye, FileSignature, LayoutDashboard, Link2, Users } from 'lucide-react';
 import Link from "next/link";
 import { WidgetCard, WidgetRow } from "@/components/widgets";
@@ -47,9 +46,8 @@ export default function SharePage() {
   const followups = isDemoEnvironment ? DEMO_FOLLOWUPS : [];
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
-      <div className="w-fit mb-6">
-        <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
+      <div className="flex min-h-10 w-full flex-wrap items-center justify-center gap-1 rounded-md bg-muted p-1 text-muted-foreground sm:w-fit">
           <Link
             href="/share"
             className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-background text-foreground shadow-sm"
@@ -79,7 +77,6 @@ export default function SharePage() {
             Contacts
           </Link>
         </div>
-      </div>
 
       <WidgetRow
         title="Share performance"

@@ -41,7 +41,7 @@ export function WidgetCard({
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold">{title}</div>
           {subtitle ? (
-            <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div>
+            <div className="mt-1 text-xs font-normal text-muted-foreground">{subtitle}</div>
           ) : null}
         </div>
         {rightSlot ? <div className="shrink-0">{rightSlot}</div> : null}

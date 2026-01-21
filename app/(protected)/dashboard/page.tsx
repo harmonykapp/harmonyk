@@ -1,6 +1,7 @@
 "use client";
 
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   FunnelCard,
   KpiCard,
@@ -147,12 +148,11 @@ export default function DashboardPage() {
               <WidgetCard title="Today's Priorities" subtitle="Do next" density="compact" className="h-full">
                 {prioritiesToShow.length === 0 ? (
                   <div className="px-2 pb-3">
-                    <div className="rounded-xl border border-border/60 bg-muted/40 px-4 py-4">
-                      <div className="text-sm font-medium">No priorities yet</div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        Once you start working in Workbench, Maestro will surface next actions here.
-                      </div>
-                    </div>
+                    <EmptyState
+                      title="No priorities yet"
+                      description="Once you start working in Workbench, Maestro will surface next actions here."
+                      className="items-start text-left bg-muted/40"
+                    />
                   </div>
                 ) : (
                   <div className="space-y-2">

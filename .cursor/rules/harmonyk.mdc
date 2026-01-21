@@ -1,0 +1,26 @@
+---
+alwaysApply: true
+---
+# Overview
+
+Insert overview text here. The agent will only see this should they choose to apply the rule.
+
+@/docs/NORTH_STAR.md
+@/docs/NORTH_STAR_POST_GA.md
+@/docs/RULES/CURSOR_RULES.md
+
+Operating rules:
+- Unified diff only. Apply patches exactly. No file moves/renames unless explicitly requested.
+- Strict TS: no any. Use unknown + narrowing if needed.
+- Minimal diffs. No speculative refactors. Don’t change configs or add deps.
+- Next.js SSR safety: no window/localStorage branching in render; useEffect for browser-only work.
+- After diff: run npm run lint, npm run build, npm run dev and smoke-test listed routes.
+- If anything fails, respond with exact fix diff.
+
+Request format:
+1) Goal:
+2) Non-goals:
+3) Acceptance criteria:
+4) Smoke-test routes:
+5) Implement as ONE unified diff.
+6) End with: files changed + what changed.

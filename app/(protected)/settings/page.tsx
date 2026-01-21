@@ -337,7 +337,7 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between p-6 bg-accent/50 rounded-lg">
                   <div>
-                    <h3 className="text-2xl font-bold">
+                    <h3 className="text-base font-semibold">
                       {currentPlan.name} Plan
                     </h3>
                     <p className="text-muted-foreground mt-1">
@@ -416,7 +416,7 @@ export default function SettingsPage() {
                       </Badge>
                     )}
                     <div className="mb-4">
-                      <h3 className="text-lg font-semibold">{plan.name}</h3>
+                      <h3 className="text-base font-semibold">{plan.name}</h3>
                       <div className="mt-2">
                         <span className="text-3xl font-bold">{plan.price}</span>
                         <span className="text-muted-foreground text-sm ml-1">
@@ -600,7 +600,7 @@ export default function SettingsPage() {
                   className="flex items-center justify-between p-4 border rounded-lg"
                 >
                   <div>
-                    <h3 className="font-medium">{integration.name}</h3>
+                    <h3 className="text-sm font-semibold">{integration.name}</h3>
                     <p className="text-sm text-muted-foreground">
                       {integration.status === "Connected"
                         ? `${integration.accounts} account(s) connected`

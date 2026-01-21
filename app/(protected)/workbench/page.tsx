@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   Select,
   SelectContent,
@@ -939,10 +940,10 @@ export default function WorkbenchPage() {
                   <div className="space-y-1.5 -mt-1">
                     {mockRecentlyActive.map((item) => (
                       <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2 min-w-0">
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-medium truncate">{item.title}</div>
-                            <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">{item.subtitle}</div>
                           </div>
                           <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
                         </div>
@@ -967,7 +968,7 @@ export default function WorkbenchPage() {
                   <div className="space-y-1.5 -mt-1">
                     {mockBlockedItems.map((item) => (
                       <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2 min-w-0">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <div className="text-sm font-medium truncate">{item.title}</div>
@@ -979,7 +980,7 @@ export default function WorkbenchPage() {
                                 {item.tag}
                               </Badge>
                             </div>
-                            <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">{item.subtitle}</div>
                           </div>
                           <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
                         </div>
@@ -1039,7 +1040,7 @@ export default function WorkbenchPage() {
                   <div className="space-y-1.5 -mt-1">
                     {mockReviewQueue.map((item) => (
                       <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2 min-w-0">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <div className="text-sm font-medium truncate">{item.title}</div>
@@ -1047,7 +1048,7 @@ export default function WorkbenchPage() {
                                 {item.tag}
                               </Badge>
                             </div>
-                            <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">{item.subtitle}</div>
                           </div>
                           <div className="text-xs text-muted-foreground whitespace-nowrap">{item.valueLabel}</div>
                         </div>
@@ -1072,11 +1073,11 @@ export default function WorkbenchPage() {
                   <div className="space-y-1.5 -mt-1">
                     {mockSignatureQueue.map((item) => (
                       <div key={item.id} className="rounded-xl px-3 py-2.5 hover:bg-muted transition-colors">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2 min-w-0">
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-medium truncate">{item.title}</div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                            <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                              <div className="text-xs text-muted-foreground line-clamp-2">{item.subtitle}</div>
                               <Badge variant="outline" className={cn(
                                 "text-[10px] px-1.5 py-0",
                                 item.tag === "high" && "border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300",
@@ -1100,45 +1101,33 @@ export default function WorkbenchPage() {
 
         {/* Empty state when no active work */}
         {!loading && filteredRows.length === 0 && (
-          <div className="mb-4 rounded-lg border bg-card p-6 text-center">
-            <div className="space-y-4">
-              <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                <FileText className="h-8 w-8 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold mb-2">No active work yet</h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Get started by generating a contract, deck, or saving a document to Vault.
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <Button asChild variant="outline">
-                    <Link href="/builder?tab=contracts">Generate a contract</Link>
-                  </Button>
-                  <Button asChild variant="outline">
-                    <Link href="/builder?tab=decks">Generate a deck</Link>
-                  </Button>
-                  <Button asChild variant="outline">
-                    <Link href="/vault">Save a document to Vault</Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <EmptyState
+            title="No active work yet"
+            description="Get started by generating a contract, deck, or saving a document to Vault."
+            action={
+              <>
+                <Button asChild variant="outline">
+                  <Link href="/builder?tab=contracts">Generate a contract</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/builder?tab=decks">Generate a deck</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/vault">Save a document to Vault</Link>
+                </Button>
+              </>
+            }
+            className="bg-card"
+          />
         )}
 
         {/* Demo NDA empty state */}
         {hasVaultDocs === false && !loading && filteredRows.length > 0 && (
-          <div className="mb-4 rounded-lg border border-dashed bg-muted/40 p-4 text-sm">
-            <h2 className="font-medium">Demo NDA (sample only)</h2>
-            <p className="mt-1 text-muted-foreground">
-              You don&apos;t have any documents in your Vault yet. For this Beta, you can
-              still test Workbench using a sample NDA.
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              This is a demo document only. Real workflows will use your own documents
-              from Vault or Google Drive.
-            </p>
-          </div>
+          <EmptyState
+            title="Demo NDA (sample only)"
+            description="You don't have any documents in your Vault yet. For this beta, you can still test Workbench using a sample NDA. This is a demo document only; real workflows will use your own documents from Vault or Google Drive."
+            className="items-start text-left border-dashed bg-muted/40"
+          />
         )}
 
         <div className="flex gap-3 items-center">
@@ -1255,7 +1244,10 @@ export default function WorkbenchPage() {
                                 <div className="min-w-0">
                                   <div className={cn("font-medium truncate", "text-sm")}>{r.title}</div>
                                   {r.preview && (
-                                    <div className={cn("text-muted-foreground truncate", "text-[10px] mt-0.5")} title={r.preview}>
+                                    <div
+                                      className={cn("text-muted-foreground line-clamp-2", "text-[10px] mt-0.5")}
+                                      title={r.preview}
+                                    >
                                       {r.preview}
                                     </div>
                                   )}

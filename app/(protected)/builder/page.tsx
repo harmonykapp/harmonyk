@@ -72,7 +72,7 @@ export default function BuilderHubPage() {
                       <Icon className={card.color} style={{ width: tokens.iconSize.lg, height: tokens.iconSize.lg }} />
                     </div>
                     <div className="flex-1 space-y-1">
-                      <h3 className="font-semibold" style={{ fontSize: tokens.fontSize.lg }}>
+                      <h3 className="font-semibold" style={{ fontSize: tokens.fontSize.sm }}>
                         {card.title}
                       </h3>
                       <p className="text-sm text-muted-foreground">

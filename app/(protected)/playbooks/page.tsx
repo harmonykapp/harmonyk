@@ -512,7 +512,7 @@ export default function PlaybooksPage() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
           <div className="min-w-0 rounded-lg border bg-card text-card-foreground shadow-sm">
             <div className="p-6 pb-3">
-              <h3 className="text-lg font-semibold">Playbooks</h3>
+              <h3 className="text-base font-semibold">Playbooks</h3>
               <p className="text-sm text-muted-foreground">
                 {PLAYBOOKS.length} playbook{PLAYBOOKS.length !== 1 ? "s" : ""}
               </p>
@@ -563,7 +563,7 @@ export default function PlaybooksPage() {
             <div className="p-6 space-y-2">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <h3 className="text-base sm:text-lg font-semibold leading-snug">
+                  <h3 className="text-base font-semibold leading-snug">
                     {selected?.name}
                   </h3>
                   <p className="mt-1 text-xs sm:text-sm text-muted-foreground">

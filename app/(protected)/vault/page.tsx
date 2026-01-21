@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { FilterChipsRowSelectable as FilterChipsRow, type FilterChipItem } from "@/components/widgets/FilterChipsRowSelectable";
 import { TEMPLATES } from "@/data/templates";
 import { useToast } from "@/hooks/use-toast";
@@ -134,6 +135,7 @@ function VaultPageInner() {
   const sbAny: any = sb;
   const router = useRouter();
   const lastAppliedQueryRef = useRef<string>("");
+  const pendingQueryRef = useRef<string | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -235,6 +237,7 @@ function VaultPageInner() {
   // IMPORTANT: Do NOT use useSearchParams() here, because it can trigger CSR bailout warnings in Next build.
   useEffect(() => {
     const q = readVaultQueryFromLocation();
+    pendingQueryRef.current = q;
     lastAppliedQueryRef.current = q;
     setSearchQuery(q);
   }, []);
@@ -259,6 +262,11 @@ function VaultPageInner() {
     if (typeof window === "undefined") return;
 
     const desired = searchQuery.trim();
+    const pending = pendingQueryRef.current;
+    if (pending !== null) {
+      if (desired !== pending) return;
+      pendingQueryRef.current = null;
+    }
     const current = readVaultQueryFromLocation();
 
     // Avoid loops and unnecessary history churn.
@@ -902,7 +910,7 @@ function VaultPageInner() {
 
   function openDoc(docId: string) {
     phCapture("vault_open_builder", { docId });
-    router.push(`/builder?docId=${docId}`);
+    router.push(`/builder?docId=${encodeURIComponent(docId)}`);
   }
 
   async function refreshTrainingStatusForDoc(doc: Row) {
@@ -1199,8 +1207,8 @@ function VaultPageInner() {
   // Guard against render-time crashes
   if (rows === null && !loading && !err) {
     return (
-      <div className="h-full flex flex-col">
-        <div className="px-4 sm:px-6 lg:px-8 pt-4">
+      <div className="h-full flex flex-col overflow-x-hidden">
+        <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8">
           <div className="grid grid-cols-[16rem,1fr] items-start">
             <div>
               <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
@@ -1244,9 +1252,9 @@ function VaultPageInner() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-x-hidden">
       {/* Top tabs (My Files / My Drafts) — second tab links to Workbench drafts */}
-      <div className="px-4 sm:px-6 lg:px-8 pt-4">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8">
         <div className="grid grid-cols-[16rem,1fr] items-start">
           <div>
             <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
@@ -1371,30 +1379,21 @@ function VaultPageInner() {
 
           {!loading && !err && visibleRows.length === 0 && (
             <div className="flex-1 flex items-center justify-center">
-              <Card className="p-8 text-center max-w-md">
-                <div className="space-y-4">
-                  <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                    <FileText className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">No documents in your Vault yet</h3>
-                    <p className="text-muted-foreground mb-2">
-                      Vault is your source of truth for saved contracts, decks and financials.
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Save your first document from Builder or upload a document to get started.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 justify-center">
+              <EmptyState
+                title="No documents in your Vault yet"
+                description="Vault is your source of truth for saved contracts, decks, and financials."
+                action={
+                  <>
                     <Link href="/builder">
                       <Button>Save from Builder</Button>
                     </Link>
                     <Button variant="outline" disabled>
                       Upload a document
                     </Button>
-                  </div>
-                </div>
-              </Card>
+                  </>
+                }
+                className="max-w-md bg-card"
+              />
             </div>
           )}
 

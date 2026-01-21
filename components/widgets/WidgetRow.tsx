@@ -66,9 +66,9 @@ export function WidgetRow({
   const header = (
     <div className="flex items-center gap-2">
       <div className="min-w-0">
-        <div className="text-sm font-medium">{title}</div>
+        <div className="text-base font-semibold">{title}</div>
         {subtitle ? (
-          <div className="text-xs text-muted-foreground">{subtitle}</div>
+          <div className="text-xs font-normal text-muted-foreground">{subtitle}</div>
         ) : null}
       </div>
     </div>
@@ -87,9 +87,9 @@ export function WidgetRow({
         <Collapsible open={open} onOpenChange={handleOpenChange}>
           <div className="flex items-center gap-2">
             <div className="min-w-0">
-              <div className="text-sm font-medium">{title}</div>
+              <div className="text-base font-semibold">{title}</div>
               {subtitle ? (
-                <div className="text-xs text-muted-foreground">{subtitle}</div>
+                <div className="text-xs font-normal text-muted-foreground">{subtitle}</div>
               ) : null}
             </div>
 

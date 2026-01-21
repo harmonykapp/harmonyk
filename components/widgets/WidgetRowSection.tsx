@@ -26,7 +26,7 @@ export function WidgetRowSection({ id, title, subtitle, defaultOpen = true, clas
       <div className="rounded-lg border bg-card">
         <div className="px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="text-sm font-semibold">{title}</div>
+            <div className="text-base font-semibold">{title}</div>
             <CollapsibleTrigger
               className={cn(
                 "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs",
@@ -39,7 +39,7 @@ export function WidgetRowSection({ id, title, subtitle, defaultOpen = true, clas
             </CollapsibleTrigger>
           </div>
           {subtitle ? (
-            <div className="mt-0.5 text-xs text-muted-foreground">
+            <div className="mt-0.5 text-xs font-normal text-muted-foreground">
               {subtitle}
             </div>
           ) : null}
