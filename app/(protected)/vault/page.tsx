@@ -1,5 +1,15 @@
 "use client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,8 +21,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TEMPLATES } from "@/data/templates";
 import { useToast } from "@/hooks/use-toast";
 import { isFeatureEnabled, isRagEnabled } from "@/lib/feature-flags";
@@ -26,6 +52,7 @@ import {
   Archive,
   Brain,
   ChevronDown,
+  ChevronRight,
   Clock,
   Download,
   Eye,
@@ -33,11 +60,15 @@ import {
   FileText,
   Loader2,
   MoreVertical,
+  Pencil,
+  Pin,
   Plug,
   Plus,
   Search,
   Share2,
+  Sparkles,
   Star,
+  Trash2,
   Upload,
   Users
 } from "lucide-react";
@@ -188,6 +219,173 @@ function buildVaultTitle(filename: string): string {
   return normalized.slice(0, Math.max(0, normalized.length - ext.length - 1)) || "Untitled document";
 }
 
+type VaultFolderRoot = "personal" | "company";
+
+type VaultFolder = {
+  id: string;
+  name: string;
+  parentId: string | null;
+  root: VaultFolderRoot;
+  createdAt: string;
+};
+
+type VaultFolderState = {
+  folders: VaultFolder[];
+  selectedFolderId: string | null;
+};
+
+type VaultFolderPreferences = {
+  defaultRoot: VaultFolderRoot;
+  defaultBuckets: string[];
+};
+
+type SelectedFolderInfo = {
+  id: string;
+  name: string;
+  root: VaultFolderRoot;
+  parentId: string | null;
+  isRoot: boolean;
+};
+
+const VAULT_FOLDER_STORAGE_KEY = "harmonyk.vaultFolders.v1";
+const VAULT_FOLDER_URL_PARAM = "folder";
+const VAULT_FOLDER_NAME_MAX = 64;
+const VAULT_BUCKET_OPTIONS = ["Contracts", "Decks", "Finance", "People", "Ops", "Other"] as const;
+const DEFAULT_VAULT_PREFERENCES: VaultFolderPreferences = {
+  defaultRoot: "personal",
+  defaultBuckets: [...VAULT_BUCKET_OPTIONS],
+};
+const ROOT_FOLDER_IDS: Record<VaultFolderRoot, string> = {
+  personal: "vault-root-personal",
+  company: "vault-root-company",
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isVaultFolderRoot(value: unknown): value is VaultFolderRoot {
+  return value === "personal" || value === "company";
+}
+
+function isVaultFolder(value: unknown): value is VaultFolder {
+  if (!isRecord(value)) return false;
+  if (typeof value.id !== "string") return false;
+  if (typeof value.name !== "string") return false;
+  if (!isVaultFolderRoot(value.root)) return false;
+  if (typeof value.createdAt !== "string") return false;
+  if (value.parentId !== null && typeof value.parentId !== "string") return false;
+  return true;
+}
+
+function parseVaultFolderState(raw: string): VaultFolderState | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return null;
+    const foldersRaw = parsed.folders;
+    const selectedRaw = parsed.selectedFolderId;
+    const folders = Array.isArray(foldersRaw)
+      ? foldersRaw.filter(isVaultFolder)
+      : [];
+    const selectedFolderId =
+      selectedRaw === null || typeof selectedRaw === "string" ? selectedRaw : null;
+    return { folders, selectedFolderId };
+  } catch {
+    return null;
+  }
+}
+
+function parseVaultPreferences(value: unknown): VaultFolderPreferences | null {
+  if (!isRecord(value)) return null;
+  if (!isVaultFolderRoot(value.defaultRoot)) return null;
+  const allowedTags = new Set(VAULT_BUCKET_OPTIONS.map((bucket) => normalizeFolderTag(bucket)));
+  const bucketsRaw = value.defaultBuckets;
+  const buckets: string[] = [];
+  if (Array.isArray(bucketsRaw)) {
+    for (const entry of bucketsRaw) {
+      if (typeof entry !== "string") continue;
+      const trimmed = entry.trim();
+      if (!trimmed) continue;
+      const tag = normalizeFolderTag(trimmed);
+      if (!allowedTags.has(tag)) continue;
+      if (buckets.some((bucket) => normalizeFolderTag(bucket) === tag)) continue;
+      const canonical =
+        VAULT_BUCKET_OPTIONS.find((bucket) => normalizeFolderTag(bucket) === tag) ?? trimmed;
+      buckets.push(canonical);
+    }
+  }
+  return { defaultRoot: value.defaultRoot, defaultBuckets: buckets };
+}
+
+function readVaultFolderStateFromStorage(): VaultFolderState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(VAULT_FOLDER_STORAGE_KEY);
+    if (!raw) return null;
+    return parseVaultFolderState(raw);
+  } catch {
+    return null;
+  }
+}
+
+function readVaultPreferencesFromStorage(): VaultFolderPreferences | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(VAULT_FOLDER_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return null;
+    return parseVaultPreferences(parsed.prefs);
+  } catch {
+    return null;
+  }
+}
+
+function readVaultFolderFromLocation(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const value = (params.get(VAULT_FOLDER_URL_PARAM) ?? "").trim();
+    return value.length > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeFolderTag(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function extractFolderTagsFromContent(content?: string | null): string[] {
+  if (!content) return [];
+  const metadataMatch = content.match(/<!-- MONO_[A-Z_]+:({.*?}) -->/s);
+  if (!metadataMatch) return [];
+  try {
+    const metadata = JSON.parse(metadataMatch[1]) as Record<string, unknown>;
+    const rawTags = metadata.tags ?? metadata.labels ?? metadata.label;
+    if (Array.isArray(rawTags)) {
+      return rawTags
+        .filter((tag): tag is string => typeof tag === "string")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+    }
+    if (typeof rawTags === "string") {
+      const trimmed = rawTags.trim();
+      return trimmed ? [trimmed] : [];
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+function createVaultFolderId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `vault-folder-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function VaultPageInner() {
   const [quickFilter, setQuickFilter] = useState<ViewKey>("all");
   const vaultExperimental = isFeatureEnabled("FEATURE_VAULT_EXPERIMENTAL_ACTIONS");
@@ -205,6 +403,9 @@ function VaultPageInner() {
   const pendingQueryRef = useRef<string | null>(null);
   const lastAppliedViewRef = useRef<ViewKey>("all");
   const pendingViewRef = useRef<ViewKey | null>(null);
+  const lastAppliedFolderRef = useRef<string | null>(null);
+  const pendingFolderRef = useRef<string | null>(null);
+  const foldersRef = useRef<VaultFolder[]>([]);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -213,6 +414,23 @@ function VaultPageInner() {
   const [err, setErr] = useState<string | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [folders, setFolders] = useState<VaultFolder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(
+    () => new Set(Object.values(ROOT_FOLDER_IDS)),
+  );
+  const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderRoot, setNewFolderRoot] = useState<VaultFolderRoot>("personal");
+  const [newFolderParentId, setNewFolderParentId] = useState<string | null>(null);
+  const [newFolderError, setNewFolderError] = useState<string | null>(null);
+  const [folderStateHydrated, setFolderStateHydrated] = useState(false);
+  const [vaultPrefs, setVaultPrefs] = useState<VaultFolderPreferences>(DEFAULT_VAULT_PREFERENCES);
+  const [showFolderSuggestions, setShowFolderSuggestions] = useState(true);
+  const [renameFolderId, setRenameFolderId] = useState<string | null>(null);
+  const [renameFolderName, setRenameFolderName] = useState("");
+  const [renameFolderError, setRenameFolderError] = useState<string | null>(null);
+  const [deleteFolderId, setDeleteFolderId] = useState<string | null>(null);
   const [trainingStatusByDocId, setTrainingStatusByDocId] = useState<Record<string, DocTrainingState>>({});
   const [loadingTrainingDocId, setLoadingTrainingDocId] = useState<string | null>(null);
   const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
@@ -223,6 +441,7 @@ function VaultPageInner() {
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "ready" | "uploading" | "success" | "error">("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const folderNameInputRef = useRef<HTMLInputElement | null>(null);
 
   const templateNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -309,6 +528,141 @@ function VaultPageInner() {
     }));
   }, [countsByFilter]);
 
+  const rootFolders = useMemo(
+    () => [
+      { id: ROOT_FOLDER_IDS.personal, name: "Personal", root: "personal" as const },
+      { id: ROOT_FOLDER_IDS.company, name: "Company", root: "company" as const },
+    ],
+    [],
+  );
+
+  const resolveFolderSelection = (value: string | null, available: VaultFolder[]): string | null => {
+    if (!value) return null;
+    if (value === ROOT_FOLDER_IDS.personal || value === ROOT_FOLDER_IDS.company) return value;
+    return available.some((folder) => folder.id === value) ? value : null;
+  };
+
+  const selectedFolderInfo = useMemo<SelectedFolderInfo | null>(() => {
+    if (!selectedFolderId) return null;
+    if (selectedFolderId === ROOT_FOLDER_IDS.personal) {
+      return { id: selectedFolderId, name: "Personal", root: "personal", parentId: null, isRoot: true };
+    }
+    if (selectedFolderId === ROOT_FOLDER_IDS.company) {
+      return { id: selectedFolderId, name: "Company", root: "company", parentId: null, isRoot: true };
+    }
+    const folder = folders.find((item) => item.id === selectedFolderId);
+    if (!folder) return null;
+    return {
+      id: folder.id,
+      name: folder.name,
+      root: folder.root,
+      parentId: folder.parentId,
+      isRoot: false,
+    };
+  }, [selectedFolderId, folders]);
+
+  const folderTree = useMemo(() => {
+    const byParent = new Map<string, VaultFolder[]>();
+    const roots = new Map<VaultFolderRoot, VaultFolder[]>();
+    for (const folder of folders) {
+      if (folder.parentId) {
+        const list = byParent.get(folder.parentId) ?? [];
+        list.push(folder);
+        byParent.set(folder.parentId, list);
+      } else {
+        const list = roots.get(folder.root) ?? [];
+        list.push(folder);
+        roots.set(folder.root, list);
+      }
+    }
+    const sortFn = (a: VaultFolder, b: VaultFolder) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    for (const list of roots.values()) list.sort(sortFn);
+    for (const list of byParent.values()) list.sort(sortFn);
+    return { byParent, roots };
+  }, [folders]);
+
+  const suggestedFolderNames = useMemo(() => {
+    const baseSuggestions =
+      vaultPrefs.defaultBuckets.length > 0 ? vaultPrefs.defaultBuckets : VAULT_BUCKET_OPTIONS;
+    const existingTags = new Set(
+      folders
+        .filter(
+          (folder) => folder.root === newFolderRoot && folder.parentId === newFolderParentId,
+        )
+        .map((folder) => normalizeFolderTag(folder.name)),
+    );
+    const suggestions: string[] = [];
+    for (const suggestion of baseSuggestions) {
+      const trimmed = suggestion.trim();
+      if (!trimmed) continue;
+      const tag = normalizeFolderTag(trimmed);
+      if (existingTags.has(tag)) continue;
+      if (suggestions.some((name) => normalizeFolderTag(name) === tag)) continue;
+      suggestions.push(trimmed);
+      if (suggestions.length >= 3) break;
+    }
+    return suggestions;
+  }, [folders, newFolderParentId, newFolderRoot, vaultPrefs.defaultBuckets]);
+
+  const missingPinnedBuckets = useMemo(() => {
+    if (vaultPrefs.defaultBuckets.length === 0) return [];
+    const existingTags = new Set(
+      folders
+        .filter((folder) => folder.root === vaultPrefs.defaultRoot && folder.parentId === null)
+        .map((folder) => normalizeFolderTag(folder.name)),
+    );
+    const missing: string[] = [];
+    for (const bucket of vaultPrefs.defaultBuckets) {
+      const trimmed = bucket.trim();
+      if (!trimmed) continue;
+      const tag = normalizeFolderTag(trimmed);
+      if (existingTags.has(tag)) continue;
+      if (missing.some((name) => normalizeFolderTag(name) === tag)) continue;
+      missing.push(trimmed);
+    }
+    return missing;
+  }, [folders, vaultPrefs.defaultBuckets, vaultPrefs.defaultRoot]);
+
+  const folderTagIndex = useMemo(() => {
+    const map = new Map<string, string[]>();
+    (rows ?? []).forEach((row) => {
+      map.set(row.id, extractFolderTagsFromContent(row.latestVersion?.content));
+    });
+    return map;
+  }, [rows]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = readVaultFolderStateFromStorage();
+    if (stored?.folders) {
+      setFolders(stored.folders);
+    }
+    const storedPrefs = readVaultPreferencesFromStorage();
+    if (storedPrefs) {
+      setVaultPrefs({
+        ...DEFAULT_VAULT_PREFERENCES,
+        ...storedPrefs,
+        defaultBuckets:
+          storedPrefs.defaultBuckets.length > 0
+            ? storedPrefs.defaultBuckets
+            : DEFAULT_VAULT_PREFERENCES.defaultBuckets,
+      });
+    }
+    const selected = resolveFolderSelection(
+      readVaultFolderFromLocation() ?? stored?.selectedFolderId ?? null,
+      stored?.folders ?? [],
+    );
+    pendingFolderRef.current = selected;
+    lastAppliedFolderRef.current = selected;
+    setSelectedFolderId(selected);
+    setFolderStateHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    foldersRef.current = folders;
+  }, [folders]);
+
   // Keep Vault search in sync with the URL (/vault?q=...).
   // IMPORTANT: Do NOT use useSearchParams() here, because it can trigger CSR bailout warnings in Next build.
   useEffect(() => {
@@ -341,6 +695,12 @@ function VaultPageInner() {
       if (view !== lastAppliedViewRef.current) {
         lastAppliedViewRef.current = view;
         setQuickFilter(view);
+      }
+
+      const folder = resolveFolderSelection(readVaultFolderFromLocation(), foldersRef.current);
+      if (folder !== lastAppliedFolderRef.current) {
+        lastAppliedFolderRef.current = folder;
+        setSelectedFolderId(folder);
       }
     };
 
@@ -415,16 +775,123 @@ function VaultPageInner() {
     }
   }, [quickFilter]);
 
-  const visibleRows = useMemo(() => {
+  // When user switches folders, keep the URL up to date (replaceState, no extra navigation).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const desired = selectedFolderId;
+    const pending = pendingFolderRef.current;
+    if (pending !== null) {
+      if (desired !== pending) return;
+      pendingFolderRef.current = null;
+    }
+    const current = readVaultFolderFromLocation();
+
+    if (desired === current) return;
+
+    try {
+      const url = new URL(window.location.href);
+      const params = url.searchParams;
+
+      if (desired) {
+        params.set(VAULT_FOLDER_URL_PARAM, desired);
+      } else {
+        params.delete(VAULT_FOLDER_URL_PARAM);
+      }
+
+      const nextSearch = params.toString();
+      const nextUrl = `${url.pathname}${nextSearch ? `?${nextSearch}` : ""}`;
+      window.history.replaceState({}, "", nextUrl);
+      lastAppliedFolderRef.current = desired;
+    } catch {
+      // If URL parsing fails, do nothing (folder selection still works locally).
+    }
+  }, [selectedFolderId]);
+
+  useEffect(() => {
+    if (!folderStateHydrated) return;
+    if (typeof window === "undefined") return;
+    try {
+      const payload: VaultFolderState & { prefs?: VaultFolderPreferences } = {
+        folders,
+        selectedFolderId,
+        prefs: vaultPrefs,
+      };
+      window.localStorage.setItem(VAULT_FOLDER_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore storage errors (private mode, quota, etc.)
+    }
+  }, [folders, selectedFolderId, folderStateHydrated, vaultPrefs]);
+
+  useEffect(() => {
+    if (!selectedFolderInfo) return;
+    setExpandedFolderIds((prev) => {
+      const expandIds = new Set(prev);
+      expandIds.add(ROOT_FOLDER_IDS[selectedFolderInfo.root]);
+      let currentParent = selectedFolderInfo.parentId;
+      while (currentParent) {
+        expandIds.add(currentParent);
+        const parent = folders.find((folder) => folder.id === currentParent);
+        currentParent = parent?.parentId ?? null;
+      }
+      if (selectedFolderInfo.isRoot) {
+        expandIds.add(selectedFolderInfo.id);
+      }
+      let changed = expandIds.size !== prev.size;
+      if (!changed) {
+        for (const id of expandIds) {
+          if (!prev.has(id)) {
+            changed = true;
+            break;
+          }
+        }
+      }
+      return changed ? expandIds : prev;
+    });
+  }, [selectedFolderInfo, folders]);
+
+  useEffect(() => {
+    if (!isFolderDialogOpen) return;
+    const defaultRoot = selectedFolderInfo?.root ?? vaultPrefs.defaultRoot;
+    const defaultParent =
+      selectedFolderInfo && !selectedFolderInfo.isRoot ? selectedFolderInfo.id : null;
+    setNewFolderRoot(defaultRoot);
+    setNewFolderParentId(defaultParent);
+    setNewFolderName("");
+    setNewFolderError(null);
+    setShowFolderSuggestions(true);
+  }, [isFolderDialogOpen, selectedFolderInfo, vaultPrefs.defaultRoot]);
+
+  useEffect(() => {
+    if (!isFolderDialogOpen) return;
+    if (!newFolderParentId) return;
+    const parent = folders.find((folder) => folder.id === newFolderParentId);
+    if (!parent || parent.root !== newFolderRoot) {
+      setNewFolderParentId(null);
+    }
+  }, [isFolderDialogOpen, newFolderParentId, newFolderRoot, folders]);
+
+  const folderFilteredRows = useMemo(() => {
     const base = rows ?? [];
-    const q = searchQuery.trim().toLowerCase();
+    const folderTag = selectedFolderInfo ? normalizeFolderTag(selectedFolderInfo.name) : "";
 
     return base.filter((row) => {
       if (!matchesQuickFilter(row, quickFilter)) return false;
+      if (!selectedFolderInfo) return true;
+      if (!folderTag) return false;
+      const tags = folderTagIndex.get(row.id) ?? [];
+      return tags.some((tag) => normalizeFolderTag(tag) === folderTag);
+    });
+  }, [rows, quickFilter, selectedFolderInfo, folderTagIndex]);
+
+  const visibleRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    return folderFilteredRows.filter((row) => {
       if (!q) return true;
       return (row.title ?? "").toLowerCase().includes(q);
     });
-  }, [rows, quickFilter, searchQuery]);
+  }, [folderFilteredRows, searchQuery]);
 
   useEffect(() => {
     if (!selectedDoc) return;
@@ -1497,7 +1964,8 @@ function VaultPageInner() {
   const uploadHasLongNames = uploadItems.some((item) => item.file.name.length > 60);
   const hasSearchQuery = searchQuery.trim().length > 0;
   const hasActiveViewFilter = quickFilter !== "all";
-  const hasActiveFilters = hasSearchQuery || hasActiveViewFilter;
+  const hasActiveFolderFilter = selectedFolderInfo !== null;
+  const hasActiveFilters = hasSearchQuery || hasActiveViewFilter || hasActiveFolderFilter;
   const hasAnyRows = (rows?.length ?? 0) > 0;
   const showEmptyLibrary = !loading && !err && !hasAnyRows;
   const showEmptyDrafts =
@@ -1507,13 +1975,282 @@ function VaultPageInner() {
     !hasSearchQuery &&
     quickFilter === "drafts" &&
     countsByFilter.drafts === 0;
+  const showEmptyFolder =
+    !loading &&
+    !err &&
+    !showEmptyLibrary &&
+    !showEmptyDrafts &&
+    selectedFolderInfo !== null &&
+    folderFilteredRows.length === 0;
   const showNoMatches =
-    !loading && !err && visibleRows.length === 0 && !showEmptyLibrary && !showEmptyDrafts;
+    !loading &&
+    !err &&
+    visibleRows.length === 0 &&
+    !showEmptyLibrary &&
+    !showEmptyDrafts &&
+    !showEmptyFolder;
 
   function clearVaultFilters() {
     setSearchQuery("");
     setQuickFilter("all");
+    setSelectedFolderId(null);
   }
+
+  const folderParentOptions = useMemo(() => {
+    const candidates = folders.filter((folder) => folder.root === newFolderRoot);
+    const folderById = new Map(candidates.map((folder) => [folder.id, folder]));
+    const buildPath = (folder: VaultFolder): string => {
+      const parts = [folder.name];
+      let currentParentId = folder.parentId;
+      while (currentParentId) {
+        const parent = folderById.get(currentParentId);
+        if (!parent) break;
+        parts.unshift(parent.name);
+        currentParentId = parent.parentId;
+      }
+      return parts.join(" / ");
+    };
+    return candidates
+      .map((folder) => ({
+        id: folder.id,
+        label: buildPath(folder),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+  }, [folders, newFolderRoot]);
+
+  function toggleFolderExpanded(folderId: string) {
+    setExpandedFolderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(folderId)) {
+        next.delete(folderId);
+      } else {
+        next.add(folderId);
+      }
+      return next;
+    });
+  }
+
+  function onSelectFolder(folderId: string) {
+    setSelectedFolderId(folderId);
+  }
+
+  function applyFolderSuggestion(value: string, focus: boolean) {
+    setNewFolderName(value);
+    if (newFolderError) setNewFolderError(null);
+    if (focus) {
+      requestAnimationFrame(() => folderNameInputRef.current?.focus());
+    }
+  }
+
+  function onPinPreferredBuckets() {
+    if (vaultPrefs.defaultBuckets.length === 0) {
+      toast({
+        title: "No buckets selected",
+        description: "Choose default buckets in Settings to pin them here.",
+      });
+      return;
+    }
+    if (missingPinnedBuckets.length === 0) {
+      toast({
+        title: "Buckets already pinned",
+        description: "All preferred buckets already exist at the top level.",
+      });
+      return;
+    }
+    const createdAt = new Date().toISOString();
+    const newFolders = missingPinnedBuckets.map((bucket) => ({
+      id: createVaultFolderId(),
+      name: bucket,
+      parentId: null,
+      root: vaultPrefs.defaultRoot,
+      createdAt,
+    }));
+    setFolders((prev) => [...prev, ...newFolders]);
+    setExpandedFolderIds((prev) => {
+      const next = new Set(prev);
+      next.add(ROOT_FOLDER_IDS[vaultPrefs.defaultRoot]);
+      return next;
+    });
+  }
+
+  function onSubmitNewFolder() {
+    const trimmed = newFolderName.trim();
+    if (!trimmed) {
+      setNewFolderError("Folder name is required.");
+      return;
+    }
+    if (trimmed.length > VAULT_FOLDER_NAME_MAX) {
+      setNewFolderError(`Folder name must be ${VAULT_FOLDER_NAME_MAX} characters or less.`);
+      return;
+    }
+    const duplicate = folders.some(
+      (folder) =>
+        folder.root === newFolderRoot &&
+        folder.parentId === newFolderParentId &&
+        normalizeFolderTag(folder.name) === normalizeFolderTag(trimmed),
+    );
+    if (duplicate) {
+      setNewFolderError("A folder with this name already exists here.");
+      return;
+    }
+    const nextFolder: VaultFolder = {
+      id: createVaultFolderId(),
+      name: trimmed,
+      parentId: newFolderParentId,
+      root: newFolderRoot,
+      createdAt: new Date().toISOString(),
+    };
+    setFolders((prev) => [...prev, nextFolder]);
+    setSelectedFolderId(nextFolder.id);
+    setExpandedFolderIds((prev) => {
+      const next = new Set(prev);
+      next.add(ROOT_FOLDER_IDS[newFolderRoot]);
+      if (newFolderParentId) next.add(newFolderParentId);
+      return next;
+    });
+    setIsFolderDialogOpen(false);
+  }
+
+  function onRequestRenameFolder(folderId: string) {
+    const folder = folders.find((item) => item.id === folderId);
+    if (!folder) return;
+    setRenameFolderId(folderId);
+    setRenameFolderName(folder.name);
+    setRenameFolderError(null);
+  }
+
+  function onSubmitRenameFolder() {
+    if (!renameFolderId) return;
+    const folder = folders.find((item) => item.id === renameFolderId);
+    if (!folder) {
+      setRenameFolderId(null);
+      return;
+    }
+    const trimmed = renameFolderName.trim();
+    if (!trimmed) {
+      setRenameFolderError("Folder name is required.");
+      return;
+    }
+    if (trimmed.length > VAULT_FOLDER_NAME_MAX) {
+      setRenameFolderError(`Folder name must be ${VAULT_FOLDER_NAME_MAX} characters or less.`);
+      return;
+    }
+    const duplicate = folders.some(
+      (candidate) =>
+        candidate.id !== renameFolderId &&
+        candidate.root === folder.root &&
+        candidate.parentId === folder.parentId &&
+        normalizeFolderTag(candidate.name) === normalizeFolderTag(trimmed),
+    );
+    if (duplicate) {
+      setRenameFolderError("A folder with this name already exists here.");
+      return;
+    }
+    setFolders((prev) =>
+      prev.map((item) => (item.id === renameFolderId ? { ...item, name: trimmed } : item)),
+    );
+    setRenameFolderId(null);
+  }
+
+  function onRequestDeleteFolder(folderId: string) {
+    setDeleteFolderId(folderId);
+  }
+
+  function onConfirmDeleteFolder() {
+    if (!deleteFolderId) return;
+    const hasChildren = (folderTree.byParent.get(deleteFolderId) ?? []).length > 0;
+    if (hasChildren) return;
+    setFolders((prev) => prev.filter((folder) => folder.id !== deleteFolderId));
+    setExpandedFolderIds((prev) => {
+      const next = new Set(prev);
+      next.delete(deleteFolderId);
+      return next;
+    });
+    if (selectedFolderId === deleteFolderId) {
+      setSelectedFolderId(ROOT_FOLDER_IDS[vaultPrefs.defaultRoot]);
+    }
+    setDeleteFolderId(null);
+  }
+
+  const renderFolderBranch = (node: SelectedFolderInfo, depth: number) => {
+    const children = node.isRoot
+      ? folderTree.roots.get(node.root) ?? []
+      : folderTree.byParent.get(node.id) ?? [];
+    const isExpandable = children.length > 0;
+    const isExpanded = expandedFolderIds.has(node.id);
+    const hasChildren = (folderTree.byParent.get(node.id) ?? []).length > 0;
+    return (
+      <div key={node.id} className="space-y-1">
+        <div className="flex items-center gap-1" style={{ paddingLeft: depth * 12 }}>
+          {isExpandable ? (
+            <button
+              type="button"
+              className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground"
+              onClick={() => toggleFolderExpanded(node.id)}
+              aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
+            >
+              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </button>
+          ) : (
+            <span className="h-6 w-6" />
+          )}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={() => onSelectFolder(node.id)}
+              className={cn(
+                "flex-1 w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors text-sm min-w-0",
+                "hover:bg-sidebar-active/50",
+                selectedFolderId === node.id && "bg-sidebar-active/60",
+              )}
+            >
+              <span className={cn("min-w-0 truncate", node.isRoot && "font-medium")}>{node.name}</span>
+            </button>
+            {!node.isRoot && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <MoreVertical className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onRequestRenameFolder(node.id)}>
+                    <Pencil className="h-3 w-3 mr-2" />
+                    Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onRequestDeleteFolder(node.id)}
+                    disabled={hasChildren}
+                    className={hasChildren ? undefined : "text-destructive"}
+                  >
+                    <Trash2 className="h-3 w-3 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </div>
+        {isExpandable && isExpanded && (
+          <div className="space-y-1">
+            {children.map((child) =>
+              renderFolderBranch(
+                {
+                  id: child.id,
+                  name: child.name,
+                  root: child.root,
+                  parentId: child.parentId,
+                  isRoot: false,
+                },
+                depth + 1,
+              ),
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   useEffect(() => {
     if (!vaultExperimental || !ragEnabled) return;
@@ -1534,6 +2271,11 @@ function VaultPageInner() {
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0 text-base font-semibold text-foreground truncate">
                   {viewLabels[quickFilter]}
+                  {selectedFolderInfo && (
+                    <Badge variant="outline" className="ml-2 text-xs font-normal">
+                      Folder: {selectedFolderInfo.name}
+                    </Badge>
+                  )}
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
                     Loading…
                   </span>
@@ -1611,6 +2353,59 @@ function VaultPageInner() {
                 );
               })}
             </div>
+
+            <div className="mt-6 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <span>Folders</span>
+              <TooltipProvider delayDuration={150}>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={onPinPreferredBuckets}
+                        disabled={missingPinnedBuckets.length === 0}
+                        aria-label="Pin buckets"
+                      >
+                        <Pin className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Pin buckets</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => setIsFolderDialogOpen(true)}
+                        aria-label="New folder"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">New folder</TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            </div>
+            <div className="space-y-1 mt-2">
+              {rootFolders.map((root) =>
+                renderFolderBranch(
+                  {
+                    id: root.id,
+                    name: root.name,
+                    root: root.root,
+                    parentId: null,
+                    isRoot: true,
+                  },
+                  0,
+                ),
+              )}
+            </div>
           </div>
         </div>
 
@@ -1619,6 +2414,11 @@ function VaultPageInner() {
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 text-base font-semibold text-foreground truncate">
                 {viewLabels[quickFilter]}
+                {selectedFolderInfo && (
+                  <Badge variant="outline" className="ml-2 text-xs font-normal">
+                    Folder: {selectedFolderInfo.name}
+                  </Badge>
+                )}
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
                   {loading ? "Loading…" : `${visibleRows.length} documents`}
                 </span>
@@ -1691,6 +2491,28 @@ function VaultPageInner() {
                   <Link href="/builder">
                     <Button>New Document</Button>
                   </Link>
+                }
+                className="max-w-md bg-card"
+              />
+            </div>
+          )}
+
+          {showEmptyFolder && (
+            <div className="flex-1 flex items-center justify-center">
+              <EmptyState
+                title="No documents in this folder yet"
+                description={
+                  selectedFolderInfo
+                    ? `Upload files or import documents to add items to ${selectedFolderInfo.name}.`
+                    : "Upload files or import documents to add items to this folder."
+                }
+                action={
+                  <>
+                    <Button onClick={() => setIsUploadDialogOpen(true)}>Upload Files</Button>
+                    <Link href="/integrations">
+                      <Button variant="outline">Import Documents</Button>
+                    </Link>
+                  </>
                 }
                 className="max-w-md bg-card"
               />
@@ -2154,6 +2976,195 @@ function VaultPageInner() {
               </p>
             </div>
           )}
+
+          <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create new folder</DialogTitle>
+                <DialogDescription>
+                  Organize your Vault into Personal or Company folders.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="vault-folder-name">Folder name</Label>
+                  <Input
+                    id="vault-folder-name"
+                    ref={folderNameInputRef}
+                    value={newFolderName}
+                    onChange={(e) => {
+                      setNewFolderName(e.target.value);
+                      if (newFolderError) setNewFolderError(null);
+                    }}
+                    maxLength={VAULT_FOLDER_NAME_MAX}
+                    placeholder="e.g. Contracts"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Max {VAULT_FOLDER_NAME_MAX} characters.
+                  </p>
+                </div>
+                {showFolderSuggestions && suggestedFolderNames.length > 0 && (
+                  <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <Sparkles className="h-3 w-3" />
+                      Suggested by Maestro
+                    </div>
+                    <div className="space-y-2">
+                      {suggestedFolderNames.map((suggestion) => (
+                        <div key={suggestion} className="flex items-center justify-between gap-2">
+                          <span className="text-sm text-foreground">{suggestion}</span>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                applyFolderSuggestion(suggestion, false);
+                                setShowFolderSuggestions(false);
+                              }}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => applyFolderSuggestion(suggestion, true)}
+                            >
+                              Edit
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground underline"
+                      onClick={() => setShowFolderSuggestions(false)}
+                    >
+                      Dismiss suggestions
+                    </button>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label>Root</Label>
+                  <Select
+                    value={newFolderRoot}
+                    onValueChange={(value) => {
+                      if (value === "personal" || value === "company") {
+                        setNewFolderRoot(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose root" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="personal">Personal</SelectItem>
+                      <SelectItem value="company">Company</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Parent (optional)</Label>
+                  <Select
+                    value={newFolderParentId ?? "none"}
+                    onValueChange={(value) => {
+                      setNewFolderParentId(value === "none" ? null : value);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No parent" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No parent</SelectItem>
+                      {folderParentOptions.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {newFolderError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{newFolderError}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsFolderDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={onSubmitNewFolder}>Create folder</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={renameFolderId !== null} onOpenChange={(open) => !open && setRenameFolderId(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Rename folder</DialogTitle>
+                <DialogDescription>Update the name for this folder.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="vault-rename-folder-name">Folder name</Label>
+                  <Input
+                    id="vault-rename-folder-name"
+                    value={renameFolderName}
+                    onChange={(e) => {
+                      setRenameFolderName(e.target.value);
+                      if (renameFolderError) setRenameFolderError(null);
+                    }}
+                    maxLength={VAULT_FOLDER_NAME_MAX}
+                    placeholder="e.g. Contracts"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Max {VAULT_FOLDER_NAME_MAX} characters.
+                  </p>
+                </div>
+                {renameFolderError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{renameFolderError}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRenameFolderId(null)}>
+                  Cancel
+                </Button>
+                <Button onClick={onSubmitRenameFolder}>Save changes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <AlertDialog open={deleteFolderId !== null} onOpenChange={(open) => !open && setDeleteFolderId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete folder?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {(deleteFolderId &&
+                    (folderTree.byParent.get(deleteFolderId) ?? []).length > 0) &&
+                    "This folder has subfolders. Remove them first before deleting."}
+                  {deleteFolderId &&
+                    (folderTree.byParent.get(deleteFolderId) ?? []).length === 0 &&
+                    "This action cannot be undone. Documents stay in Vault and can be re-filed later."}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onConfirmDeleteFolder}
+                  disabled={Boolean(
+                    deleteFolderId && (folderTree.byParent.get(deleteFolderId) ?? []).length > 0,
+                  )}
+                >
+                  Delete folder
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           <Dialog open={isUploadDialogOpen} onOpenChange={handleUploadDialogChange}>
             <DialogContent className="max-w-lg">
