@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/input";
-import { FilterChipsRowSelectable as FilterChipsRow, type FilterChipItem } from "@/components/widgets/FilterChipsRowSelectable";
 import { TEMPLATES } from "@/data/templates";
 import { useToast } from "@/hooks/use-toast";
 import { isFeatureEnabled, isRagEnabled } from "@/lib/feature-flags";
@@ -35,6 +34,7 @@ import {
   Loader2,
   MoreVertical,
   Plug,
+  Plus,
   Search,
   Share2,
   Star,
@@ -128,7 +128,7 @@ const viewLabels: Record<ViewKey, string> = {
   all: "All files",
   recent: "Recent",
   starred: "Starred",
-  shared: "Shared",
+  shared: "Shared with me",
   drafts: "Drafts",
   signed: "Signed",
   archived: "Archived",
@@ -143,7 +143,7 @@ const viewDefs: Array<{
     { id: "all", icon: FileText, label: "All files", color: "text-muted-foreground" },
     { id: "recent", icon: Clock, label: "Recent", color: "text-blue-600" },
     { id: "starred", icon: Star, label: "Starred", color: "text-yellow-600" },
-    { id: "shared", icon: Users, label: "Shared", color: "text-green-600" },
+    { id: "shared", icon: Users, label: "Shared with me", color: "text-green-600" },
     { id: "drafts", icon: FileText, label: "Drafts", color: "text-indigo-600" },
     { id: "signed", icon: FileSignature, label: "Signed", color: "text-purple-600" },
     { id: "archived", icon: Archive, label: "Archived", color: "text-gray-600" },
@@ -301,18 +301,6 @@ function VaultPageInner() {
 
     return counts;
   }, [rows]);
-
-  const quickFilters: FilterChipItem[] = useMemo(() => {
-    return [
-      { id: "all", label: "All", count: countsByFilter.all },
-      { id: "starred", label: "Starred", count: countsByFilter.starred },
-      { id: "recent", label: "Recent", count: countsByFilter.recent },
-      { id: "shared", label: "Shared", count: countsByFilter.shared },
-      { id: "drafts", label: "Drafts", count: countsByFilter.drafts },
-      { id: "signed", label: "Signed", count: countsByFilter.signed },
-      { id: "archived", label: "Archived", count: countsByFilter.archived },
-    ];
-  }, [countsByFilter]);
 
   const viewItems = useMemo(() => {
     return viewDefs.map((f) => ({
@@ -1550,22 +1538,25 @@ function VaultPageInner() {
                     Loading…
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 flex-nowrap">
                   <Link href="/builder">
-                    <Button>New Document</Button>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 sm:mr-2" />
+                      <span className="sr-only sm:not-sr-only">New Document</span>
+                    </Button>
                   </Link>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setIsUploadDialogOpen(true)}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Files
+                    <Upload className="h-4 w-4 sm:mr-2" />
+                    <span className="sr-only sm:not-sr-only">Upload Files</span>
                   </Button>
                   <Link href="/integrations">
                     <Button variant="outline" size="sm">
-                      <Plug className="h-4 w-4 mr-2" />
-                      Import Files
+                      <Plug className="h-4 w-4 sm:mr-2" />
+                      <span className="sr-only sm:not-sr-only">Import Documents</span>
                     </Button>
                   </Link>
                 </div>
@@ -1633,48 +1624,30 @@ function VaultPageInner() {
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-nowrap">
                 <Link href="/builder">
-                  <Button>New Document</Button>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="sr-only sm:not-sr-only">New Document</span>
+                  </Button>
                 </Link>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsUploadDialogOpen(true)}
                 >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Files
+                  <Upload className="h-4 w-4 sm:mr-2" />
+                  <span className="sr-only sm:not-sr-only">Upload Files</span>
                 </Button>
                 <Link href="/integrations">
                   <Button variant="outline" size="sm">
-                    <Plug className="h-4 w-4 mr-2" />
-                    Import Files
+                    <Plug className="h-4 w-4 sm:mr-2" />
+                    <span className="sr-only sm:not-sr-only">Import Documents</span>
                   </Button>
                 </Link>
               </div>
             </div>
 
-            {/* Desktop quick filters (left-aligned under the title) */}
-            <div className="hidden md:block">
-              <FilterChipsRow
-                items={quickFilters}
-                value={quickFilter}
-                onChange={(next) => setQuickFilter(toViewKey(next))}
-                className="justify-start flex-wrap"
-                aria-label="Vault quick filters"
-              />
-            </div>
-          </div>
-
-          {/* Mobile quick filters row */}
-          <div className="px-6 pb-4 md:hidden">
-            <FilterChipsRow
-              items={quickFilters}
-              value={quickFilter}
-              onChange={(next) => setQuickFilter(toViewKey(next))}
-              className="justify-start flex-wrap"
-              aria-label="Vault quick filters"
-            />
           </div>
 
           {loading && (
@@ -1693,7 +1666,7 @@ function VaultPageInner() {
             <div className="flex-1 flex items-center justify-center">
               <EmptyState
                 title="Your Vault is empty"
-                description="Import documents or create a new one to start building your library."
+                description="Import Documents or create a New Document to start building your library."
                 action={
                   <>
                     <Link href="/builder">
@@ -1713,7 +1686,7 @@ function VaultPageInner() {
             <div className="flex-1 flex items-center justify-center">
               <EmptyState
                 title="No drafts yet"
-                description="Create a new document to start a draft in Vault."
+                description="Start a draft with a New Document."
                 action={
                   <Link href="/builder">
                     <Button>New Document</Button>
@@ -1746,20 +1719,25 @@ function VaultPageInner() {
           )}
 
           {!loading && !err && visibleRows.length > 0 && (
-            <div className="flex-1 flex min-w-0">
-              <div className={cn("flex-1 p-6 min-w-0", selectedDoc && "max-w-[60%]")}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-w-0">
+            <div
+              className={cn(
+                "flex-1 flex min-w-0 flex-col",
+                selectedDocument && "xl:flex-row"
+              )}
+            >
+              <div className={cn("flex-1 p-6 min-w-0", selectedDocument && "xl:max-w-[60%]")}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-w-0 auto-rows-fr">
                   {visibleRows.map((doc) => (
                     <Card
                       key={doc.id}
                       className={cn(
-                        'p-4 cursor-pointer transition-all hover:shadow-md',
+                        "p-4 cursor-pointer transition-all hover:shadow-md h-full",
                         selectedDoc === doc.id && 'ring-2 ring-primary'
                       )}
                       onClick={() => setSelectedDoc(doc.id)}
                     >
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3">
+                      <div className="flex h-full flex-col gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
                           <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
                             <FileText className="h-6 w-6 text-primary" />
                           </div>
@@ -1767,9 +1745,9 @@ function VaultPageInner() {
                             <h3 className="font-medium text-sm line-clamp-2 leading-tight">
                               {doc.title}
                             </h3>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 min-w-0 flex-nowrap">
                               {doc.kind === "deck" && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-xs shrink-0">
                                   {(() => {
                                     const deckType = doc.latestVersion?.content
                                       ? (() => {
@@ -1791,12 +1769,12 @@ function VaultPageInner() {
                                 </Badge>
                               )}
                               {doc.templateId && (
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-xs text-muted-foreground truncate min-w-0 flex-1">
                                   {templateNameMap.get(doc.templateId) ?? "—"}
                                 </span>
                               )}
                               {!doc.kind && !doc.templateId && (
-                                <span className="text-xs text-muted-foreground">—</span>
+                                <span className="text-xs text-muted-foreground truncate">—</span>
                               )}
                             </div>
                           </div>
@@ -1807,7 +1785,7 @@ function VaultPageInner() {
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t mt-auto">
                           <span>{new Date(doc.updated_at).toLocaleDateString()}</span>
                           <span>{doc.versionCount ? `v${doc.versionCount}` : "—"}</span>
                         </div>
@@ -1818,7 +1796,7 @@ function VaultPageInner() {
               </div>
 
               {selectedDocument && (
-                <div className="w-[40%] border-l bg-card min-w-0">
+                <div className="border-t xl:border-t-0 xl:border-l bg-card min-w-0 xl:w-[40%]">
                   <div className="p-6 space-y-4">
                     {/* Header */}
                     <div className="flex items-start justify-between gap-3">
@@ -1826,9 +1804,9 @@ function VaultPageInner() {
                         <h2 className="text-lg font-semibold leading-snug line-clamp-2">
                           {selectedDocument.title}
                         </h2>
-                        <div className="mt-1 flex items-center gap-2">
+                        <div className="mt-1 flex items-center gap-2 min-w-0 flex-nowrap">
                           {selectedDocument.kind === "deck" && (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-xs shrink-0">
                               {(() => {
                                 const deckType = selectedDocument.latestVersion?.content
                                   ? (() => {
@@ -1853,12 +1831,12 @@ function VaultPageInner() {
                             </Badge>
                           )}
                           {selectedDocument.templateId && (
-                            <span className="text-sm text-muted-foreground truncate">
+                            <span className="text-sm text-muted-foreground truncate min-w-0 flex-1">
                               {templateNameMap.get(selectedDocument.templateId) ?? "—"}
                             </span>
                           )}
                           {!selectedDocument.kind && !selectedDocument.templateId && (
-                            <span className="text-sm text-muted-foreground">—</span>
+                            <span className="text-sm text-muted-foreground truncate">—</span>
                           )}
                         </div>
                       </div>
@@ -1909,8 +1887,8 @@ function VaultPageInner() {
                               v{selectedDocument.versionCount || 1}
                             </div>
                             <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">Current version</span>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-sm font-medium truncate">Current version</span>
                                 <span className="text-xs text-muted-foreground">
                                   {new Date(selectedDocument.updated_at).toLocaleDateString()}
                                 </span>

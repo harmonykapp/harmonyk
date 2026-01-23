@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
 import { readVaultDocs } from "@/lib/vault-local";
 import { FileText } from "lucide-react";
@@ -308,15 +309,24 @@ export default function VaultDocPage({ params }: PageProps) {
   if (!doc) {
     return (
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <Card className="p-6">
-          <div className="font-medium">Document not found</div>
-          <div className="mt-2 text-sm text-muted-foreground">{err ?? "This Vault document isn't available."}</div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button asChild variant="outline">
-              <Link href="/vault">Back to Vault</Link>
-            </Button>
-          </div>
-        </Card>
+        <EmptyState
+          title="Document not available"
+          description="This document isn’t available in your Vault right now. It may have been moved or removed."
+          action={
+            <>
+              <Link href="/vault">
+                <Button>Back to Vault</Button>
+              </Link>
+              <Link href="/integrations">
+                <Button variant="outline">Import Documents</Button>
+              </Link>
+              <Link href="/builder">
+                <Button variant="outline">New Document</Button>
+              </Link>
+            </>
+          }
+          className="max-w-md bg-card"
+        />
       </div>
     );
   }
