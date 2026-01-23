@@ -531,7 +531,7 @@ function VaultPageInner() {
   const rootFolders = useMemo(
     () => [
       { id: ROOT_FOLDER_IDS.personal, name: "Personal", root: "personal" as const },
-      { id: ROOT_FOLDER_IDS.company, name: "Company", root: "company" as const },
+      { id: ROOT_FOLDER_IDS.company, name: "Business", root: "company" as const },
     ],
     [],
   );
@@ -548,7 +548,7 @@ function VaultPageInner() {
       return { id: selectedFolderId, name: "Personal", root: "personal", parentId: null, isRoot: true };
     }
     if (selectedFolderId === ROOT_FOLDER_IDS.company) {
-      return { id: selectedFolderId, name: "Company", root: "company", parentId: null, isRoot: true };
+      return { id: selectedFolderId, name: "Business", root: "company", parentId: null, isRoot: true };
     }
     const folder = folders.find((item) => item.id === selectedFolderId);
     if (!folder) return null;
