@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import type * as React from "react";
 
 export type WidgetTone =
+  | "accent"
   | "blue"
   | "purple"
   | "emerald"
@@ -23,6 +24,7 @@ export type KpiCardProps = {
 };
 
 const toneToTextClass: Record<WidgetTone, string> = {
+  accent: "text-primary",
   blue: "text-blue-700",
   purple: "text-violet-700",
   emerald: "text-emerald-700",

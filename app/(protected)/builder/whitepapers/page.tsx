@@ -38,8 +38,7 @@ export default function WhitepapersBuilderPage() {
   const active = TEMPLATE_ITEMS.find((t) => t.id === activeId)!;
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <div className="space-y-6">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         {/* LEFT RAIL: template types (replaces horizontal tabs) */}
         <aside className="rounded-xl border bg-background p-4">
@@ -110,7 +109,6 @@ export default function WhitepapersBuilderPage() {
             </div>
           </div>
         </section>
-      </div>
       </div>
     </div>
   );

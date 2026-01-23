@@ -45,8 +45,32 @@ const maestroSuggestions = [
 
 export default function BuilderHubPage() {
   return (
-    <div style={{ padding: tokens.spacing[8], maxWidth: tokens.layout.pageMaxWidth, margin: '0 auto' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing[6] }}>
+    <div className="mx-auto w-full max-w-[1600px] px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-base font-semibold text-foreground">
+            Build contracts, decks, whitepapers, and accounts in one place.
+          </p>
+          <Button asChild size="sm">
+            <Link href="/builder/contracts">Start a contract</Link>
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/builder/contracts">Contracts</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/builder/decks">Decks</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/builder/whitepapers">Whitepapers</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/builder/accounts">Accounts</Link>
+          </Button>
+        </div>
+
         <Widget
           title="Maestro Suggestions"
           description="This will evolve into predictive insights + optimized choices (Post-GA doctrine)."

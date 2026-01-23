@@ -70,7 +70,7 @@ export default function DevActivityLogPage() {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Activity Log (Dev Only)</h1>
           <p className="text-muted-foreground mt-1">Loading...</p>
@@ -81,7 +81,7 @@ export default function DevActivityLogPage() {
 
   if (error) {
     return (
-      <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Activity Log (Dev Only)</h1>
           <p className="text-destructive mt-1">Error: {error}</p>
@@ -92,7 +92,7 @@ export default function DevActivityLogPage() {
 
   if (!data) {
     return (
-      <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Activity Log (Dev Only)</h1>
           <p className="text-muted-foreground mt-1">No data</p>
@@ -102,7 +102,7 @@ export default function DevActivityLogPage() {
   }
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Activity Log (Dev Only)</h1>
         <p className="text-muted-foreground mt-1">

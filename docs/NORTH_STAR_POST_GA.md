@@ -19,6 +19,12 @@ Canonical implementation artifacts:
 - Maestro operates mainly through **UI actions embedded in pages** (buttons/chips), not chat.
 - The UI is personalised to each user's **state**, **workload**, and **priorities**.
 
+### UX / UI Minimalism Rules (Locked)
+- Most pages: at most 1 row of 3 widgets + compact Quick Actions strip + optional Maestro recs.
+- Widget sections collapsed by default on first render/first visit (NO persistence unless already supported).
+- Each page must have a purpose line + primary CTA under title.
+- Keep at least one anchor per page (primary list/table or a single “do next” card) so pages never feel empty.
+
 ### 3-Layer Model (official)
 1) **Predictive Signals** (widgets surface what changed / what's blocked / what's due / what's risky)
 2) **Optimized Choices** (one primary action + 2–3 alternative chips + "Why?")
@@ -42,10 +48,23 @@ Exact left-nav order:
 10) Integrations
 11) Settings
 
+## 2.1) Design System (Locked)
+- Single accent color aligned to nav/buttons/logo.
+- Mono charts (no multi-color graphs).
+- Semantic colors (red/amber/green) allowed only as small badges/dots/icons/status tags, not full charts.
+- Prefer ranked lists, KPI cards, mono bars/lines, stacked bars; avoid pies/donuts.
+
 ## 3) Rooms (Locked)
 - Rooms are top-level deal / project / company hubs.
 - Each Room auto-aggregates docs, evidence, timeline, and actions.
+- Rooms are project/deal/company hubs (containers for docs/sources/tasks/activity). NOT teams/workspaces.
 - Rooms are NOT part of Playbooks.
+
+## 3.1) Workbench (Locked)
+- Workbench is the personal execution cockpit across all Rooms (queues for review/sign/blockers).
+
+## 3.2) Playbooks (Locked)
+- Playbooks are the automation engine operating on Rooms/docs/tasks; runs monitored in Playbooks.
 
 ## 4) Tasks (Locked)
 - Tasks is a doc-driven action queue (views, signatures, approvals, renewals, filing, playbook steps).
@@ -140,6 +159,9 @@ Required guardrails (esp. 2-way connectors and write tools):
 ## 10) Mandatory UI surface separation (no drift)
 
 Harmonyk stays document-first by enforcing page intent:
+
+Page purpose + primary CTA rule:
+- Every core page must declare a purpose line + primary CTA and keep it consistent with PRODUCT thread table.
 
 ### Integrations (user connectors only)
 - Integrations is for **user-owned, user-authorized external data sources** (Drive/Gmail/etc.) used to import/classify/organize into Vault.

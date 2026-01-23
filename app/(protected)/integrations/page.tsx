@@ -424,14 +424,57 @@ export default function IntegrationsPage() {
   });
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-base font-semibold text-foreground">
+          Connect sources, resolve issues, and keep syncs healthy.
+        </p>
+        <Button asChild size="sm">
+          <a href="#connectors">Connect data source</a>
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={handleConnect}
+          disabled={connectStatus === "loading" || connectStatus === "redirecting"}
+        >
+          {driveConnected ? "Reconnect Drive" : "Connect Drive"}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={handleGmailConnect}
+          disabled={
+            gmailConnectStatus === "loading" ||
+            gmailConnectStatus === "redirecting"
+          }
+        >
+          {gmailConnected ? "Reconnect Gmail" : "Connect Gmail"}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            window.location.href = "/activity?groups=connectors";
+          }}
+        >
+          View activity log
+        </Button>
+      </div>
+
       <WidgetRowSection
         id="connectors"
-        title="Data Sources"
-        subtitle="Connect your accounts to import and organize documents into Vault"
+        title="Integration Status"
+        subtitle="Status cards, action required, and recent sync activity"
       >
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-6">
+          <div className="md:col-span-4">
             <WidgetCard
               title="Google Drive"
               subtitle="Docs, Sheets, Slides, PDFs"
@@ -527,7 +570,7 @@ export default function IntegrationsPage() {
             </WidgetCard>
           </div>
 
-          <div className="md:col-span-6">
+          <div className="md:col-span-4">
             <WidgetCard
               title="Gmail"
               subtitle="Email metadata & attachments"
@@ -628,106 +671,109 @@ export default function IntegrationsPage() {
               </div>
             </WidgetCard>
           </div>
-        </div>
-      </WidgetRowSection>
 
-      <WidgetRowSection id="activity" title="Activity & Status" subtitle="Action required and recent sync activity" className="mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-6">
-            <WidgetCard title="Action Required" subtitle={`${actionItems.length} items`} className="h-[280px]">
-              {actionItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <CheckCircle2 className="h-8 w-8 text-emerald-500/60 mb-2" />
-                  <div className="text-sm font-medium">All systems healthy</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    No issues detected with your integrations
-                  </div>
-                </div>
-              ) : (
+          <div className="md:col-span-4">
+            <WidgetCard
+              title="Action Required & Recent Sync"
+              subtitle="Issues and latest jobs"
+              className="h-[280px]"
+            >
+              <div className="flex h-full flex-col gap-4">
                 <div className="space-y-2">
-                  {actionItems.slice(0, 5).map((item) => (
-                    <div
-                      key={item.id}
-                      className={`p-2 rounded border text-xs ${item.type === "error"
-                        ? "border-rose-200 bg-rose-50/50 dark:border-rose-800 dark:bg-rose-950/20"
-                        : "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
-                        }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <AlertCircle
-                          className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${item.type === "error" ? "text-rose-600" : "text-amber-600"
-                            }`}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium">{item.source}</div>
-                          <div className="text-muted-foreground mt-0.5 break-words">
-                            {item.message}
-                          </div>
-                          {item.time && (
-                            <div className="text-[10px] text-muted-foreground/60 mt-1">
-                              {formatTimeAgo(item.time)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                  <div className="text-xs font-semibold text-muted-foreground uppercase">
+                    Action required
+                  </div>
+                  {actionItems.length === 0 ? (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500/60" />
+                      All systems healthy
                     </div>
-                  ))}
-                  {actionItems.length > 5 && (
-                    <div className="text-xs text-muted-foreground text-center pt-2">
-                      +{actionItems.length - 5} more
+                  ) : (
+                    <div className="space-y-2">
+                      {actionItems.slice(0, 3).map((item) => (
+                        <div
+                          key={item.id}
+                          className={`p-2 rounded border text-xs ${item.type === "error"
+                            ? "border-rose-200 bg-rose-50/50 dark:border-rose-800 dark:bg-rose-950/20"
+                            : "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
+                            }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <AlertCircle
+                              className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${item.type === "error" ? "text-rose-600" : "text-amber-600"
+                                }`}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium">{item.source}</div>
+                              <div className="text-muted-foreground mt-0.5 break-words">
+                                {item.message}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {actionItems.length > 3 && (
+                        <div className="text-[11px] text-muted-foreground">
+                          +{actionItems.length - 3} more
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </WidgetCard>
-          </div>
 
-          <div className="md:col-span-6">
-            <WidgetCard title="Recent Sync Activity" subtitle="Last 8 jobs" className="h-[280px]">
-              {recentSyncActivity.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <Clock className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                  <div className="text-sm text-muted-foreground">No sync activity yet</div>
-                  <div className="text-xs text-muted-foreground/60 mt-1">
-                    Connect a data source to see activity
+                <div className="space-y-2 border-t pt-3">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase">
+                    Recent sync activity
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {recentSyncActivity.slice(0, 8).map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="flex items-start gap-2 p-2 rounded border border-border/40 text-xs"
-                    >
-                      <div className="shrink-0 mt-0.5">
-                        {activity.success ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                        ) : (
-                          <AlertCircle className="h-3.5 w-3.5 text-rose-500" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium">{activity.source}</div>
-                        <div className="text-muted-foreground">{activity.action}</div>
-                        {activity.details && (
-                          <div className="text-muted-foreground/60 text-[11px] mt-0.5">
-                            {activity.details}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground/60 shrink-0">
-                        {formatTimeAgo(activity.time)}
-                      </div>
+                  {recentSyncActivity.length === 0 ? (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5" />
+                      No sync activity yet
                     </div>
-                  ))}
+                  ) : (
+                    <div className="space-y-2">
+                      {recentSyncActivity.slice(0, 3).map((activity) => (
+                        <div
+                          key={activity.id}
+                          className="flex items-start gap-2 p-2 rounded border border-border/40 text-xs"
+                        >
+                          <div className="shrink-0 mt-0.5">
+                            {activity.success ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            ) : (
+                              <AlertCircle className="h-3.5 w-3.5 text-rose-500" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium">{activity.source}</div>
+                            <div className="text-muted-foreground">{activity.action}</div>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground/60 shrink-0">
+                            {formatTimeAgo(activity.time)}
+                          </div>
+                        </div>
+                      ))}
+                      {recentSyncActivity.length > 3 && (
+                        <div className="text-[11px] text-muted-foreground">
+                          +{recentSyncActivity.length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </WidgetCard>
           </div>
         </div>
       </WidgetRowSection>
 
-      <WidgetRowSection id="accounts" title="Connected Accounts" subtitle="Accounts, permissions, and data sources" className="mt-4">
+      <WidgetRowSection
+        id="more-signals"
+        title="More signals"
+        subtitle="Accounts, permissions, and data sources"
+        className="mt-6"
+        defaultOpen={false}
+      >
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
           <div className="md:col-span-4">
             <WidgetCard title="Connected Accounts" subtitle={`${connectedSources} active`} className="h-[240px]">

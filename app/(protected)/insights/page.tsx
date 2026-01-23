@@ -120,6 +120,13 @@ const STATIC_ENGAGEMENT_BARS = [
   68, 55, 62, 74, 66, 58, 70, 75, 68, 62
 ];
 
+const DOC_TYPE_MIX = [
+  { label: "Decks", value: 38 },
+  { label: "Contracts", value: 29 },
+  { label: "Accounts", value: 19 },
+  { label: "Whitepapers", value: 14 },
+];
+
 function getKindLabel(kind: InsightDocKind): string {
   switch (kind) {
     case "contract":
@@ -165,9 +172,9 @@ export default function InsightsPage() {
       : activities.filter((row) => row.kind === kindFilter);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
       {/* Overview / Activity tabs (match global tab sizing) */}
-      <div className="mb-6">
+      <div className="w-fit">
         <InsightsTabs active="overview" />
       </div>
 
@@ -207,7 +214,7 @@ export default function InsightsPage() {
         </div>
       </div>
 
-      <WidgetRow title="Signals" subtitle="Charts and distribution" storageKey="row:insights:signals" className="mt-10">
+      <WidgetRow title="Signals" subtitle="Charts and distribution" storageKey="row:insights:signals">
         {/* Row 2: L + M + M widgets (340px height) */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
           <div className="md:col-span-6 lg:h-[340px]">
@@ -218,7 +225,7 @@ export default function InsightsPage() {
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center">
                       <div
-                        className="w-full bg-blue-400/40 rounded-t"
+                        className="w-full bg-primary/30 rounded-t"
                         style={{ height: `${height}px` }}
                       />
                     </div>
@@ -230,75 +237,27 @@ export default function InsightsPage() {
 
           <div className="md:col-span-3 lg:h-[340px]">
             <WidgetCard title="Doc Type Mix" subtitle="Distribution" className="h-full" bodyClassName="flex flex-col">
-              <div className="flex flex-col items-center justify-start">
-                <div className="-mt-3 flex flex-col items-center">
-                  <div className="mt-0 relative" style={{ width: "170px", height: "170px" }}>
-                    <svg viewBox="0 0 100 100" className="transform -rotate-90">
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="20"
-                        className="text-blue-400/40"
-                        strokeDasharray="75 251"
-                        strokeDashoffset="0"
-                      />
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="20"
-                        className="text-emerald-400/40"
-                        strokeDasharray="63 251"
-                        strokeDashoffset="-75"
-                      />
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="20"
-                        className="text-amber-400/40"
-                        strokeDasharray="50 251"
-                        strokeDashoffset="-138"
-                      />
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="20"
-                        className="text-slate-400/30"
-                        strokeDasharray="63 251"
-                        strokeDashoffset="-188"
-                      />
-                    </svg>
-                  </div>
-                  <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] text-muted-foreground">
-                    <div className="flex items-center gap-1 whitespace-nowrap">
-                      <div className="w-2 h-2 rounded-full bg-blue-400/40" />
-                      <span>Decks</span>
+              <div className="flex flex-col gap-3 py-2">
+                {DOC_TYPE_MIX.map((item, idx) => {
+                  const opacity = Math.max(0.4, 0.85 - idx * 0.12);
+                  return (
+                    <div key={item.label} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-primary/60" style={{ opacity }} />
+                          <span className="text-muted-foreground">{item.label}</span>
+                        </div>
+                        <span className="font-medium">{item.value}%</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted">
+                        <div
+                          className="h-2 rounded-full bg-primary/60"
+                          style={{ width: `${item.value}%`, opacity }}
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 whitespace-nowrap">
-                      <div className="w-2 h-2 rounded-full bg-emerald-400/40" />
-                      <span>Contracts</span>
-                    </div>
-                    <div className="flex items-center gap-1 whitespace-nowrap">
-                      <div className="w-2 h-2 rounded-full bg-amber-400/40" />
-                      <span>Accounts</span>
-                    </div>
-                    <div className="flex items-center gap-1 whitespace-nowrap">
-                      <div className="w-2 h-2 rounded-full bg-slate-400/30" />
-                      <span>Whitepapers</span>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </WidgetCard>
           </div>
@@ -311,28 +270,28 @@ export default function InsightsPage() {
                     <span className="text-muted-foreground">Viewed</span>
                     <span className="font-medium">{sharedLast30 * 12}</span>
                   </div>
-                  <div className="h-2 bg-blue-400/40 rounded-full" style={{ width: "100%" }} />
+                  <div className="h-2 bg-primary/40 rounded-full" style={{ width: "100%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Follow-up</span>
                     <span className="font-medium">{Math.floor(sharedLast30 * 8)}</span>
                   </div>
-                  <div className="h-2 bg-emerald-400/40 rounded-full" style={{ width: "67%" }} />
+                  <div className="h-2 bg-primary/40 rounded-full" style={{ width: "67%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Review</span>
                     <span className="font-medium">{Math.floor(sharedLast30 * 5)}</span>
                   </div>
-                  <div className="h-2 bg-amber-400/40 rounded-full" style={{ width: "42%" }} />
+                  <div className="h-2 bg-primary/40 rounded-full" style={{ width: "42%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Signed</span>
                     <span className="font-medium">{signedLast30}</span>
                   </div>
-                  <div className="h-2 bg-slate-400/30 rounded-full" style={{ width: "25%" }} />
+                  <div className="h-2 bg-primary/40 rounded-full" style={{ width: "25%" }} />
                 </div>
               </div>
             </WidgetCard>
@@ -340,7 +299,7 @@ export default function InsightsPage() {
         </div>
       </WidgetRow>
 
-      <WidgetRow title="Follow-ups" subtitle="What to chase next" storageKey="row:insights:followups" className="mt-10">
+      <WidgetRow title="Follow-ups" subtitle="What to chase next" storageKey="row:insights:followups">
         {/* Row 3: M + M + M widgets (all 280px height) */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
           <div className={`md:col-span-4 ${FOLLOW_UPS_ROW_CARD_HEIGHT}`}>
@@ -359,8 +318,14 @@ export default function InsightsPage() {
                   </div>
                 ))}
                 {activities.length === 0 && (
-                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                    No shares yet
+                  <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                    <div className="text-sm font-medium text-foreground">No shares yet</div>
+                    <div className="text-xs text-muted-foreground">
+                      Create a share link to start tracking engagement.
+                    </div>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/share/links">Create Share Link</Link>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -374,7 +339,7 @@ export default function InsightsPage() {
                   .filter(a => a.status === "no_response" || a.status === "out_for_signature")
                   .slice(0, 4)
                   .map((item) => (
-                    <div key={item.id} className="flex items-start justify-between gap-2 p-2 rounded border border-amber-400/40 bg-amber-50/50 dark:bg-amber-950/10">
+                    <div key={item.id} className="flex items-start justify-between gap-2 p-2 rounded border border-border/40 bg-muted/40">
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium truncate">{item.title}</div>
                         <div className="text-xs text-muted-foreground">{item.lastActionAt}</div>
@@ -383,8 +348,14 @@ export default function InsightsPage() {
                     </div>
                   ))}
                 {activities.filter(a => a.status === "no_response" || a.status === "out_for_signature").length === 0 && (
-                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                    All clear
+                  <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                    <div className="text-sm font-medium text-foreground">All clear</div>
+                    <div className="text-xs text-muted-foreground">
+                      Start a new share to keep momentum.
+                    </div>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/share/links">Create Share Link</Link>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -399,28 +370,28 @@ export default function InsightsPage() {
                     <span className="text-muted-foreground">Share → First View</span>
                     <span className="font-medium">2.3d</span>
                   </div>
-                  <div className="h-6 bg-blue-400/40 rounded" style={{ width: "25%" }} />
+                  <div className="h-6 bg-primary/40 rounded" style={{ width: "25%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">View → Follow-up</span>
                     <span className="font-medium">4.7d</span>
                   </div>
-                  <div className="h-6 bg-emerald-400/40 rounded" style={{ width: "47%" }} />
+                  <div className="h-6 bg-primary/40 rounded" style={{ width: "47%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Follow-up → Review</span>
                     <span className="font-medium">6.2d</span>
                   </div>
-                  <div className="h-6 bg-amber-400/40 rounded" style={{ width: "62%" }} />
+                  <div className="h-6 bg-primary/40 rounded" style={{ width: "62%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Review → Signed</span>
                     <span className="font-medium">8.9d</span>
                   </div>
-                  <div className="h-6 bg-slate-400/30 rounded" style={{ width: "89%" }} />
+                  <div className="h-6 bg-primary/40 rounded" style={{ width: "89%" }} />
                 </div>
               </div>
             </WidgetCard>
@@ -430,7 +401,7 @@ export default function InsightsPage() {
 
       {/* Recent Document Activity Section - separated with explicit margin */}
       {/* push this section DOWN so it can never overlap the row above */}
-      <section className="mt-12">
+      <section className="mt-6">
         {/* Filters + quick links */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div className={SEGMENTED_LIST_CLASS}>
@@ -523,9 +494,12 @@ export default function InsightsPage() {
                   <FileText className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <h3 className="text-sm font-semibold mb-1">No activity to show</h3>
-                <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Activity will appear here as you work with documents
+                <p className="text-xs text-muted-foreground max-w-md mx-auto mb-4">
+                  Activity will appear here as you work with documents.
                 </p>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/share/links">Create Share Link</Link>
+                </Button>
               </div>
             ) : (
               <div className="rounded-md border overflow-x-auto">

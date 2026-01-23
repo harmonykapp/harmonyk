@@ -18,11 +18,13 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider>
-      <AppShell monoContext={monoContext}>
-        {children}
-        <Toaster />
-        <ShadcnToaster />
-      </AppShell>
+      <div className="h-screen overflow-hidden">
+        <AppShell monoContext={monoContext}>
+          {children}
+          <Toaster />
+          <ShadcnToaster />
+        </AppShell>
+      </div>
     </SidebarProvider>
   );
 }

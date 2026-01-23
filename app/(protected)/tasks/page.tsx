@@ -389,6 +389,31 @@ export default function TasksPage() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-base font-semibold text-foreground">Capture and clear what you owe.</p>
+        <Button asChild size="sm">
+          <a href="#tasks-add-form">Add Task</a>
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="outline" size="sm">
+          <Link href="/builder?tab=contracts">New Document</Link>
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/share/links">Create Share Link</Link>
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/signatures">Request Signature</Link>
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/workbench#insightsStrip">Open Review Queue</Link>
+        </Button>
+        <Button variant="outline" size="sm" disabled title="Use the Ask Maestro button in the top bar.">
+          Ask Maestro
+        </Button>
+      </div>
+
       <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
         <a
           href="/tasks"
@@ -590,7 +615,7 @@ export default function TasksPage() {
         </div>
 
         <div className="md:col-span-6" style={{ height: "280px" }}>
-          <Card className="h-full">
+          <Card className="h-full" id="tasks-add-form">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Add New Task</CardTitle>
               <CardDescription className="text-xs">Create a new task manually</CardDescription>

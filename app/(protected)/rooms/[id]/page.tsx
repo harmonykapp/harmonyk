@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Input } from "@/components/ui/input";
 import { useRoom } from "@/lib/rooms/hooks";
 import { RoomsService } from "@/lib/rooms/service";
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
@@ -559,6 +559,11 @@ export default function RoomDetailPage({ params }: PageProps) {
         <EmptyState
           title="Rooms disabled"
           description="Rooms are currently disabled for this environment."
+          action={
+            <Button asChild variant="outline" size="sm">
+              <Link href="/vault">Open in Vault</Link>
+            </Button>
+          }
           className="items-start text-left bg-card"
         />
       ) : !room ? (
@@ -567,13 +572,13 @@ export default function RoomDetailPage({ params }: PageProps) {
           description="We couldn't find this Room in your workspace."
           action={
             <Button asChild variant="outline" size="sm">
-              <Link href="/rooms">Back to Rooms</Link>
+              <Link href="/rooms">Create Room</Link>
             </Button>
           }
           className="items-start text-left bg-card"
         />
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-6">
           <div className="rounded-lg border p-4">
             <div className="flex flex-wrap items-start gap-3">
               <div className="min-w-0 flex-1">
@@ -626,6 +631,11 @@ export default function RoomDetailPage({ params }: PageProps) {
                 <EmptyState
                   title="No sources attached"
                   description="Attach Vault documents to build your evidence trail."
+                  action={
+                    <Button type="button" variant="outline" size="sm" onClick={openAttach}>
+                      Add to Room
+                    </Button>
+                  }
                   className="items-start text-left bg-muted/30 border-dashed mt-3"
                 />
               ) : (
@@ -706,6 +716,11 @@ export default function RoomDetailPage({ params }: PageProps) {
                 <EmptyState
                   title="Nothing pinned yet"
                   description="Pin key sources to keep them on top."
+                  action={
+                    <Button type="button" variant="outline" size="sm" onClick={openAttach}>
+                      Add to Room
+                    </Button>
+                  }
                   className="items-start text-left bg-muted/30 border-dashed mt-3"
                 />
               ) : (
@@ -717,43 +732,48 @@ export default function RoomDetailPage({ params }: PageProps) {
                       const src = room.sources.find((s) => s.id === p.sourceId) ?? null;
                       const missingState = src ? missingStateForVaultDoc(src.vaultDocId) : "unknown";
                       return (
-                      <div key={p.id} className="rounded-md border p-3">
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="min-w-0 sm:flex-1">
-                            {src ? (
-                              <>
-                                <div className="truncate text-sm font-medium">
-                                  {src.label ?? src.vaultDocId}
-                                </div>
-                                <div className="mt-1 flex flex-wrap items-center gap-2">
-                                  <div className="break-all text-xs text-muted-foreground">{src.vaultDocId}</div>
-                                  {missingState === "missing" ? (
-                                    <Badge variant="destructive" className="text-[11px]">
-                                      Missing
-                                    </Badge>
-                                  ) : null}
-                                  {missingState === "present" ? (
-                                    <Badge variant="secondary" className="text-[11px]">
-                                      In Vault
-                                    </Badge>
-                                  ) : null}
-                                </div>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                  Pinned {new Date(p.pinnedAt).toLocaleString()}
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <EmptyState
-                                  title="Source missing"
-                                  description="This pinned item no longer links to a Vault document."
-                                  className="items-start text-left bg-muted/30 border-dashed"
-                                />
-                                <div className="mt-2 break-all text-xs text-muted-foreground">{p.sourceId}</div>
-                              </>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center justify-start gap-2 sm:shrink-0 sm:justify-end">
+                        <div key={p.id} className="rounded-md border p-3">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0 sm:flex-1">
+                              {src ? (
+                                <>
+                                  <div className="truncate text-sm font-medium">
+                                    {src.label ?? src.vaultDocId}
+                                  </div>
+                                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                                    <div className="break-all text-xs text-muted-foreground">{src.vaultDocId}</div>
+                                    {missingState === "missing" ? (
+                                      <Badge variant="destructive" className="text-[11px]">
+                                        Missing
+                                      </Badge>
+                                    ) : null}
+                                    {missingState === "present" ? (
+                                      <Badge variant="secondary" className="text-[11px]">
+                                        In Vault
+                                      </Badge>
+                                    ) : null}
+                                  </div>
+                                  <div className="mt-1 text-xs text-muted-foreground">
+                                    Pinned {new Date(p.pinnedAt).toLocaleString()}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <EmptyState
+                                    title="Source missing"
+                                    description="This pinned item no longer links to a Vault document."
+                                    action={
+                                      <Button type="button" variant="outline" size="sm" onClick={openAttach}>
+                                        Add to Room
+                                      </Button>
+                                    }
+                                    className="items-start text-left bg-muted/30 border-dashed"
+                                  />
+                                  <div className="mt-2 break-all text-xs text-muted-foreground">{p.sourceId}</div>
+                                </>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center justify-start gap-2 sm:shrink-0 sm:justify-end">
                               {src ? (
                                 <Button asChild variant="outline" size="sm" aria-label="Open in Vault">
                                   <Link href={vaultHrefForDoc(src.vaultDocId)}>Open</Link>
@@ -793,6 +813,11 @@ export default function RoomDetailPage({ params }: PageProps) {
               <EmptyState
                 title="No activity yet"
                 description="Room activity will show up here as you add sources and pins."
+                action={
+                  <Button type="button" variant="outline" size="sm" onClick={openAttach}>
+                    Add to Room
+                  </Button>
+                }
                 className="items-start text-left bg-muted/30 border-dashed mt-3"
               />
             ) : (
@@ -896,6 +921,11 @@ export default function RoomDetailPage({ params }: PageProps) {
                       <EmptyState
                         title="No Vault documents yet"
                         description="Save a document to Vault, then attach it here."
+                        action={
+                          <Button asChild variant="outline" size="sm">
+                            <Link href="/vault">Open in Vault</Link>
+                          </Button>
+                        }
                         className="items-start text-left bg-muted/30 border-dashed"
                       />
                     ) : (

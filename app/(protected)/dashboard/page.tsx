@@ -2,6 +2,9 @@
 
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { CollapsibleHeaderButton } from "@/components/ui/collapsible-header-button";
 import {
   FunnelCard,
   KpiCard,
@@ -21,6 +24,7 @@ import {
 } from "@/lib/mock/widgets";
 import { getUserProgressNarration, type UserProgressSignals } from "@/lib/user-progress";
 import { track } from "@/lib/telemetry/events";
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -35,6 +39,9 @@ type OnboardingStatus = {
 
 export default function DashboardPage() {
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupHydrated, setSetupHydrated] = useState(false);
+  const setupContentId = React.useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +73,10 @@ export default function DashboardPage() {
     };
   }, []);
 
+  useEffect(() => {
+    setSetupHydrated(true);
+  }, []);
+
   const progressSignals: UserProgressSignals = useMemo(() => {
     // Safe defaults: keep the dashboard non-blank even if onboarding status fails to load.
     // We'll deepen these signals later (tasks, playbooks, metadata) once we wire real analytics.
@@ -90,62 +101,145 @@ export default function DashboardPage() {
   const narration = useMemo(() => getUserProgressNarration(progressSignals), [progressSignals]);
 
   // Dashboard rule: no scrollbars inside widgets. Show fewer rows instead.
-  const prioritiesToShow = mockDashboardPriorities.slice(0, 3);
-  const atRiskToShow = mockAtRiskItems.slice(0, 3);
+  const prioritiesToShow = mockDashboardPriorities.slice(0, 2);
+  const atRiskToShow = mockAtRiskItems.slice(0, 2);
   const topLinksToShow = mockLinkLeaderboard.slice(0, 3);
   const showQuickStart = !(onboardingStatus?.hasConnectedGoogleDrive ?? false);
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <div className="flex flex-col gap-4">
-        {/* Slim banner at top */}
-        <div className="col-span-12">
-          <DashboardHero narration={narration} progressState={onboardingStatus ?? undefined} />
+    <div className="mx-auto w-full max-w-[1600px] px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-base font-semibold text-foreground">
+            Your next best actions across docs, sharing, and signing.
+          </p>
+          <Button size="sm" disabled title="Use the Ask Maestro button in the top bar.">
+            Ask Maestro
+          </Button>
         </div>
 
-        {/* Maestro Next Steps (compact): 3 recommended next actions */}
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/builder?tab=contracts">New Document</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/share/links">Create Share Link</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/signatures">Request Signature</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/workbench#insightsStrip">Open Review Queue</Link>
+          </Button>
+          <Button variant="outline" size="sm" disabled title="Use the Ask Maestro button in the top bar.">
+            Ask Maestro
+          </Button>
+        </div>
+
+        {/* Slim banner at top */}
         {showQuickStart ? (
-          <WidgetCard
-            title="Next Steps recommended by Maestro"
-            subtitle="3 quick wins to unlock the dashboard"
-            density="compact"
-          >
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Link
-                href="/integrations"
-                className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
-              >
-                <div className="text-sm font-semibold">Connect Google Drive</div>
-                <div className="mt-1 text-xs text-muted-foreground">Import docs into Vault</div>
-              </Link>
-              <Link
-                href="/integrations"
-                className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
-              >
-                <div className="text-sm font-semibold">Connect Gmail</div>
-                <div className="mt-1 text-xs text-muted-foreground">Find docs in email threads</div>
-              </Link>
-              <Link
-                href="/share"
-                className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
-              >
-                <div className="text-sm font-semibold">Create a share link</div>
-                <div className="mt-1 text-xs text-muted-foreground">Track views + follow-ups</div>
-              </Link>
-            </div>
-          </WidgetCard>
-        ) : null}
+          <section className="overflow-x-hidden">
+            {!setupHydrated ? (
+              <div>
+                <div className="flex min-h-9 w-full items-start justify-between gap-3 rounded-md px-2 py-1.5">
+                  <span className="flex min-w-0 items-start gap-2">
+                    <span className="min-w-0">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="text-base font-semibold">Setup</span>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      </span>
+                      <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                        Connect tools and unlock the dashboard
+                      </span>
+                    </span>
+                  </span>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href="/integrations">Connect connectors</Link>
+                  </Button>
+                </div>
+                <div className="pt-4" />
+              </div>
+            ) : (
+              <Collapsible open={setupOpen} onOpenChange={setSetupOpen}>
+                <div className="flex items-start justify-between gap-3">
+                  <CollapsibleHeaderButton
+                    title="Setup"
+                    subtitle="Connect tools and unlock the dashboard"
+                    open={setupOpen}
+                    controlsId={setupContentId}
+                    buttonClassName="flex-1 w-auto"
+                  />
+                  {!setupOpen ? (
+                    <Button asChild size="sm" variant="outline" className="mt-0.5 shrink-0">
+                      <Link href="/integrations">Connect connectors</Link>
+                    </Button>
+                  ) : null}
+                </div>
+
+                {setupOpen ? (
+                  <CollapsibleContent id={setupContentId} className="pt-4 overflow-x-hidden">
+                    <div className="flex flex-col gap-5">
+                      <div className="col-span-12">
+                        <DashboardHero narration={narration} progressState={onboardingStatus ?? undefined} />
+                      </div>
+                      <WidgetCard
+                        title="Next Steps recommended by Maestro"
+                        subtitle="3 quick wins to unlock the dashboard"
+                        density="compact"
+                      >
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <Link
+                            href="/integrations"
+                            className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
+                          >
+                            <div className="text-sm font-semibold">Connect Google Drive</div>
+                            <div className="mt-1 text-xs text-muted-foreground">Import docs into Vault</div>
+                          </Link>
+                          <Link
+                            href="/integrations"
+                            className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
+                          >
+                            <div className="text-sm font-semibold">Connect Gmail</div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Find docs in email threads
+                            </div>
+                          </Link>
+                          <Link
+                            href="/share"
+                            className="rounded-2xl border border-border/60 bg-background px-4 py-3 hover:bg-muted transition-colors"
+                          >
+                            <div className="text-sm font-semibold">Create a share link</div>
+                            <div className="mt-1 text-xs text-muted-foreground">Track views + follow-ups</div>
+                          </Link>
+                        </div>
+                      </WidgetCard>
+                    </div>
+                  </CollapsibleContent>
+                ) : null}
+              </Collapsible>
+            )}
+          </section>
+        ) : (
+          <div className="col-span-12">
+            <DashboardHero narration={narration} progressState={onboardingStatus ?? undefined} />
+          </div>
+        )}
 
         {/* Row 1: 3 widgets (standard) */}
         <WidgetRow
           title="Today's Focus"
           subtitle="Priorities, at-risk deals, and signatures"
           storageKey="row:dashboard:focus"
-          className="mt-8"
+          defaultOpen={false}
         >
           <div className="grid gap-4 lg:grid-cols-12">
-            <div className="lg:col-span-4 lg:h-[280px]">
-              <WidgetCard title="Today's Priorities" subtitle="Do next" density="compact" className="h-full">
+            <div className="lg:col-span-4">
+              <WidgetCard
+                title="Today's Priorities"
+                subtitle="Do next"
+                density="compact"
+                className="min-h-[280px]"
+              >
                 {prioritiesToShow.length === 0 ? (
                   <div className="px-2 pb-3">
                     <EmptyState
@@ -194,7 +288,7 @@ export default function DashboardPage() {
                             <div className="mt-2">
                               <div className="h-2 w-full rounded-full bg-muted">
                                 <div
-                                  className="h-2 rounded-full bg-indigo-500/25 dark:bg-indigo-400/20"
+                                  className="h-2 rounded-full bg-primary/30 dark:bg-primary/20"
                                   style={{
                                     width: `${Math.max(0, Math.min(100, item.valuePct))}%`,
                                   }}
@@ -209,32 +303,33 @@ export default function DashboardPage() {
                 )}
               </WidgetCard>
             </div>
-            <div className="lg:col-span-4 lg:h-[280px]">
+            <div className="lg:col-span-4">
               <RankedListCard
                 title="At-Risk Deals"
                 items={atRiskToShow}
                 emptyTitle="No at-risk deals"
                 emptyDescription="All deals are on track."
-                className="h-full"
+                className="min-h-[280px]"
               />
             </div>
 
-            <div className="lg:col-span-4 lg:h-[280px]">
+            <div className="lg:col-span-4">
               <WidgetCard
                 title="Signature Load"
                 subtitle="What needs signing next"
                 density="compact"
-                className="h-full"
+                className="min-h-[280px]"
+                bodyClassName="py-2"
               >
                 {/* Keep everything visible inside the fixed 1/3 widget height */}
-                <div className="flex h-full min-h-0 flex-col gap-2">
+                <div className="flex h-full min-h-0 flex-col gap-1.5">
                   <Link href="/share/signatures" className="block">
                     <KpiCard
                       label="Waiting on me"
                       value={mockSignatureLoad.waitingOnMe}
                       helper="Review"
-                      tone="purple"
-                      className="cursor-pointer hover:bg-muted py-2"
+                      tone="accent"
+                      className="cursor-pointer hover:bg-muted py-1.5"
                     />
                   </Link>
                   <Link href="/share/signatures" className="block">
@@ -242,14 +337,14 @@ export default function DashboardPage() {
                       label="Waiting on others"
                       value={mockSignatureLoad.waitingOnOthers}
                       helper="Nudge"
-                      tone="purple"
-                      className="cursor-pointer hover:bg-muted py-2"
+                      tone="accent"
+                      className="cursor-pointer hover:bg-muted py-1.5"
                     />
                   </Link>
 
                   {/* Compact bottom section (no clipping) */}
-                  <div className="mt-auto pt-1">
-                    <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="mt-auto pt-0.5">
+                    <div className="mb-0.5 flex items-center justify-between text-[11px] text-muted-foreground">
                       <span>Waiting on me</span>
                       <span>
                         {mockSignatureLoad.waitingOnMe + mockSignatureLoad.waitingOnOthers}
@@ -257,7 +352,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-muted">
                       <div
-                        className="h-1.5 rounded-full bg-purple-600/70 dark:bg-purple-400/70"
+                        className="h-1.5 rounded-full bg-primary/70"
                         style={{
                           width: `${Math.round(
                             (mockSignatureLoad.waitingOnMe /
@@ -282,7 +377,7 @@ export default function DashboardPage() {
           title="Analytics"
           subtitle="Funnel, activity trend, and top links"
           storageKey="row:dashboard:analytics"
-          className="mt-10"
+          defaultOpen={false}
         >
           <div className="grid gap-4 lg:grid-cols-12">
             <div className="lg:col-span-4 lg:h-[280px]">
@@ -291,7 +386,7 @@ export default function DashboardPage() {
                 subtitle="Documents by stage"
                 stages={mockDealFunnelStages}
                 onClick={() => console.log("Funnel clicked")}
-                tone="blue"
+                tone="accent"
                 className="h-full"
               />
             </div>
@@ -302,7 +397,7 @@ export default function DashboardPage() {
                 subtitle="Last 12 days"
                 points={mockActivityTrend}
                 onClick={() => console.log("Activity trend clicked")}
-                tone="emerald"
+                tone="accent"
                 className="h-full"
               />
             </div>

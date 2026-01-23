@@ -9,7 +9,8 @@ import { useRoomsList } from "@/lib/rooms/hooks";
 import { RoomsService } from "@/lib/rooms/service";
 import type { Room } from "@/lib/rooms/types";
 import { flag } from "@/lib/ui/flags";
-import { ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { CollapsibleHeaderButton } from "@/components/ui/collapsible-header-button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -225,11 +226,46 @@ export default function RoomsPage() {
         <EmptyState
           title="Rooms disabled"
           description="Rooms are currently disabled for this environment."
+          action={
+            <Button asChild variant="outline" size="sm">
+              <Link href="/vault">Open in Vault</Link>
+            </Button>
+          }
           className="items-start text-left bg-card"
         />
       ) : (
         <>
-          <div className="grid gap-3">
+          <div className="grid gap-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-base font-semibold text-foreground">
+                Project hubs where your docs, sources, and actions live.
+              </p>
+              <Button type="button" size="sm" onClick={openCreate}>
+                Create Room
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/builder?tab=contracts">New Document</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/share/links">Create Share Link</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/signatures">Request Signature</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/workbench#insightsStrip">Open Review Queue</Link>
+              </Button>
+              <Button variant="outline" size="sm" disabled title="Use the Ask Maestro button in the top bar.">
+                Ask Maestro
+              </Button>
+              <Button variant="outline" size="sm" onClick={openCreate}>
+                Create Room
+              </Button>
+            </div>
+
             <Card className="p-4">
               <div className="text-base font-semibold">Quick start</div>
               <div className="mt-2 text-sm text-muted-foreground">
@@ -246,77 +282,76 @@ export default function RoomsPage() {
             </Card>
 
             <Card className="p-4">
-              <div className="flex flex-wrap items-start gap-3">
-                <div className="min-w-0">
-                  <div className="text-base font-semibold">Room health</div>
-                  <div className="mt-0.5 text-xs text-muted-foreground">
-                    At-a-glance status across Rooms.
+              <Collapsible
+                open={!widgetsCollapsed}
+                onOpenChange={(nextOpen) => setWidgetsCollapsed(!nextOpen)}
+              >
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <CollapsibleHeaderButton
+                      title="Room health"
+                      subtitle="At-a-glance status across Rooms."
+                      open={!widgetsCollapsed}
+                      controlsId="rooms-health-widgets"
+                      buttonClassName="px-0 py-0 min-h-0"
+                      titleClassName="text-base font-semibold"
+                    />
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                  onClick={() => setWidgetsCollapsed((v) => !v)}
-                  aria-expanded={!widgetsCollapsed}
-                  aria-controls="rooms-health-widgets"
-                >
-                  <ChevronDown
-                    className={`mr-1 h-4 w-4 transition-transform ${widgetsCollapsed ? "rotate-0" : "rotate-180"}`}
-                  />
-                  {widgetsCollapsed ? "Expand" : "Collapse"}
-                </Button>
-              </div>
 
-              {!widgetsCollapsed ? (
-                <div id="rooms-health-widgets" className="mt-4 grid gap-3 lg:grid-cols-3">
-                  <Card className="p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-semibold">At-risk Rooms</div>
-                      <Badge variant="outline" className="text-xs">
-                        Top {Math.min(5, rooms.length)}
-                      </Badge>
-                    </div>
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      Rooms that look stale or under-curated.
-                    </div>
-                    {rooms.length === 0 ? (
-                      <EmptyState
-                        title="No Room risk yet"
-                        description="Create a Room to see risk signals."
-                        className="items-start text-left bg-muted/30 border-dashed mt-3"
-                      />
-                    ) : (
-                      <div className="mt-3 grid gap-2">
-                        {topRiskRooms.map(({ room, risk }) => (
-                          <Link
-                            key={room.id}
-                            href={`/rooms/${room.id}`}
-                            className="block rounded-md border px-3 py-2 hover:bg-muted/30"
-                            aria-label={`Open room ${room.name}`}
-                          >
-                            <div className="flex items-start justify-between gap-2 min-w-0">
-                              <div className="min-w-0">
-                                <div className="truncate text-sm font-medium">{room.name}</div>
-                                <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                                  {risk.reasons.length > 0 ? risk.reasons.slice(0, 2).join(" • ") : "Looks healthy"}
-                                </div>
-                              </div>
-                              <Badge
-                                variant={risk.score >= 5 ? "destructive" : risk.score >= 3 ? "secondary" : "outline"}
-                                className="shrink-0"
-                              >
-                                {risk.score}
-                              </Badge>
-                            </div>
-                          </Link>
-                        ))}
+                <CollapsibleContent id="rooms-health-widgets">
+                  <div className="mt-6 grid gap-6 lg:grid-cols-3">
+                    <Card className="p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm font-semibold">At-risk Rooms</div>
+                        <Badge variant="outline" className="text-xs">
+                          Top {Math.min(5, rooms.length)}
+                        </Badge>
                       </div>
-                    )}
-                  </Card>
+                      <div className="mt-2 text-sm text-muted-foreground">
+                        Rooms that look stale or under-curated.
+                      </div>
+                      {rooms.length === 0 ? (
+                        <EmptyState
+                          title="No Room risk yet"
+                          description="Create a Room to see risk signals."
+                        action={
+                          <Button type="button" variant="outline" size="sm" onClick={openCreate}>
+                            Create Room
+                          </Button>
+                        }
+                          className="items-start text-left bg-muted/30 border-dashed mt-3"
+                        />
+                      ) : (
+                        <div className="mt-3 grid gap-2">
+                          {topRiskRooms.map(({ room, risk }) => (
+                            <Link
+                              key={room.id}
+                              href={`/rooms/${room.id}`}
+                              className="block rounded-md border px-3 py-2 hover:bg-muted/30"
+                              aria-label={`Open room ${room.name}`}
+                            >
+                              <div className="flex items-start justify-between gap-2 min-w-0">
+                                <div className="min-w-0">
+                                  <div className="truncate text-sm font-medium">{room.name}</div>
+                                  <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                                    {risk.reasons.length > 0 ? risk.reasons.slice(0, 2).join(" • ") : "Looks healthy"}
+                                  </div>
+                                </div>
+                                <Badge
+                                  variant={risk.score >= 5 ? "destructive" : risk.score >= 3 ? "secondary" : "outline"}
+                                  className="shrink-0"
+                                >
+                                  {risk.score}
+                                </Badge>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </Card>
 
-                  <Card className="p-4">
+                    <Card className="p-4">
                     <div className="flex items-center justify-between gap-2">
                       <div className="text-sm font-semibold">Evidence coverage</div>
                       <Badge variant="outline" className="text-xs">
@@ -330,6 +365,11 @@ export default function RoomsPage() {
                       <EmptyState
                         title="No Rooms yet"
                         description="Create a Room to start tracking sources and pins."
+                        action={
+                          <Button type="button" variant="outline" size="sm" onClick={openCreate}>
+                            Create Room
+                          </Button>
+                        }
                         className="items-start text-left bg-muted/30 border-dashed mt-3"
                       />
                     ) : (
@@ -408,8 +448,9 @@ export default function RoomsPage() {
                       </div>
                     </div>
                   </Card>
-                </div>
-              ) : null}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </Card>
 
             <Card className="p-4">

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import * as React from "react";
 import { WidgetCard } from "./WidgetCard";
 
-export type WidgetTone = "neutral" | "blue" | "purple" | "emerald" | "amber" | "indigo";
+export type WidgetTone = "accent" | "neutral" | "blue" | "purple" | "emerald" | "amber" | "indigo";
 
 export type SparklineCardProps = {
   title: string;
@@ -15,21 +15,18 @@ export type SparklineCardProps = {
   tone?: WidgetTone;
 };
 
-function inferToneFromTitle(title: string): WidgetTone {
-  const t = title.toLowerCase();
-  if (t.includes("sign")) return "purple";
-  if (t.includes("risk")) return "amber";
-  if (t.includes("activity") || t.includes("trend")) return "emerald";
-  return "neutral";
+function inferToneFromTitle(_title: string): WidgetTone {
+  return "accent";
 }
 
 const toneToTextClass: Record<WidgetTone, string> = {
-  neutral: "text-foreground",
-  blue: "text-blue-600 dark:text-blue-400",
-  purple: "text-purple-600 dark:text-purple-400",
-  emerald: "text-emerald-600 dark:text-emerald-400",
-  amber: "text-amber-600 dark:text-amber-400",
-  indigo: "text-indigo-600 dark:text-indigo-400",
+  accent: "text-primary",
+  neutral: "text-primary",
+  blue: "text-primary",
+  purple: "text-primary",
+  emerald: "text-primary",
+  amber: "text-primary",
+  indigo: "text-primary",
 };
 
 export function SparklineCard({
@@ -108,7 +105,6 @@ export function SparklineCard({
               <path
                 d={`${pathData} L ${padding + (points.length - 1) * stepX} ${height - padding} L ${padding} ${height - padding} Z`}
                 fill={`url(#${gradientId})`}
-                className="text-foreground"
               />
               <path
                 d={pathData}
@@ -117,7 +113,6 @@ export function SparklineCard({
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-foreground"
               />
             </svg>
           </div>

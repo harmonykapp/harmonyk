@@ -4,11 +4,8 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { CollapsibleHeaderButton } from "@/components/ui/collapsible-header-button";
 import {
   Dialog,
   DialogContent,
@@ -43,7 +40,7 @@ import { handleApiError } from "@/lib/handle-api-error";
 import { getBrowserSupabaseClient } from "@/lib/supabase-browser";
 import { trackEvent } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
-import { ChevronDown, FileSignature, FileText, Filter, Search, Sparkles } from "lucide-react";
+import { FileSignature, FileText, Filter, Search, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -152,6 +149,9 @@ export default function WorkbenchPage() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isMounted, setIsMounted] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(true);
+  const [analysisOpen, setAnalysisOpen] = useState(true);
+  const [actionsOpen, setActionsOpen] = useState(true);
 
   // Signature modal state
   const [signModalOpen, setSignModalOpen] = useState(false);
@@ -869,8 +869,33 @@ export default function WorkbenchPage() {
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-base font-semibold text-foreground">Run today: review, sign, unblock.</p>
+          <Button asChild size="sm">
+            <Link href="#insightsStrip">Open Review Queue</Link>
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/builder?tab=contracts">New Document</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/share/links">Create Share Link</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/signatures">Request Signature</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="#insightsStrip">Open Review Queue</Link>
+          </Button>
+          <Button variant="outline" size="sm" disabled title="Use the Ask Maestro button in the top bar.">
+            Ask Maestro
+          </Button>
+        </div>
+
         {/* Integration Attention Strip */}
-        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="text-sm font-semibold">Integrations</div>
@@ -909,12 +934,12 @@ export default function WorkbenchPage() {
                         {mockFocusToday.map((segment, idx) => {
                           const total = mockFocusToday.reduce((acc, s) => acc + s.value, 0);
                           const pct = (segment.value / total) * 100;
-                          const colors = ["bg-blue-400/40", "bg-orange-400/40", "bg-purple-400/40"];
+                          const opacity = Math.min(0.8, 0.25 + idx * 0.18);
                           return (
                             <div
                               key={segment.id}
-                              className={colors[idx] || "bg-foreground/40"}
-                              style={{ width: `${pct}%` }}
+                              className="bg-primary"
+                              style={{ width: `${pct}%`, opacity }}
                               title={`${segment.label}: ${segment.value}`}
                             />
                           );
@@ -1009,12 +1034,12 @@ export default function WorkbenchPage() {
                         {mockStageBreakdown.map((segment, idx) => {
                           const total = mockStageBreakdown.reduce((acc, s) => acc + s.value, 0);
                           const pct = (segment.value / total) * 100;
-                          const colors = ["bg-slate-400/30", "bg-blue-400/40", "bg-emerald-400/40", "bg-teal-400/40"];
+                          const opacity = Math.min(0.8, 0.22 + idx * 0.14);
                           return (
                             <div
                               key={segment.id}
-                              className={colors[idx] || "bg-foreground/40"}
-                              style={{ width: `${pct}%` }}
+                              className="bg-primary"
+                              style={{ width: `${pct}%`, opacity }}
                               title={`${segment.label}: ${segment.value}`}
                             />
                           );
@@ -1103,17 +1128,14 @@ export default function WorkbenchPage() {
         {!loading && filteredRows.length === 0 && (
           <EmptyState
             title="No active work yet"
-            description="Get started by generating a contract, deck, or saving a document to Vault."
+            description="Open your review queue or start a new document to create items here."
             action={
               <>
                 <Button asChild variant="outline">
-                  <Link href="/builder?tab=contracts">Generate a contract</Link>
+                  <Link href="/workbench#insightsStrip">Open Review Queue</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link href="/builder?tab=decks">Generate a deck</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href="/vault">Save a document to Vault</Link>
+                  <Link href="/builder?tab=contracts">New Document</Link>
                 </Button>
               </>
             }
@@ -1126,6 +1148,11 @@ export default function WorkbenchPage() {
           <EmptyState
             title="Demo NDA (sample only)"
             description="You don't have any documents in your Vault yet. For this beta, you can still test Workbench using a sample NDA. This is a demo document only; real workflows will use your own documents from Vault or Google Drive."
+            action={
+              <Button asChild variant="outline" size="sm">
+                <Link href="/builder?tab=contracts">New Document</Link>
+              </Button>
+            }
             className="items-start text-left border-dashed bg-muted/40"
           />
         )}
@@ -1217,8 +1244,16 @@ export default function WorkbenchPage() {
                       </TableRow>
                     ) : filteredRows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground">
-                          No items yet
+                        <TableCell colSpan={7} className="py-6 text-center text-muted-foreground">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="text-sm font-medium text-foreground">No items yet</div>
+                            <div className="text-xs text-muted-foreground">
+                              Start a new document to populate this list.
+                            </div>
+                            <Button asChild variant="outline" size="sm">
+                              <Link href="/builder?tab=contracts">New Document</Link>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -1352,12 +1387,15 @@ export default function WorkbenchPage() {
                       </Button>
                     </div>
 
-                    <Collapsible defaultOpen={true}>
-                      <CollapsibleTrigger className="flex items-center justify-between w-full text-left font-medium mb-2">
-                        <span>Details</span>
-                        <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
+                    <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+                      <CollapsibleHeaderButton
+                        title="Details"
+                        open={detailsOpen}
+                        controlsId="workbench-details"
+                        buttonClassName="mb-2 px-0 py-0 min-h-0"
+                        titleClassName="text-sm font-medium"
+                      />
+                      <CollapsibleContent id="workbench-details">
                         <div className="space-y-3 text-sm">
                           <div>
                             <span className="font-medium">Source</span>
@@ -1394,15 +1432,18 @@ export default function WorkbenchPage() {
                   </div>
 
                   {/* AI Analysis Section */}
-                  {(result || analyzeError || analyzing) && (
-                    <Collapsible defaultOpen={true}>
+                    {(result || analyzeError || analyzing) && (
+                    <Collapsible open={analysisOpen} onOpenChange={setAnalysisOpen}>
                       <div className="border-t pt-6">
-                        <CollapsibleTrigger className="flex items-center gap-2 w-full text-left mb-3">
-                          <Sparkles className="h-4 w-4 text-mono" />
-                          <h3 className="font-medium">AI Analysis</h3>
-                          <ChevronDown className="h-4 w-4 ml-auto transition-transform data-[state=open]:rotate-180" />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
+                        <CollapsibleHeaderButton
+                          title="AI Analysis"
+                          open={analysisOpen}
+                          controlsId="workbench-ai-analysis"
+                          leadingIcon={<Sparkles className="h-4 w-4 text-mono" />}
+                          buttonClassName="mb-3 px-0 py-0 min-h-0"
+                          titleClassName="text-sm font-medium"
+                        />
+                        <CollapsibleContent id="workbench-ai-analysis">
                           <div className="space-y-3 text-sm">
                             {analyzing && (
                               <p className="text-muted-foreground">Running AI…</p>
@@ -1454,13 +1495,16 @@ export default function WorkbenchPage() {
                     </Collapsible>
                   )}
 
-                  <Collapsible defaultOpen={true}>
+                  <Collapsible open={actionsOpen} onOpenChange={setActionsOpen}>
                     <div className="border-t pt-6 space-y-2">
-                      <CollapsibleTrigger className="flex items-center justify-between w-full text-left mb-3">
-                        <h3 className="font-medium">Quick Actions</h3>
-                        <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
+                      <CollapsibleHeaderButton
+                        title="Quick Actions"
+                        open={actionsOpen}
+                        controlsId="workbench-quick-actions"
+                        buttonClassName="mb-3 px-0 py-0 min-h-0"
+                        titleClassName="text-sm font-medium"
+                      />
+                      <CollapsibleContent id="workbench-quick-actions">
                         <div className="space-y-2">
                           <Button
                             className="w-full justify-start"

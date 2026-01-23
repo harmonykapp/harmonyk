@@ -271,7 +271,7 @@ export default function ShareLinksPage() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
       {/* Tabs stay — topbar already shows "Share Hub" */}
       {/* Top tabs: Overview / Share Links / Signatures / Contacts */}
       <div className="w-fit">
@@ -328,13 +328,23 @@ export default function ShareLinksPage() {
               <h3 className="text-lg font-semibold mb-2">No share links yet</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 {isDemoEnvironment
-                  ? "Create a secure link to share documents with passcodes, watermarks, and expiry."
-                  : "Share link management from this dashboard will be added after GA. For now, use document-level share and signature flows."}
+                  ? "Create a secure link to share documents and track engagement."
+                  : "Use a document share or signature flow to get started."}
               </p>
-              <Button>
-                <Link2 className="h-4 w-4 mr-2" />
-                Create a share link
-              </Button>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button asChild>
+                  <Link href="/share/links">
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Create Share Link
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/signatures">
+                    <FileSignature className="h-4 w-4 mr-2" />
+                    Request Signature
+                  </Link>
+                </Button>
+              </div>
             </div>
           ) : (
             <Table>

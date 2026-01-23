@@ -62,12 +62,12 @@ export function AppShell({ children, monoContext }: AppShellProps) {
     <div className="h-screen flex overflow-hidden" suppressHydrationWarning>
       <Sidebar collapsed={collapsed} onToggle={toggle} />
 
-      <div className="flex-1 flex flex-col min-w-0" suppressHydrationWarning>
+      <div className="flex-1 flex flex-col min-w-0 min-h-0" suppressHydrationWarning>
         <Topbar onMonoToggle={() => setMonoOpen(!monoOpen)} monoOpen={monoOpen} />
 
         <main
           className={cn(
-            'flex-1 overflow-auto transition-all duration-300',
+            'flex-1 min-h-0 overflow-y-auto overflow-x-hidden transition-all duration-300',
             monoOpen && 'mr-[400px]'
           )}
           suppressHydrationWarning

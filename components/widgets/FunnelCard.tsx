@@ -8,7 +8,7 @@ export type FunnelStage = {
   count: number;
 };
 
-export type FunnelTone = "neutral" | "blue" | "purple" | "emerald" | "amber" | "indigo";
+export type FunnelTone = "accent" | "neutral" | "blue" | "purple" | "emerald" | "amber" | "indigo";
 
 export type FunnelCardProps = {
   title: string;
@@ -19,35 +19,21 @@ export type FunnelCardProps = {
   tone?: FunnelTone;
 };
 
-function inferToneFromTitle(title: string): FunnelTone {
-  const t = title.toLowerCase();
-  if (t.includes("sign")) return "purple";
-  if (t.includes("risk")) return "amber";
-  if (t.includes("activity") || t.includes("trend")) return "emerald";
-  return "blue";
+function inferToneFromTitle(_title: string): FunnelTone {
+  return "accent";
 }
 
-function inferStageTone(label: string, base: FunnelTone): FunnelTone {
-  const s = label.toLowerCase();
-  if (s.includes("signed") || s.includes("active")) return "emerald";
-  if (s.includes("sign")) return "purple";
-  if (s.includes("review")) return "amber";
-  return base;
-}
+const monoBarClass =
+  "bg-primary/25 hover:bg-primary/35 dark:bg-primary/20 dark:hover:bg-primary/28";
 
 const toneToBarClass: Record<FunnelTone, string> = {
-  neutral:
-    "bg-foreground/20 hover:bg-foreground/30 dark:bg-foreground/16 dark:hover:bg-foreground/22",
-  blue:
-    "bg-blue-500/25 hover:bg-blue-500/35 dark:bg-blue-400/20 dark:hover:bg-blue-400/28",
-  purple:
-    "bg-purple-500/25 hover:bg-purple-500/35 dark:bg-purple-400/20 dark:hover:bg-purple-400/28",
-  emerald:
-    "bg-emerald-500/25 hover:bg-emerald-500/35 dark:bg-emerald-400/20 dark:hover:bg-emerald-400/28",
-  amber:
-    "bg-amber-500/25 hover:bg-amber-500/35 dark:bg-amber-400/20 dark:hover:bg-amber-400/28",
-  indigo:
-    "bg-indigo-500/25 hover:bg-indigo-500/35 dark:bg-indigo-400/20 dark:hover:bg-indigo-400/28",
+  accent: monoBarClass,
+  neutral: monoBarClass,
+  blue: monoBarClass,
+  purple: monoBarClass,
+  emerald: monoBarClass,
+  amber: monoBarClass,
+  indigo: monoBarClass,
 };
 
 export function FunnelCard({
@@ -76,8 +62,7 @@ export function FunnelCard({
           {stages.slice(0, 5).map((stage, idx) => {
             const pct = maxCount > 0 ? (stage.count / maxCount) * 100 : 0;
             const heightPct = Math.max(18, pct);
-            const stageTone = inferStageTone(stage.label, baseTone);
-            const barClass = toneToBarClass[stageTone] ?? toneToBarClass.neutral;
+            const barClass = toneToBarClass[baseTone] ?? toneToBarClass.neutral;
 
             return (
               <div key={idx} className="flex flex-col items-center gap-1.5 h-full">

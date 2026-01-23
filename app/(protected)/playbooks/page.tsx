@@ -128,7 +128,11 @@ const DEMO_RECENT_OUTPUTS = [
   { id: "4", type: "Log", title: "Renewal sequence started" },
 ];
 
-const TIME_SAVED_SPARKLINE = [18, 22, 20, 28, 32, 30, 38, 42, 40, 48, 52, 50, 58, 62, 60, 68, 72, 70, 75, 78, 82, 80, 85, 88, 90, 92, 95, 98, 100, 102];
+const RUN_OUTCOME_BREAKDOWN = [
+  { label: "Success", value: 75, dotClass: "bg-emerald-500/60" },
+  { label: "Failed", value: 15, dotClass: "bg-rose-500/60" },
+  { label: "Needs input", value: 10, dotClass: "bg-amber-500/60" },
+];
 
 export default function PlaybooksPage() {
   const [selectedId, setSelectedId] = useState<string>(PLAYBOOKS[0]?.id ?? "");
@@ -149,6 +153,11 @@ export default function PlaybooksPage() {
   const selected = useMemo(
     () => PLAYBOOKS.find((p) => p.id === selectedId) ?? PLAYBOOKS[0],
     [selectedId]
+  );
+
+  const runsNeedingAttention = useMemo(
+    () => runs.filter((run) => run.status !== "success").slice(0, 5),
+    [runs],
   );
 
   async function handleDryRunSelectedPlaybook() {
@@ -255,6 +264,32 @@ export default function PlaybooksPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-base font-semibold text-foreground">
+          Monitor playbook runs and keep automations healthy.
+        </p>
+        <Button size="sm" onClick={() => setActiveTab("library")}>
+          Browse playbooks
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={() => setActiveTab("runs")}>
+          View runs
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setActiveTab("triggers")}>
+          Review triggers
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDryRunSelectedPlaybook}
+          disabled={dryRunPending || !selected}
+        >
+          {dryRunPending ? "Running…" : "Dry-run selected"}
+        </Button>
+      </div>
+
       <div suppressHydrationWarning>
         {tabsHydrationReady ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -290,11 +325,53 @@ export default function PlaybooksPage() {
             title="Playbook Activity"
             subtitle="Runs, outcomes, and time saved"
             storageKey="row:playbooks:activity"
-            className="mt-2"
           >
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className={`md:col-span-6 ${PLAYBOOK_ACTIVITY_ROW_CARD_HEIGHT}`}>
-                <WidgetCard title="Playbook Runs" subtitle="Recent activity" className="h-full">
+                <WidgetCard title="Runs Needing Attention" subtitle="Failed or waiting" className="h-full">
+                  <div className="space-y-1">
+                    {runsNeedingAttention.map((run) => (
+                      <div key={run.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/40 text-xs">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">{run.name}</div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={
+                            run.status === "failed"
+                              ? "text-[10px] bg-rose-50 border-rose-400/40 text-rose-700 dark:bg-rose-950/20 shrink-0"
+                              : "text-[10px] bg-amber-50 border-amber-400/40 text-amber-700 dark:bg-amber-950/20 shrink-0"
+                          }
+                        >
+                          {run.status === "failed" && <AlertCircle className="h-3 w-3 mr-0.5" />}
+                          {run.status === "needs_input" && <Loader2 className="h-3 w-3 mr-0.5" />}
+                          {run.status === "failed" ? "Failed" : "Needs input"}
+                        </Badge>
+                        <div className="text-muted-foreground shrink-0 w-16">{run.lastRun}</div>
+                      </div>
+                    ))}
+                    {runsNeedingAttention.length === 0 && (
+                      <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                        <div className="text-sm font-medium text-foreground">No attention needed</div>
+                        <div className="text-xs text-muted-foreground">
+                          Run a playbook to generate new results.
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDryRunSelectedPlaybook}
+                          disabled={dryRunPending || !selected}
+                        >
+                          {dryRunPending ? "Running…" : "Run Playbook"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </WidgetCard>
+              </div>
+
+              <div className={`md:col-span-3 ${PLAYBOOK_ACTIVITY_ROW_CARD_HEIGHT}`}>
+                <WidgetCard title="Recent Runs" subtitle="Most recent activity" className="h-full">
                   <div className="space-y-1">
                     {runs.slice(0, 6).map((run) => (
                       <div key={run.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/40 text-xs">
@@ -324,8 +401,19 @@ export default function PlaybooksPage() {
                       </div>
                     ))}
                     {runs.length === 0 && (
-                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                        No playbook runs yet
+                      <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                        <div className="text-sm font-medium text-foreground">No playbook runs yet</div>
+                        <div className="text-xs text-muted-foreground">
+                          Start with a dry-run to see outcomes.
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDryRunSelectedPlaybook}
+                          disabled={dryRunPending || !selected}
+                        >
+                          {dryRunPending ? "Running…" : "Run Playbook"}
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -333,94 +421,10 @@ export default function PlaybooksPage() {
               </div>
 
               <div className={`md:col-span-3 ${PLAYBOOK_ACTIVITY_ROW_CARD_HEIGHT}`}>
-                <WidgetCard title="Run Outcomes" subtitle="Distribution" className="h-full" bodyClassName="flex flex-col">
-                  <div className="flex flex-col items-center justify-start">
-                    <div className="shrink-0 mb-2">
-                      <div className="grid grid-cols-1 gap-1.5 text-[9px] text-muted-foreground">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 whitespace-nowrap">
-                            <div className="w-2 h-2 rounded-full bg-emerald-400/40" />
-                            <span>Success</span>
-                          </div>
-                          <span className="font-medium ml-2">75%</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 whitespace-nowrap">
-                            <div className="w-2 h-2 rounded-full bg-rose-400/40" />
-                            <span>Failed</span>
-                          </div>
-                          <span className="font-medium ml-2">15%</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 whitespace-nowrap">
-                            <div className="w-2 h-2 rounded-full bg-amber-400/40" />
-                            <span>Needs input</span>
-                          </div>
-                          <span className="font-medium ml-2">10%</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-2 flex items-center justify-center flex-1 min-h-0">
-                      <div className="relative" style={{ width: "140px", height: "140px" }}>
-                        <svg viewBox="0 0 100 100" className="transform -rotate-90">
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="20"
-                            className="text-emerald-400/40"
-                            strokeDasharray="188 251"
-                            strokeDashoffset="0"
-                          />
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="20"
-                            className="text-rose-400/40"
-                            strokeDasharray="38 251"
-                            strokeDashoffset="-188"
-                          />
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="20"
-                            className="text-amber-400/40"
-                            strokeDasharray="25 251"
-                            strokeDashoffset="-226"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </WidgetCard>
-              </div>
-
-              <div className={`md:col-span-3 ${PLAYBOOK_ACTIVITY_ROW_CARD_HEIGHT}`}>
                 <WidgetCard title="Time Saved" subtitle="Last 30 days" className="h-full">
-                  <div className="flex flex-col items-center justify-center gap-2 py-6">
+                  <div className="flex flex-col items-center justify-center gap-2 py-10">
                     <div className="text-4xl font-bold">102</div>
                     <div className="text-sm text-muted-foreground">hours saved</div>
-                  </div>
-                  <div className="h-24 flex items-end justify-between gap-[2px] mt-4">
-                    {TIME_SAVED_SPARKLINE.map((value, i) => {
-                      const height = (value / 120) * 96;
-                      return (
-                        <div key={i} className="flex-1 flex flex-col items-center">
-                          <div
-                            className="w-full bg-blue-400/40 rounded-t"
-                            style={{ height: `${height}px` }}
-                          />
-                        </div>
-                      );
-                    })}
                   </div>
                 </WidgetCard>
               </div>
@@ -428,13 +432,38 @@ export default function PlaybooksPage() {
           </WidgetRow>
 
           <WidgetRow
-            title="Usage & Outputs"
-            subtitle="Most used, scheduled, and recent outputs"
-            storageKey="row:playbooks:usage"
-            className="mt-6"
+            title="More signals"
+            subtitle="Outcomes, usage, and scheduling"
+            storageKey="row:playbooks:more-signals"
+            collapsedLabel="More signals"
+            defaultOpen={false}
           >
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 min-h-[560px]">
-              <div className="md:col-span-4">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <div className="md:col-span-3">
+                <WidgetCard title="Run Outcomes" subtitle="Distribution" className="h-full" bodyClassName="flex flex-col">
+                  <div className="flex flex-col gap-3">
+                    {RUN_OUTCOME_BREAKDOWN.map((item) => (
+                      <div key={item.label} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className={cn("h-2 w-2 rounded-full", item.dotClass)} />
+                            <span className="text-muted-foreground">{item.label}</span>
+                          </div>
+                          <span className="font-medium">{item.value}%</span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-muted">
+                          <div
+                            className="h-2 rounded-full bg-primary/60"
+                            style={{ width: `${item.value}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </WidgetCard>
+              </div>
+
+              <div className="md:col-span-3">
                 <WidgetCard title="Most Used Playbooks" subtitle="By run count" className="h-full">
                   <div className="space-y-2">
                     {mostUsed.map((item, idx) => (
@@ -449,15 +478,21 @@ export default function PlaybooksPage() {
                       </div>
                     ))}
                     {mostUsed.length === 0 && (
-                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                        No playbooks used yet
+                      <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                        <div className="text-sm font-medium text-foreground">No playbooks used yet</div>
+                        <div className="text-xs text-muted-foreground">
+                          Browse the library to pick a playbook.
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => setActiveTab("library")}>
+                          Browse Library
+                        </Button>
                       </div>
                     )}
                   </div>
                 </WidgetCard>
               </div>
 
-              <div className="md:col-span-4">
+              <div className="md:col-span-3">
                 <WidgetCard title="Scheduled Runs" subtitle="Upcoming" className="h-full">
                   <div className="space-y-2">
                     {scheduled.map((item) => (
@@ -470,15 +505,21 @@ export default function PlaybooksPage() {
                       </div>
                     ))}
                     {scheduled.length === 0 && (
-                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                        No scheduled runs
+                      <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                        <div className="text-sm font-medium text-foreground">No scheduled runs</div>
+                        <div className="text-xs text-muted-foreground">
+                          Choose a playbook to configure schedules.
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => setActiveTab("library")}>
+                          Browse Library
+                        </Button>
                       </div>
                     )}
                   </div>
                 </WidgetCard>
               </div>
 
-              <div className="md:col-span-4">
+              <div className="md:col-span-3">
                 <WidgetCard title="Recent Outputs" subtitle="Generated items" className="h-full">
                   <div className="space-y-2">
                     {recentOutputs.map((item) => (
@@ -490,8 +531,19 @@ export default function PlaybooksPage() {
                       </div>
                     ))}
                     {recentOutputs.length === 0 && (
-                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                        No outputs yet
+                      <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                        <div className="text-sm font-medium text-foreground">No outputs yet</div>
+                        <div className="text-xs text-muted-foreground">
+                          Run a playbook to generate outputs.
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDryRunSelectedPlaybook}
+                          disabled={dryRunPending || !selected}
+                        >
+                          {dryRunPending ? "Running…" : "Run Playbook"}
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -640,21 +692,44 @@ export default function PlaybooksPage() {
       {activeTab === "drafts" && (
         <div className="p-12 text-center text-muted-foreground">
           <FileText className="h-12 w-12 mx-auto mb-4 opacity-20" />
-          <p>Playbook drafts view coming soon</p>
+          <p className="text-sm font-semibold text-foreground">No drafts yet</p>
+          <p className="mt-1 text-xs text-muted-foreground">Browse the library to start a playbook.</p>
+          <div className="mt-4">
+            <Button variant="outline" size="sm" onClick={() => setActiveTab("library")}>
+              Browse Library
+            </Button>
+          </div>
         </div>
       )}
 
       {activeTab === "runs" && (
         <div className="p-12 text-center text-muted-foreground">
           <Play className="h-12 w-12 mx-auto mb-4 opacity-20" />
-          <p>Playbook runs view coming soon</p>
+          <p className="text-sm font-semibold text-foreground">No runs to show</p>
+          <p className="mt-1 text-xs text-muted-foreground">Run a playbook to see results here.</p>
+          <div className="mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDryRunSelectedPlaybook}
+              disabled={dryRunPending || !selected}
+            >
+              {dryRunPending ? "Running…" : "Run Playbook"}
+            </Button>
+          </div>
         </div>
       )}
 
       {activeTab === "triggers" && (
         <div className="p-12 text-center text-muted-foreground">
           <Zap className="h-12 w-12 mx-auto mb-4 opacity-20" />
-          <p>Playbook triggers view coming soon</p>
+          <p className="text-sm font-semibold text-foreground">No triggers configured</p>
+          <p className="mt-1 text-xs text-muted-foreground">Pick a playbook to review its triggers.</p>
+          <div className="mt-4">
+            <Button variant="outline" size="sm" onClick={() => setActiveTab("library")}>
+              Browse Library
+            </Button>
+          </div>
         </div>
       )}
     </div>

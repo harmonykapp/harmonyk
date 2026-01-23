@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +29,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 type ContactSource = "auto" | "google" | "manual";
 
@@ -225,7 +225,7 @@ export default function ContactsPage() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-[1600px] mx-auto space-y-6">
       {/* Tabs stay — topbar already shows "Share Hub" */}
       {/* Top tabs: Overview / Share Links / Signatures / Contacts */}
       <div className="w-fit">
@@ -327,10 +327,20 @@ export default function ContactsPage() {
                 Once you start sharing documents or sending signature requests, contacts will
                 appear here automatically.
               </p>
-              <Button type="button" onClick={handleAddContact}>
-                <Users className="h-4 w-4 mr-2" />
-                Add contact
-              </Button>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button asChild>
+                  <Link href="/share/links">
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Create Share Link
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/signatures">
+                    <FileSignature className="h-4 w-4 mr-2" />
+                    Request Signature
+                  </Link>
+                </Button>
+              </div>
             </div>
           ) : (
             <Table>
