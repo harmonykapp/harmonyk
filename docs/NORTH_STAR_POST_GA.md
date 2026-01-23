@@ -66,6 +66,72 @@ Exact left-nav order:
 ## 3.2) Playbooks (Locked)
 - Playbooks are the automation engine operating on Rooms/docs/tasks; runs monitored in Playbooks.
 
+## Integrations: routing + governance (locked)
+
+### Routing rule (non-negotiable)
+**Inbound integrations route into Rooms first.** Workbench surfaces **derived queues** across Room-scoped objects.
+
+#### Room-scoped objects created by ingestion
+- Email: `EmailThread`, `EmailMessage`
+- Meetings: `MeetingNote`
+- Files: `Attachment` (with provenance)
+- CRM/Contacts: `Touchpoint`
+
+#### Workbench derived queues (examples)
+- Untriaged (Inbox Room)
+- Needs reply
+- Follow-up due
+- Draft ready
+- Waiting on them
+
+### Inbox Room (“Unsorted”)
+If an item cannot be mapped to a Room during ingest, it lands in the **Inbox Room**. Workbench’s **Untriaged** queue pulls from it.
+Primary action: **Assign to Room / Create Room**.
+
+### Integration intake rubric
+Any new integration must pass:
+1) Reliable ingestion path (API/webhooks/email-forward)
+2) Write-back (optional but preferred)
+3) Clean mapping to Rooms/Playbooks objects
+4) OAuth scopes + rate limits acceptable
+5) User sees value in <5 minutes after connecting
+
+### Integrations UI buckets
+- **Sources**: bring information into Rooms (email, docs, chat, files, CRM)
+- **Actions**: Playbooks can execute changes (calendar actions, task updates, CRM updates, senders)
+- **Pipes**: Zapier/Make/n8n-style “connect anything” bridges
+
+### Connector contract (standard)
+Each connector must expose:
+- `ingest()`
+- `sync_state` and `health`
+- `webhook_handler` (where applicable)
+- `entity_mapping` to Room objects
+
+### Deferred: Fyxer
+Do not list “Fyxer” as a first-class integration yet.
+If needed later, support “Fyxer (via forwarding)” first; “Fyxer (native)” only with partner API access.
+
+## Vault information architecture (locked)
+
+### Vault = library page
+Vault is a **document library** (NOT a widget page).
+
+### Left pane: Views vs Folders
+Vault’s left pane is split into:
+1) **Views (smart lists / filters)**: All files, Recent, Starred, Shared with me, Drafts, Signed, Archived.
+2) **Folders (tree)**: reserved for future user/AI folders. Views must not be presented as folders.
+
+### Drafts = a View (state), not a folder
+- Drafts is accessed via the left-pane **Drafts** item under Views.
+- Remove “My Files / My Drafts” tabs from Vault (direction locked).
+- Drafts filters the library list to draft-only items. Implementation may be via route param or dedicated route later; do not commit to details here.
+
+### File Explorer direction (future-safe, not implemented in PGW8)
+- Folder tree will support user-created folders and AI-suggested folders (reviewable/pinnable).
+- Keep taxonomy small and predictable; avoid AI folder explosion.
+- Suggested default backbone (non-binding): Personal, Company (multi-company), with stable buckets (Contracts, Decks, Finance, People, Ops, Other).
+
 ## 4) Tasks (Locked)
 - Tasks is a doc-driven action queue (views, signatures, approvals, renewals, filing, playbook steps).
 - Tasks is not a generic CRM task list.

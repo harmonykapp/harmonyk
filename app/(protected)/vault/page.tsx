@@ -1,4 +1,5 @@
 "use client";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,8 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Input } from "@/components/ui/input";
 import { FilterChipsRowSelectable as FilterChipsRow, type FilterChipItem } from "@/components/widgets/FilterChipsRowSelectable";
 import { TEMPLATES } from "@/data/templates";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,7 @@ import {
   FileText,
   Loader2,
   MoreVertical,
+  Plug,
   Search,
   Share2,
   Star,
@@ -52,6 +54,18 @@ async function sha256Hex(text: string) {
 }
 
 type VersionSummary = Pick<Version, "document_id" | "number" | "content" | "created_at">;
+
+const VAULT_UPLOAD_ALLOWED_EXTENSIONS = ["md", "txt", "csv", "pdf", "docx"] as const;
+const VAULT_UPLOAD_ALLOWED_LABEL = VAULT_UPLOAD_ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(", ");
+
+type UploadItemStatus = "ready" | "uploading" | "uploaded" | "unsupported" | "duplicate" | "error";
+
+type UploadItem = {
+  file: File;
+  title: string;
+  status: UploadItemStatus;
+  message?: string;
+};
 
 type Row = {
   id: string;
@@ -98,16 +112,40 @@ type TrainResponse = {
   error?: string;
 };
 
-const folderDefs: Array<{
-  id: "starred" | "recent" | "shared" | "signed" | "archived";
+const viewKeys = [
+  "all",
+  "recent",
+  "starred",
+  "shared",
+  "drafts",
+  "signed",
+  "archived",
+] as const;
+
+type ViewKey = (typeof viewKeys)[number];
+
+const viewLabels: Record<ViewKey, string> = {
+  all: "All files",
+  recent: "Recent",
+  starred: "Starred",
+  shared: "Shared",
+  drafts: "Drafts",
+  signed: "Signed",
+  archived: "Archived",
+};
+
+const viewDefs: Array<{
+  id: ViewKey;
   icon: typeof Star;
   label: string;
   color: string;
 }> = [
-    { id: "starred", icon: Star, label: "Starred", color: "text-yellow-600" },
+    { id: "all", icon: FileText, label: "All files", color: "text-muted-foreground" },
     { id: "recent", icon: Clock, label: "Recent", color: "text-blue-600" },
-    { id: "shared", icon: Users, label: "Shared with me", color: "text-green-600" },
-    { id: "signed", icon: FileSignature, label: "Signed Documents", color: "text-purple-600" },
+    { id: "starred", icon: Star, label: "Starred", color: "text-yellow-600" },
+    { id: "shared", icon: Users, label: "Shared", color: "text-green-600" },
+    { id: "drafts", icon: FileText, label: "Drafts", color: "text-indigo-600" },
+    { id: "signed", icon: FileSignature, label: "Signed", color: "text-purple-600" },
     { id: "archived", icon: Archive, label: "Archived", color: "text-gray-600" },
   ];
 
@@ -121,8 +159,37 @@ function readVaultQueryFromLocation(): string {
   }
 }
 
+function toViewKey(value: string | null): ViewKey {
+  if (!value) return "all";
+  const normalized = value.toLowerCase();
+  return (viewKeys as readonly string[]).includes(normalized) ? (normalized as ViewKey) : "all";
+}
+
+function readVaultViewFromLocation(): ViewKey {
+  if (typeof window === "undefined") return "all";
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return toViewKey(params.get("view"));
+  } catch {
+    return "all";
+  }
+}
+
+function getFileExtension(filename: string): string {
+  const parts = filename.split(".");
+  if (parts.length <= 1) return "";
+  return parts[parts.length - 1]?.toLowerCase() ?? "";
+}
+
+function buildVaultTitle(filename: string): string {
+  const normalized = filename.trim();
+  const ext = getFileExtension(normalized);
+  if (!ext) return normalized || "Untitled document";
+  return normalized.slice(0, Math.max(0, normalized.length - ext.length - 1)) || "Untitled document";
+}
+
 function VaultPageInner() {
-  const [quickFilter, setQuickFilter] = useState<string>("all");
+  const [quickFilter, setQuickFilter] = useState<ViewKey>("all");
   const vaultExperimental = isFeatureEnabled("FEATURE_VAULT_EXPERIMENTAL_ACTIONS");
   const ragEnabled = isRagEnabled();
   const { toast } = useToast();
@@ -136,10 +203,13 @@ function VaultPageInner() {
   const router = useRouter();
   const lastAppliedQueryRef = useRef<string>("");
   const pendingQueryRef = useRef<string | null>(null);
+  const lastAppliedViewRef = useRef<ViewKey>("all");
+  const pendingViewRef = useRef<ViewKey | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [userReady, setUserReady] = useState(false);
+  const [vaultRefreshKey, setVaultRefreshKey] = useState(0);
   const [err, setErr] = useState<string | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -149,6 +219,10 @@ function VaultPageInner() {
   const [signRecipientName, setSignRecipientName] = useState("");
   const [signRecipientEmail, setSignRecipientEmail] = useState("");
   const [isSendingForSignature, setIsSendingForSignature] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "ready" | "uploading" | "success" | "error">("idle");
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const templateNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -158,7 +232,16 @@ function VaultPageInner() {
 
   const RECENT_DAYS = 14;
 
-  const matchesQuickFilter = (row: Row, filter: string): boolean => {
+  const existingTitleSet = useMemo(() => {
+    const titles = new Set<string>();
+    (rows ?? []).forEach((row) => {
+      const title = (row.title ?? "").trim().toLowerCase();
+      if (title) titles.add(title);
+    });
+    return titles;
+  }, [rows]);
+
+  const matchesQuickFilter = (row: Row, filter: ViewKey): boolean => {
     if (filter === "all") return true;
 
     const status = (row.status ?? "").toLowerCase();
@@ -186,6 +269,8 @@ function VaultPageInner() {
         return status === "shared" || title.includes("shared");
       case "starred":
         return status === "starred" || title.includes("⭐");
+      case "drafts":
+        return status === "draft";
       case "recent":
         return isRecent;
       default:
@@ -193,13 +278,14 @@ function VaultPageInner() {
     }
   };
 
-  const countsByFilter = useMemo(() => {
+  const countsByFilter = useMemo<Record<ViewKey, number>>(() => {
     const base = rows ?? [];
-    const counts: Record<string, number> = {
+    const counts: Record<ViewKey, number> = {
       all: base.length,
       starred: 0,
       recent: 0,
       shared: 0,
+      drafts: 0,
       signed: 0,
       archived: 0,
     };
@@ -208,6 +294,7 @@ function VaultPageInner() {
       if (matchesQuickFilter(r, "starred")) counts.starred += 1;
       if (matchesQuickFilter(r, "recent")) counts.recent += 1;
       if (matchesQuickFilter(r, "shared")) counts.shared += 1;
+      if (matchesQuickFilter(r, "drafts")) counts.drafts += 1;
       if (matchesQuickFilter(r, "signed")) counts.signed += 1;
       if (matchesQuickFilter(r, "archived")) counts.archived += 1;
     }
@@ -221,13 +308,14 @@ function VaultPageInner() {
       { id: "starred", label: "Starred", count: countsByFilter.starred },
       { id: "recent", label: "Recent", count: countsByFilter.recent },
       { id: "shared", label: "Shared", count: countsByFilter.shared },
+      { id: "drafts", label: "Drafts", count: countsByFilter.drafts },
       { id: "signed", label: "Signed", count: countsByFilter.signed },
       { id: "archived", label: "Archived", count: countsByFilter.archived },
     ];
   }, [countsByFilter]);
 
-  const folderItems = useMemo(() => {
-    return folderDefs.map((f) => ({
+  const viewItems = useMemo(() => {
+    return viewDefs.map((f) => ({
       ...f,
       count: countsByFilter[f.id] ?? 0,
     }));
@@ -242,15 +330,30 @@ function VaultPageInner() {
     setSearchQuery(q);
   }, []);
 
+  // Keep Vault view in sync with the URL (/vault?view=...).
+  useEffect(() => {
+    const view = readVaultViewFromLocation();
+    pendingViewRef.current = view;
+    lastAppliedViewRef.current = view;
+    setQuickFilter(view);
+  }, []);
+
   // Back/forward navigation updates searchQuery (popstate).
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const onPopState = () => {
       const q = readVaultQueryFromLocation();
-      if (q === lastAppliedQueryRef.current) return;
-      lastAppliedQueryRef.current = q;
-      setSearchQuery(q);
+      if (q !== lastAppliedQueryRef.current) {
+        lastAppliedQueryRef.current = q;
+        setSearchQuery(q);
+      }
+
+      const view = readVaultViewFromLocation();
+      if (view !== lastAppliedViewRef.current) {
+        lastAppliedViewRef.current = view;
+        setQuickFilter(view);
+      }
     };
 
     window.addEventListener("popstate", onPopState);
@@ -290,6 +393,39 @@ function VaultPageInner() {
       // If URL parsing fails, do nothing (search still works locally).
     }
   }, [searchQuery]);
+
+  // When user switches views, keep the URL up to date (replaceState, no extra navigation).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const desired = quickFilter;
+    const pending = pendingViewRef.current;
+    if (pending !== null) {
+      if (desired !== pending) return;
+      pendingViewRef.current = null;
+    }
+    const current = readVaultViewFromLocation();
+
+    if (desired === current) return;
+
+    try {
+      const url = new URL(window.location.href);
+      const params = url.searchParams;
+
+      if (desired === "all") {
+        params.delete("view");
+      } else {
+        params.set("view", desired);
+      }
+
+      const nextSearch = params.toString();
+      const nextUrl = `${url.pathname}${nextSearch ? `?${nextSearch}` : ""}`;
+      window.history.replaceState({}, "", nextUrl);
+      lastAppliedViewRef.current = desired;
+    } catch {
+      // If URL parsing fails, do nothing (view still works locally).
+    }
+  }, [quickFilter]);
 
   const visibleRows = useMemo(() => {
     const base = rows ?? [];
@@ -453,7 +589,7 @@ function VaultPageInner() {
     return () => {
       cancelled = true;
     };
-  }, [sb, userId, userReady, toast]);
+  }, [sb, userId, userReady, vaultRefreshKey, toast]);
 
   // events
   async function logEvent(
@@ -482,6 +618,175 @@ function VaultPageInner() {
     }
     setUserId(DEMO_OWNER_ID);
     return DEMO_OWNER_ID;
+  }
+
+  function resetUploadState() {
+    setUploadItems([]);
+    setUploadStatus("idle");
+    setUploadError(null);
+  }
+
+  function handleUploadDialogChange(open: boolean) {
+    if (!open && uploadStatus === "uploading") {
+      return;
+    }
+    if (!open && uploadStatus !== "uploading") {
+      if (uploadStatus !== "success") {
+        toast({
+          title: "Upload cancelled",
+          description: "No files were uploaded. Select files to try again.",
+        });
+      }
+      resetUploadState();
+    }
+    setIsUploadDialogOpen(open);
+  }
+
+  function handleUploadSelection(files: FileList | null) {
+    const selected = files ? Array.from(files) : [];
+    if (selected.length === 0) {
+      setUploadItems([]);
+      setUploadStatus("idle");
+      setUploadError(null);
+      toast({
+        title: "No files selected",
+        description: `Choose ${VAULT_UPLOAD_ALLOWED_LABEL} files to upload.`,
+      });
+      return;
+    }
+
+    const seenTitles = new Set<string>();
+    const nextItems: UploadItem[] = selected.map((file) => {
+      const ext = getFileExtension(file.name);
+      const title = buildVaultTitle(file.name);
+      const titleKey = title.toLowerCase();
+
+      if (!VAULT_UPLOAD_ALLOWED_EXTENSIONS.includes(ext as (typeof VAULT_UPLOAD_ALLOWED_EXTENSIONS)[number])) {
+        return {
+          file,
+          title,
+          status: "unsupported",
+          message: `Unsupported file type${ext ? ` .${ext}` : ""}`,
+        };
+      }
+
+      if (existingTitleSet.has(titleKey) || seenTitles.has(titleKey)) {
+        return {
+          file,
+          title,
+          status: "duplicate",
+          message: existingTitleSet.has(titleKey) ? "Already in Vault" : "Duplicate in selection",
+        };
+      }
+
+      seenTitles.add(titleKey);
+      return {
+        file,
+        title,
+        status: "ready",
+      };
+    });
+
+    setUploadItems(nextItems);
+    setUploadStatus("ready");
+    setUploadError(null);
+  }
+
+  async function startUpload(nextItems?: UploadItem[]) {
+    const items = nextItems ?? uploadItems;
+    const readyItems = items.filter((item) => item.status === "ready");
+
+    if (readyItems.length === 0) {
+      toast({
+        title: "No files ready to upload",
+        description: "Remove duplicates or unsupported files, then try again.",
+      });
+      return;
+    }
+
+    setUploadStatus("uploading");
+    setUploadError(null);
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (const item of readyItems) {
+      setUploadItems((prev) =>
+        prev.map((current) =>
+          current.file === item.file ? { ...current, status: "uploading", message: undefined } : current,
+        ),
+      );
+
+      try {
+        const content = await item.file.text();
+        const response = await fetch("/api/documents/versions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: item.title || item.file.name,
+            content,
+            kind: "file",
+          }),
+        });
+
+        const text = await response.text();
+        let payload: { error?: string } = {};
+        try {
+          payload = text ? (JSON.parse(text) as { error?: string }) : {};
+        } catch {
+          // Ignore parse errors; use raw text fallback below.
+        }
+
+        if (!response.ok || payload.error) {
+          throw new Error(
+            payload.error ||
+            text ||
+            `Upload failed (HTTP ${response.status})`,
+          );
+        }
+
+        successCount += 1;
+        setUploadItems((prev) =>
+          prev.map((current) =>
+            current.file === item.file ? { ...current, status: "uploaded", message: undefined } : current,
+          ),
+        );
+      } catch (error) {
+        failureCount += 1;
+        const message = error instanceof Error ? error.message : "Upload failed";
+        setUploadItems((prev) =>
+          prev.map((current) =>
+            current.file === item.file ? { ...current, status: "error", message } : current,
+          ),
+        );
+      }
+    }
+
+    if (failureCount > 0) {
+      setUploadStatus("error");
+      setUploadError(
+        `${failureCount} file${failureCount === 1 ? "" : "s"} failed to upload. Fix the issues and retry.`,
+      );
+    } else {
+      setUploadStatus("success");
+      toast({
+        title: `Uploaded ${successCount} file${successCount === 1 ? "" : "s"}`,
+        description: "Your documents are now in Vault.",
+      });
+      setVaultRefreshKey((key) => key + 1);
+      setIsUploadDialogOpen(false);
+      resetUploadState();
+    }
+  }
+
+  function retryFailedUploads() {
+    const retryItems = uploadItems.map<UploadItem>((item) =>
+      item.status === "error" ? { ...item, status: "ready", message: undefined } : item,
+    );
+    setUploadItems(retryItems);
+    setUploadStatus("ready");
+    setUploadError(null);
+    void startUpload(retryItems);
   }
 
   // actions
@@ -1195,6 +1500,32 @@ function VaultPageInner() {
   const actionsDisabled = !userReady || !userId;
 
   const selectedDocument = selectedDoc ? visibleRows.find((doc) => doc.id === selectedDoc) : null;
+  const uploadReadyCount = uploadItems.filter((item) => item.status === "ready").length;
+  const uploadUnsupportedCount = uploadItems.filter((item) => item.status === "unsupported").length;
+  const uploadDuplicateCount = uploadItems.filter((item) => item.status === "duplicate").length;
+  const uploadErrorCount = uploadItems.filter((item) => item.status === "error").length;
+  const uploadHasIssues = uploadUnsupportedCount > 0 || uploadDuplicateCount > 0;
+  const uploadHasFailures = uploadErrorCount > 0;
+  const uploadHasLongNames = uploadItems.some((item) => item.file.name.length > 60);
+  const hasSearchQuery = searchQuery.trim().length > 0;
+  const hasActiveViewFilter = quickFilter !== "all";
+  const hasActiveFilters = hasSearchQuery || hasActiveViewFilter;
+  const hasAnyRows = (rows?.length ?? 0) > 0;
+  const showEmptyLibrary = !loading && !err && !hasAnyRows;
+  const showEmptyDrafts =
+    !loading &&
+    !err &&
+    !showEmptyLibrary &&
+    !hasSearchQuery &&
+    quickFilter === "drafts" &&
+    countsByFilter.drafts === 0;
+  const showNoMatches =
+    !loading && !err && visibleRows.length === 0 && !showEmptyLibrary && !showEmptyDrafts;
+
+  function clearVaultFilters() {
+    setSearchQuery("");
+    setQuickFilter("all");
+  }
 
   useEffect(() => {
     if (!vaultExperimental || !ragEnabled) return;
@@ -1210,32 +1541,32 @@ function VaultPageInner() {
       <div className="h-full flex flex-col overflow-x-hidden">
         <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8">
           <div className="grid grid-cols-[16rem,1fr] items-start">
-            <div>
-              <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
-                <Link
-                  href="/vault"
-                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-background text-foreground shadow-sm"
-                >
-                  My Files
-                </Link>
-                <Link
-                  href="/builder/draft"
-                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  My Drafts
-                </Link>
-              </div>
-            </div>
-
-            <div className="px-6">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="text-lg sm:text-xl font-bold text-muted-foreground">All documents</h2>
-                  <p className="mt-1 text-muted-foreground">Loading your documents…</p>
+            <div />
+            <div className="px-6 min-w-0">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0 text-base font-semibold text-foreground truncate">
+                  {viewLabels[quickFilter]}
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    Loading…
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <Link href="/builder">
-                    <Button>New from Builder</Button>
+                    <Button>New Document</Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsUploadDialogOpen(true)}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Files
+                  </Button>
+                  <Link href="/integrations">
+                    <Button variant="outline" size="sm">
+                      <Plug className="h-4 w-4 mr-2" />
+                      Import Files
+                    </Button>
                   </Link>
                 </div>
               </div>
@@ -1253,58 +1584,8 @@ function VaultPageInner() {
 
   return (
     <div className="h-full flex flex-col overflow-x-hidden">
-      {/* Top tabs (My Files / My Drafts) — second tab links to Workbench drafts */}
-      <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8">
-        <div className="grid grid-cols-[16rem,1fr] items-start">
-          <div>
-            <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
-              <Link
-                href="/vault"
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-background text-foreground shadow-sm"
-              >
-                My Files
-              </Link>
-              <Link
-                href="/builder/draft"
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                My Drafts
-              </Link>
-            </div>
-          </div>
-
-          <div className="px-6">
-            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div className="min-w-0">
-                <h2 className="text-lg sm:text-xl font-bold text-muted-foreground">All documents</h2>
-                <p className="mt-1 text-muted-foreground">
-                  {loading ? "Loading…" : `${visibleRows.length} documents`}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <Link href="/activity">
-                  <Button variant="outline" size="sm">View activity</Button>
-                </Link>
-                <Link href="/builder">
-                  <Button>New from Builder</Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-64 shrink-0 border-r bg-sidebar overflow-y-auto overflow-x-hidden">
-          <div className="p-4 border-b">
-            <Link href="/builder">
-              <Button className="w-full">
-                <Upload className="h-4 w-4 mr-2" />
-                New Document
-              </Button>
-            </Link>
-          </div>
-
+      <div className="flex-1 flex">
+        <div className="w-64 shrink-0 border-r bg-sidebar overflow-x-hidden">
           <div className="p-4">
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1316,22 +1597,25 @@ function VaultPageInner() {
               />
             </div>
 
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              Views
+            </div>
             <div className="space-y-1">
-              {folderItems.map((folder) => {
-                const Icon = folder.icon;
+              {viewItems.map((view) => {
+                const Icon = view.icon;
                 return (
                   <button
-                    key={folder.label}
-                    onClick={() => setQuickFilter(folder.id)}
+                    key={view.label}
+                    onClick={() => setQuickFilter(view.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm",
+                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm min-w-0",
                       "hover:bg-sidebar-active/50",
-                      quickFilter === folder.id && "bg-sidebar-active/60"
+                      quickFilter === view.id && "bg-sidebar-active/60"
                     )}
                   >
-                    <Icon className={`h-4 w-4 ${folder.color}`} />
-                    <span className="flex-1 text-left">{folder.label}</span>
-                    <span className="text-xs text-muted-foreground">{folder.count}</span>
+                    <Icon className={`h-4 w-4 ${view.color}`} />
+                    <span className="flex-1 text-left min-w-0 truncate">{view.label}</span>
+                    <span className="text-xs text-muted-foreground">{view.count}</span>
                   </button>
                 );
               })}
@@ -1339,19 +1623,46 @@ function VaultPageInner() {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="border-b px-6 pb-4 pt-5">
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="border-b px-6 pb-4 pt-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 text-base font-semibold text-foreground truncate">
+                {viewLabels[quickFilter]}
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  {loading ? "Loading…" : `${visibleRows.length} documents`}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Link href="/builder">
+                  <Button>New Document</Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsUploadDialogOpen(true)}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Files
+                </Button>
+                <Link href="/integrations">
+                  <Button variant="outline" size="sm">
+                    <Plug className="h-4 w-4 mr-2" />
+                    Import Files
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
             {/* Desktop quick filters (left-aligned under the title) */}
             <div className="hidden md:block">
-              <div className="overflow-x-auto">
-                <FilterChipsRow
-                  items={quickFilters}
-                  value={quickFilter}
-                  onChange={setQuickFilter}
-                  className="justify-start flex-nowrap w-max"
-                  aria-label="Vault quick filters"
-                />
-              </div>
+              <FilterChipsRow
+                items={quickFilters}
+                value={quickFilter}
+                onChange={(next) => setQuickFilter(toViewKey(next))}
+                className="justify-start flex-wrap"
+                aria-label="Vault quick filters"
+              />
             </div>
           </div>
 
@@ -1360,7 +1671,8 @@ function VaultPageInner() {
             <FilterChipsRow
               items={quickFilters}
               value={quickFilter}
-              onChange={setQuickFilter}
+              onChange={(next) => setQuickFilter(toViewKey(next))}
+              className="justify-start flex-wrap"
               aria-label="Vault quick filters"
             />
           </div>
@@ -1377,19 +1689,19 @@ function VaultPageInner() {
             </div>
           )}
 
-          {!loading && !err && visibleRows.length === 0 && (
+          {showEmptyLibrary && (
             <div className="flex-1 flex items-center justify-center">
               <EmptyState
-                title="No documents in your Vault yet"
-                description="Vault is your source of truth for saved contracts, decks, and financials."
+                title="Your Vault is empty"
+                description="Import documents or create a new one to start building your library."
                 action={
                   <>
                     <Link href="/builder">
-                      <Button>Save from Builder</Button>
+                      <Button>New Document</Button>
                     </Link>
-                    <Button variant="outline" disabled>
-                      Upload a document
-                    </Button>
+                    <Link href="/integrations">
+                      <Button variant="outline">Import Documents</Button>
+                    </Link>
                   </>
                 }
                 className="max-w-md bg-card"
@@ -1397,10 +1709,46 @@ function VaultPageInner() {
             </div>
           )}
 
+          {showEmptyDrafts && (
+            <div className="flex-1 flex items-center justify-center">
+              <EmptyState
+                title="No drafts yet"
+                description="Create a new document to start a draft in Vault."
+                action={
+                  <Link href="/builder">
+                    <Button>New Document</Button>
+                  </Link>
+                }
+                className="max-w-md bg-card"
+              />
+            </div>
+          )}
+
+          {showNoMatches && (
+            <div className="flex-1 flex items-center justify-center">
+              <EmptyState
+                title="No matches found"
+                description={
+                  hasActiveFilters
+                    ? "Try clearing filters or search to see more documents."
+                    : "Try adjusting your search to find matching documents."
+                }
+                action={
+                  hasActiveFilters ? (
+                    <Button onClick={clearVaultFilters}>Clear filters/search</Button>
+                  ) : (
+                    <Button onClick={() => setSearchQuery("")}>Clear search</Button>
+                  )
+                }
+                className="max-w-md bg-card"
+              />
+            </div>
+          )}
+
           {!loading && !err && visibleRows.length > 0 && (
-            <div className="flex-1 flex overflow-hidden">
-              <div className={cn('flex-1 overflow-auto p-6', selectedDoc && 'max-w-[60%]')}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex-1 flex min-w-0">
+              <div className={cn("flex-1 p-6 min-w-0", selectedDoc && "max-w-[60%]")}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-w-0">
                   {visibleRows.map((doc) => (
                     <Card
                       key={doc.id}
@@ -1470,7 +1818,7 @@ function VaultPageInner() {
               </div>
 
               {selectedDocument && (
-                <div className="w-[40%] border-l bg-card overflow-auto">
+                <div className="w-[40%] border-l bg-card min-w-0">
                   <div className="p-6 space-y-4">
                     {/* Header */}
                     <div className="flex items-start justify-between gap-3">
@@ -1828,6 +2176,144 @@ function VaultPageInner() {
               </p>
             </div>
           )}
+
+          <Dialog open={isUploadDialogOpen} onOpenChange={handleUploadDialogChange}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Upload files to Vault</DialogTitle>
+                <DialogDescription>
+                  Upload text-based files ({VAULT_UPLOAD_ALLOWED_LABEL}). We’ll create a Vault document for each file.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Choose files</label>
+                  <Input
+                    type="file"
+                    accept={VAULT_UPLOAD_ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(",")}
+                    multiple
+                    onChange={(e) => handleUploadSelection(e.target.files)}
+                    disabled={uploadStatus === "uploading"}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Supported types: {VAULT_UPLOAD_ALLOWED_LABEL}. Long filenames are truncated in the list.
+                  </p>
+                </div>
+
+                {uploadHasIssues && (
+                  <Alert>
+                    <AlertTitle>Some files need attention</AlertTitle>
+                    <AlertDescription>
+                      {uploadUnsupportedCount > 0 && (
+                        <p>
+                          {uploadUnsupportedCount} unsupported file{uploadUnsupportedCount === 1 ? "" : "s"}.
+                          Choose {VAULT_UPLOAD_ALLOWED_LABEL} files instead.
+                        </p>
+                      )}
+                      {uploadDuplicateCount > 0 && (
+                        <p>
+                          {uploadDuplicateCount} duplicate file{uploadDuplicateCount === 1 ? "" : "s"}.
+                          Rename the file or replace the existing Vault document.
+                        </p>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {uploadHasFailures && uploadError && (
+                  <Alert variant="destructive">
+                    <AlertTitle>Upload failed</AlertTitle>
+                    <AlertDescription className="space-y-2">
+                      <p>{uploadError}</p>
+                      <div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={retryFailedUploads}
+                          disabled={uploadStatus === "uploading"}
+                        >
+                          Retry failed uploads
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {uploadItems.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Selected files
+                    </div>
+                    <div className="max-h-48 overflow-y-auto rounded-md border">
+                      {uploadItems.map((item) => (
+                        <div
+                          key={`${item.file.name}-${item.file.size}-${item.file.lastModified}`}
+                          className="flex items-start justify-between gap-3 border-b px-3 py-2 last:border-b-0"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate max-w-[18rem]" title={item.file.name}>
+                              {item.file.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[18rem]" title={item.title}>
+                              Vault title: {item.title || "Untitled document"}
+                            </p>
+                            {item.message && (
+                              <p className="text-xs text-muted-foreground">{item.message}</p>
+                            )}
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[11px] shrink-0",
+                              item.status === "uploaded" && "border-emerald-500 text-emerald-700",
+                              item.status === "error" && "border-destructive text-destructive",
+                              (item.status === "unsupported" || item.status === "duplicate") &&
+                              "border-amber-400 text-amber-700",
+                            )}
+                          >
+                            {item.status === "ready" && "Ready"}
+                            {item.status === "uploading" && "Uploading"}
+                            {item.status === "uploaded" && "Uploaded"}
+                            {item.status === "unsupported" && "Unsupported"}
+                            {item.status === "duplicate" && "Duplicate"}
+                            {item.status === "error" && "Failed"}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {uploadHasLongNames && (
+                  <Alert>
+                    <AlertTitle>Long filenames truncated</AlertTitle>
+                    <AlertDescription>
+                      We truncate long filenames in this list to avoid layout issues. The full name is still used for the Vault title.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => handleUploadDialogChange(false)}
+                  disabled={uploadStatus === "uploading"}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => startUpload()}
+                  disabled={uploadStatus === "uploading" || uploadReadyCount === 0}
+                >
+                  {uploadStatus === "uploading"
+                    ? "Uploading…"
+                    : uploadReadyCount > 0
+                      ? `Upload ${uploadReadyCount} file${uploadReadyCount === 1 ? "" : "s"}`
+                      : "Upload"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={isSignDialogOpen} onOpenChange={setIsSignDialogOpen}>
             <DialogContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WidgetCard, WidgetRowSection } from "@/components/widgets";
@@ -566,6 +567,28 @@ export default function IntegrationsPage() {
                     </>
                   )}
                 </div>
+                {connectStatus === "error" && connectMessage && (
+                  <Alert variant="destructive" className="mt-3">
+                    <AlertTitle>Drive connection failed</AlertTitle>
+                    <AlertDescription>
+                      {connectMessage} Retry the connect flow or check your Drive permissions.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {syncStatus === "error" && syncMessage && (
+                  <Alert variant="destructive" className="mt-3">
+                    <AlertTitle>Drive import failed</AlertTitle>
+                    <AlertDescription>
+                      {syncMessage} Retry sync or review the activity log for details.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {syncStatus === "ok" && syncMessage && (
+                  <Alert className="mt-3">
+                    <AlertTitle>Drive import complete</AlertTitle>
+                    <AlertDescription>{syncMessage}</AlertDescription>
+                  </Alert>
+                )}
               </div>
             </WidgetCard>
           </div>
@@ -668,6 +691,28 @@ export default function IntegrationsPage() {
                     </>
                   )}
                 </div>
+                {gmailConnectStatus === "error" && gmailConnectMessage && (
+                  <Alert variant="destructive" className="mt-3">
+                    <AlertTitle>Gmail connection failed</AlertTitle>
+                    <AlertDescription>
+                      {gmailConnectMessage} Retry the connect flow or check your Gmail permissions.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {gmailSyncStatus === "error" && gmailSyncMessage && (
+                  <Alert variant="destructive" className="mt-3">
+                    <AlertTitle>Gmail import failed</AlertTitle>
+                    <AlertDescription>
+                      {gmailSyncMessage} Retry sync or review the activity log for details.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {gmailSyncStatus === "ok" && gmailSyncMessage && (
+                  <Alert className="mt-3">
+                    <AlertTitle>Gmail import complete</AlertTitle>
+                    <AlertDescription>{gmailSyncMessage}</AlertDescription>
+                  </Alert>
+                )}
               </div>
             </WidgetCard>
           </div>

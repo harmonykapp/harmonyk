@@ -1,5 +1,27 @@
 # Harmonyk North Star (SSOT)
 
+## Core ingestion rule: Rooms first, Workbench second
+All inbound information becomes **Room-scoped objects** first (system of record). The **Workbench** is a personal execution cockpit that surfaces **derived queues** across Rooms.
+
+### Ingestion → Room objects (system of record)
+Connectors and imports MUST create Room-scoped objects such as:
+- `EmailThread`, `EmailMessage`
+- `MeetingNote`
+- `Attachment`
+- `Touchpoint` (contact/company interaction)
+
+### Workbench → derived queues (execution view)
+Workbench queues are views over Room-scoped objects, e.g.:
+- Needs reply
+- Follow-up due
+- Draft ready
+- Waiting on them
+- Untriaged
+
+### Default Inbox Room
+If inbound items cannot be confidently mapped to a Room at ingest time, they are routed into a default **Inbox Room** (aka “Unsorted”).
+Workbench’s **Untriaged** queue sources from the Inbox Room. The primary action is **Assign to Room / Create Room**.
+
 ## Post-GA UI + Maestro doctrine (SSOT)
 Harmonyk is not a chat app. It is a **document-first operating system** with **Maestro** as an operator.
 Prompts remain available, but **secondary**.
