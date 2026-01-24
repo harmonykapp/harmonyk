@@ -234,6 +234,8 @@ type VaultFolderState = {
   selectedFolderId: string | null;
 };
 
+type DocFolderMap = Record<string, string | null>;
+
 type VaultFolderPreferences = {
   defaultRoot: VaultFolderRoot;
   defaultBuckets: string[];
@@ -248,6 +250,7 @@ type SelectedFolderInfo = {
 };
 
 const VAULT_FOLDER_STORAGE_KEY = "harmonyk.vaultFolders.v1";
+const VAULT_FILE_FOLDER_STORAGE_KEY = "harmonyk.vaultFileFolders.v1";
 const VAULT_FOLDER_URL_PARAM = "folder";
 const VAULT_FOLDER_NAME_MAX = 64;
 const VAULT_BUCKET_OPTIONS = ["Contracts", "Decks", "Finance", "People", "Ops", "Other"] as const;
@@ -295,6 +298,36 @@ function parseVaultFolderState(raw: string): VaultFolderState | null {
   }
 }
 
+function coerceDocFolderMap(value: unknown): DocFolderMap | null {
+  if (!isRecord(value)) return null;
+  const map: DocFolderMap = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (!key) continue;
+    if (typeof entry === "string") {
+      const trimmed = entry.trim();
+      if (!trimmed) continue;
+      map[key] = trimmed;
+      continue;
+    }
+    if (entry === null) {
+      map[key] = null;
+    }
+  }
+  return map;
+}
+
+function parseVaultFileFolderMap(raw: string): DocFolderMap | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (isRecord(parsed) && "map" in parsed) {
+      return coerceDocFolderMap((parsed as Record<string, unknown>).map);
+    }
+    return coerceDocFolderMap(parsed);
+  } catch {
+    return null;
+  }
+}
+
 function parseVaultPreferences(value: unknown): VaultFolderPreferences | null {
   if (!isRecord(value)) return null;
   if (!isVaultFolderRoot(value.defaultRoot)) return null;
@@ -336,6 +369,17 @@ function readVaultPreferencesFromStorage(): VaultFolderPreferences | null {
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed)) return null;
     return parseVaultPreferences(parsed.prefs);
+  } catch {
+    return null;
+  }
+}
+
+function readVaultFileFolderMapFromStorage(): DocFolderMap | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(VAULT_FILE_FOLDER_STORAGE_KEY);
+    if (!raw) return null;
+    return parseVaultFileFolderMap(raw);
   } catch {
     return null;
   }
@@ -416,6 +460,8 @@ function VaultPageInner() {
   const [searchQuery, setSearchQuery] = useState("");
   const [folders, setFolders] = useState<VaultFolder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [docFolderMap, setDocFolderMap] = useState<DocFolderMap>({});
+  const [docFolderStateHydrated, setDocFolderStateHydrated] = useState(false);
   const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(
     () => new Set(Object.values(ROOT_FOLDER_IDS)),
   );
@@ -431,6 +477,9 @@ function VaultPageInner() {
   const [renameFolderName, setRenameFolderName] = useState("");
   const [renameFolderError, setRenameFolderError] = useState<string | null>(null);
   const [deleteFolderId, setDeleteFolderId] = useState<string | null>(null);
+  const [isMoveFolderDialogOpen, setIsMoveFolderDialogOpen] = useState(false);
+  const [moveFolderDocId, setMoveFolderDocId] = useState<string | null>(null);
+  const [moveFolderTargetId, setMoveFolderTargetId] = useState<string | null>(null);
   const [trainingStatusByDocId, setTrainingStatusByDocId] = useState<Record<string, DocTrainingState>>({});
   const [loadingTrainingDocId, setLoadingTrainingDocId] = useState<string | null>(null);
   const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
@@ -531,7 +580,7 @@ function VaultPageInner() {
   const rootFolders = useMemo(
     () => [
       { id: ROOT_FOLDER_IDS.personal, name: "Personal", root: "personal" as const },
-      { id: ROOT_FOLDER_IDS.company, name: "Business", root: "company" as const },
+      { id: ROOT_FOLDER_IDS.company, name: "Company", root: "company" as const },
     ],
     [],
   );
@@ -548,7 +597,7 @@ function VaultPageInner() {
       return { id: selectedFolderId, name: "Personal", root: "personal", parentId: null, isRoot: true };
     }
     if (selectedFolderId === ROOT_FOLDER_IDS.company) {
-      return { id: selectedFolderId, name: "Business", root: "company", parentId: null, isRoot: true };
+      return { id: selectedFolderId, name: "Company", root: "company", parentId: null, isRoot: true };
     }
     const folder = folders.find((item) => item.id === selectedFolderId);
     if (!folder) return null;
@@ -560,6 +609,8 @@ function VaultPageInner() {
       isRoot: false,
     };
   }, [selectedFolderId, folders]);
+
+  const primaryHeaderLabel = selectedFolderInfo ? selectedFolderInfo.name : viewLabels[quickFilter];
 
   const folderTree = useMemo(() => {
     const byParent = new Map<string, VaultFolder[]>();
@@ -580,6 +631,10 @@ function VaultPageInner() {
     for (const list of roots.values()) list.sort(sortFn);
     for (const list of byParent.values()) list.sort(sortFn);
     return { byParent, roots };
+  }, [folders]);
+
+  const folderById = useMemo(() => {
+    return new Map<string, VaultFolder>(folders.map((folder) => [folder.id, folder]));
   }, [folders]);
 
   const suggestedFolderNames = useMemo(() => {
@@ -660,8 +715,26 @@ function VaultPageInner() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = readVaultFileFolderMapFromStorage();
+    if (stored) {
+      setDocFolderMap(stored);
+    }
+    setDocFolderStateHydrated(true);
+  }, []);
+
+  useEffect(() => {
     foldersRef.current = folders;
   }, [folders]);
+
+  useEffect(() => {
+    if (!docFolderStateHydrated) return;
+    try {
+      window.localStorage.setItem(VAULT_FILE_FOLDER_STORAGE_KEY, JSON.stringify(docFolderMap));
+    } catch {
+      // Ignore storage write errors.
+    }
+  }, [docFolderMap, docFolderStateHydrated]);
 
   // Keep Vault search in sync with the URL (/vault?q=...).
   // IMPORTANT: Do NOT use useSearchParams() here, because it can trigger CSR bailout warnings in Next build.
@@ -674,6 +747,13 @@ function VaultPageInner() {
 
   // Keep Vault view in sync with the URL (/vault?view=...).
   useEffect(() => {
+    const activeFolder = readVaultFolderFromLocation();
+    if (activeFolder) {
+      pendingViewRef.current = "all";
+      lastAppliedViewRef.current = "all";
+      setQuickFilter("all");
+      return;
+    }
     const view = readVaultViewFromLocation();
     pendingViewRef.current = view;
     lastAppliedViewRef.current = view;
@@ -691,16 +771,16 @@ function VaultPageInner() {
         setSearchQuery(q);
       }
 
-      const view = readVaultViewFromLocation();
-      if (view !== lastAppliedViewRef.current) {
-        lastAppliedViewRef.current = view;
-        setQuickFilter(view);
-      }
-
       const folder = resolveFolderSelection(readVaultFolderFromLocation(), foldersRef.current);
       if (folder !== lastAppliedFolderRef.current) {
         lastAppliedFolderRef.current = folder;
         setSelectedFolderId(folder);
+      }
+      const view = readVaultViewFromLocation();
+      const nextView = folder ? "all" : view;
+      if (nextView !== lastAppliedViewRef.current) {
+        lastAppliedViewRef.current = nextView;
+        setQuickFilter(nextView);
       }
     };
 
@@ -809,6 +889,13 @@ function VaultPageInner() {
   }, [selectedFolderId]);
 
   useEffect(() => {
+    if (!selectedFolderId) return;
+    if (quickFilter !== "all") {
+      setQuickFilter("all");
+    }
+  }, [selectedFolderId, quickFilter]);
+
+  useEffect(() => {
     if (!folderStateHydrated) return;
     if (typeof window === "undefined") return;
     try {
@@ -878,11 +965,21 @@ function VaultPageInner() {
     return base.filter((row) => {
       if (!matchesQuickFilter(row, quickFilter)) return false;
       if (!selectedFolderInfo) return true;
+      const hasMapping = Object.prototype.hasOwnProperty.call(docFolderMap, row.id);
+      const mappedFolderId = typeof docFolderMap[row.id] === "string" ? docFolderMap[row.id] : null;
+      if (hasMapping) {
+        if (selectedFolderInfo.isRoot) {
+          if (!mappedFolderId) return false;
+          const mappedFolder = folderById.get(mappedFolderId);
+          return mappedFolder?.root === selectedFolderInfo.root;
+        }
+        return mappedFolderId === selectedFolderInfo.id;
+      }
       if (!folderTag) return false;
       const tags = folderTagIndex.get(row.id) ?? [];
       return tags.some((tag) => normalizeFolderTag(tag) === folderTag);
     });
-  }, [rows, quickFilter, selectedFolderInfo, folderTagIndex]);
+  }, [rows, quickFilter, selectedFolderInfo, folderTagIndex, docFolderMap, folderById]);
 
   const visibleRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -1955,6 +2052,8 @@ function VaultPageInner() {
   const actionsDisabled = !userReady || !userId;
 
   const selectedDocument = selectedDoc ? visibleRows.find((doc) => doc.id === selectedDoc) : null;
+  const selectedDocumentFolderName = selectedDocument ? getDocFolderName(selectedDocument.id) : null;
+  const hasFolders = folders.length > 0;
   const uploadReadyCount = uploadItems.filter((item) => item.status === "ready").length;
   const uploadUnsupportedCount = uploadItems.filter((item) => item.status === "unsupported").length;
   const uploadDuplicateCount = uploadItems.filter((item) => item.status === "duplicate").length;
@@ -1996,6 +2095,11 @@ function VaultPageInner() {
     setSelectedFolderId(null);
   }
 
+  function onSelectView(view: ViewKey) {
+    setQuickFilter(view);
+    setSelectedFolderId(null);
+  }
+
   const folderParentOptions = useMemo(() => {
     const candidates = folders.filter((folder) => folder.root === newFolderRoot);
     const folderById = new Map(candidates.map((folder) => [folder.id, folder]));
@@ -2032,6 +2136,7 @@ function VaultPageInner() {
 
   function onSelectFolder(folderId: string) {
     setSelectedFolderId(folderId);
+    setQuickFilter("all");
   }
 
   function applyFolderSuggestion(value: string, focus: boolean) {
@@ -2167,10 +2272,63 @@ function VaultPageInner() {
       return next;
     });
     if (selectedFolderId === deleteFolderId) {
-      setSelectedFolderId(ROOT_FOLDER_IDS[vaultPrefs.defaultRoot]);
+      setSelectedFolderId(ROOT_FOLDER_IDS.personal);
     }
     setDeleteFolderId(null);
   }
+
+  function getDocFolderId(docId: string): string | null {
+    const value = docFolderMap[docId];
+    return typeof value === "string" ? value : null;
+  }
+
+  function getDocFolderName(docId: string): string | null {
+    const folderId = getDocFolderId(docId);
+    if (!folderId) return null;
+    return folderById.get(folderId)?.name ?? null;
+  }
+
+  function openMoveFolderDialog(docId: string) {
+    if (folders.length === 0) return;
+    const assignedFolderId = getDocFolderId(docId);
+    const defaultFolderId =
+      assignedFolderId ??
+      (selectedFolderInfo && !selectedFolderInfo.isRoot ? selectedFolderInfo.id : null);
+    setMoveFolderDocId(docId);
+    setMoveFolderTargetId(defaultFolderId && folderById.has(defaultFolderId) ? defaultFolderId : null);
+    setIsMoveFolderDialogOpen(true);
+  }
+
+  function closeMoveFolderDialog() {
+    setIsMoveFolderDialogOpen(false);
+    setMoveFolderDocId(null);
+    setMoveFolderTargetId(null);
+  }
+
+  function onConfirmMoveFolder() {
+    if (!moveFolderDocId || !moveFolderTargetId) return;
+    if (!folderById.has(moveFolderTargetId)) return;
+    setDocFolderMap((prev) => ({
+      ...prev,
+      [moveFolderDocId]: moveFolderTargetId,
+    }));
+    closeMoveFolderDialog();
+  }
+
+  function onRemoveDocFromFolder(docId: string) {
+    setDocFolderMap((prev) => ({
+      ...prev,
+      [docId]: null,
+    }));
+  }
+
+  useEffect(() => {
+    if (!isMoveFolderDialogOpen) return;
+    if (!moveFolderTargetId) return;
+    if (!folderById.has(moveFolderTargetId)) {
+      setMoveFolderTargetId(null);
+    }
+  }, [isMoveFolderDialogOpen, moveFolderTargetId, folderById]);
 
   const renderFolderBranch = (node: SelectedFolderInfo, depth: number) => {
     const children = node.isRoot
@@ -2221,7 +2379,6 @@ function VaultPageInner() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onRequestDeleteFolder(node.id)}
-                    disabled={hasChildren}
                     className={hasChildren ? undefined : "text-destructive"}
                   >
                     <Trash2 className="h-3 w-3 mr-2" />
@@ -2270,12 +2427,7 @@ function VaultPageInner() {
             <div className="px-6 min-w-0">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0 text-base font-semibold text-foreground truncate">
-                  {viewLabels[quickFilter]}
-                  {selectedFolderInfo && (
-                    <Badge variant="outline" className="ml-2 text-xs font-normal">
-                      Folder: {selectedFolderInfo.name}
-                    </Badge>
-                  )}
+                  {primaryHeaderLabel}
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
                     Loading…
                   </span>
@@ -2339,7 +2491,7 @@ function VaultPageInner() {
                 return (
                   <button
                     key={view.label}
-                    onClick={() => setQuickFilter(view.id)}
+                    onClick={() => onSelectView(view.id)}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm min-w-0",
                       "hover:bg-sidebar-active/50",
@@ -2413,12 +2565,7 @@ function VaultPageInner() {
           <div className="border-b px-6 pb-4 pt-4">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 text-base font-semibold text-foreground truncate">
-                {viewLabels[quickFilter]}
-                {selectedFolderInfo && (
-                  <Badge variant="outline" className="ml-2 text-xs font-normal">
-                    Folder: {selectedFolderInfo.name}
-                  </Badge>
-                )}
+                {primaryHeaderLabel}
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
                   {loading ? "Loading…" : `${visibleRows.length} documents`}
                 </span>
@@ -2600,11 +2747,31 @@ function VaultPageInner() {
                               )}
                             </div>
                           </div>
-                          {vaultExperimental && (
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                              <MoreVertical className="h-3 w-3" />
-                            </Button>
-                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-6 w-6">
+                                <MoreVertical className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                disabled={!hasFolders}
+                                onClick={() => openMoveFolderDialog(doc.id)}
+                                title={!hasFolders ? "Create a folder to move this file." : undefined}
+                              >
+                                Move to folder…
+                              </DropdownMenuItem>
+                              {hasFolders &&
+                                (selectedFolderInfo !== null || getDocFolderId(doc.id) !== null) && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => onRemoveDocFromFolder(doc.id)}>
+                                      Remove from folder
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
 
                         <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t mt-auto">
@@ -2661,6 +2828,11 @@ function VaultPageInner() {
                             <span className="text-sm text-muted-foreground truncate">—</span>
                           )}
                         </div>
+                        {selectedDocumentFolderName && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            Folder: <span className="font-medium text-foreground/80">{selectedDocumentFolderName}</span>
+                          </div>
+                        )}
                       </div>
                       <Button
                         variant="ghost"
@@ -3100,6 +3272,80 @@ function VaultPageInner() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Dialog open={isMoveFolderDialogOpen} onOpenChange={(open) => !open && closeMoveFolderDialog()}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Move to folder</DialogTitle>
+                <DialogDescription>
+                  {moveFolderDocId
+                    ? `Choose a folder for “${buildVaultTitle(
+                      rows?.find((doc) => doc.id === moveFolderDocId)?.title ?? "this document",
+                    )}”.`
+                    : "Choose a folder for this document."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                {hasFolders ? (
+                  <div className="space-y-4 max-h-72 overflow-y-auto rounded-lg border bg-background/40 p-2">
+                    {rootFolders.map((root) => {
+                      const rootItems = folderTree.roots.get(root.root) ?? [];
+                      return (
+                        <div key={root.id} className="space-y-2">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-2">
+                            {root.name}
+                          </div>
+                          {rootItems.length === 0 ? (
+                            <div className="px-2 text-xs text-muted-foreground">No folders yet.</div>
+                          ) : (
+                            rootItems.map((folder) => {
+                              const renderBranch = (node: VaultFolder, depth: number) => {
+                                const children = folderTree.byParent.get(node.id) ?? [];
+                                const isSelected = moveFolderTargetId === node.id;
+                                return (
+                                  <div key={node.id} className="space-y-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setMoveFolderTargetId(node.id)}
+                                      className={cn(
+                                        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                                        "hover:bg-muted/60",
+                                        isSelected && "bg-muted font-medium",
+                                      )}
+                                      style={{ paddingLeft: 8 + depth * 14 }}
+                                    >
+                                      <span className="truncate">{node.name}</span>
+                                    </button>
+                                    {children.length > 0 && (
+                                      <div className="space-y-1">
+                                        {children.map((child) => renderBranch(child, depth + 1))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              };
+                              return renderBranch(folder, 0);
+                            })
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Create a folder first, then you can move files into it.
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={closeMoveFolderDialog}>
+                  Cancel
+                </Button>
+                <Button onClick={onConfirmMoveFolder} disabled={!moveFolderTargetId || !hasFolders}>
+                  Move
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={renameFolderId !== null} onOpenChange={(open) => !open && setRenameFolderId(null)}>
             <DialogContent className="max-w-md">
@@ -3146,7 +3392,7 @@ function VaultPageInner() {
                 <AlertDialogDescription>
                   {(deleteFolderId &&
                     (folderTree.byParent.get(deleteFolderId) ?? []).length > 0) &&
-                    "This folder has subfolders. Remove them first before deleting."}
+                    "This folder has subfolders. Move or delete them first."}
                   {deleteFolderId &&
                     (folderTree.byParent.get(deleteFolderId) ?? []).length === 0 &&
                     "This action cannot be undone. Documents stay in Vault and can be re-filed later."}
