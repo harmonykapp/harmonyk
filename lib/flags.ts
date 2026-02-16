@@ -14,7 +14,8 @@ export type FeatureFlagName =
   | "FEATURE_VISUAL_ASSISTANT"
   | "FEATURE_PII_EXPORT"
   | "FEATURE_PII_ERASURE"
-  | "FEATURE_CONNECTORS_BETA";
+  | "FEATURE_CONNECTORS_BETA"
+  | "FEATURE_PINNED_COMMENTS";
 
 export type FeatureFlagScope = "env" | "org" | "user";
 
@@ -63,6 +64,14 @@ const FEATURE_FLAGS: Record<FeatureFlagName, FeatureFlagDefinition> = {
     scope: "env",
     owner: "product/connectors",
     tags: ["connectors", "beta"],
+  },
+  FEATURE_PINNED_COMMENTS: {
+    key: "FEATURE_PINNED_COMMENTS",
+    description: "Controls the PDF pinned comments shell for Vault previews.",
+    defaultValue: false,
+    scope: "env",
+    owner: "product/review",
+    tags: ["vault", "review", "comments"],
   },
 };
 

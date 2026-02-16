@@ -580,7 +580,7 @@ function VaultPageInner() {
   const rootFolders = useMemo(
     () => [
       { id: ROOT_FOLDER_IDS.personal, name: "Personal", root: "personal" as const },
-      { id: ROOT_FOLDER_IDS.company, name: "Company", root: "company" as const },
+      { id: ROOT_FOLDER_IDS.company, name: "Business", root: "company" as const },
     ],
     [],
   );
@@ -597,7 +597,7 @@ function VaultPageInner() {
       return { id: selectedFolderId, name: "Personal", root: "personal", parentId: null, isRoot: true };
     }
     if (selectedFolderId === ROOT_FOLDER_IDS.company) {
-      return { id: selectedFolderId, name: "Company", root: "company", parentId: null, isRoot: true };
+      return { id: selectedFolderId, name: "Business", root: "company", parentId: null, isRoot: true };
     }
     const folder = folders.find((item) => item.id === selectedFolderId);
     if (!folder) return null;
@@ -2450,7 +2450,7 @@ function VaultPageInner() {
                   <Link href="/integrations">
                     <Button variant="outline" size="sm">
                       <Plug className="h-4 w-4 sm:mr-2" />
-                      <span className="sr-only sm:not-sr-only">Import Documents</span>
+                      <span className="sr-only sm:not-sr-only">Import Files</span>
                     </Button>
                   </Link>
                 </div>
@@ -2589,7 +2589,7 @@ function VaultPageInner() {
                 <Link href="/integrations">
                   <Button variant="outline" size="sm">
                     <Plug className="h-4 w-4 sm:mr-2" />
-                    <span className="sr-only sm:not-sr-only">Import Documents</span>
+                    <span className="sr-only sm:not-sr-only">Import Files</span>
                   </Button>
                 </Link>
               </div>
@@ -2613,14 +2613,14 @@ function VaultPageInner() {
             <div className="flex-1 flex items-center justify-center">
               <EmptyState
                 title="Your Vault is empty"
-                description="Import Documents or create a New Document to start building your library."
+                description="Import Files or create a New Document to start building your library."
                 action={
                   <>
                     <Link href="/builder">
                       <Button>New Document</Button>
                     </Link>
                     <Link href="/integrations">
-                      <Button variant="outline">Import Documents</Button>
+                      <Button variant="outline">Import Files</Button>
                     </Link>
                   </>
                 }
@@ -2657,7 +2657,7 @@ function VaultPageInner() {
                   <>
                     <Button onClick={() => setIsUploadDialogOpen(true)}>Upload Files</Button>
                     <Link href="/integrations">
-                      <Button variant="outline">Import Documents</Button>
+                      <Button variant="outline">Import Files</Button>
                     </Link>
                   </>
                 }
@@ -3154,7 +3154,7 @@ function VaultPageInner() {
               <DialogHeader>
                 <DialogTitle>Create new folder</DialogTitle>
                 <DialogDescription>
-                  Organize your Vault into Personal or Company folders.
+                  Organize your Vault into Personal or Business folders.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">
@@ -3233,7 +3233,7 @@ function VaultPageInner() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="personal">Personal</SelectItem>
-                      <SelectItem value="company">Company</SelectItem>
+                      <SelectItem value="company">Business</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

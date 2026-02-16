@@ -1,9 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 @layer base {
-:root {
+  :root {
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
@@ -23,29 +23,34 @@
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 235 70% 65%;
-    --mono: 265 75% 65%;
+    /* Mono = widget brand blue (use for widget/chart fills) */
+    --mono: 235 70% 65%;
     --mono-foreground: 0 0% 100%;
     --sidebar: 225 25% 97%;
     --sidebar-foreground: 222 47% 11%;
     --sidebar-active: 235 70% 95%;
-    --chart-1: 229 84% 55%;
-    --chart-2: 173 58% 45%;
-    --chart-3: 197 37% 28%;
-    --chart-4: 43 74% 60%;
-    --chart-5: 27 87% 60%;
+    /* Charts: blue-only scale (use lighter/darker shades of primary) */
+    --chart-1: var(--primary);
+    --chart-2: 235 70% 75%;
+    --chart-3: 235 70% 85%;
+    --chart-4: 235 70% 60%;
+    --chart-5: 235 70% 50%;
     --radius: 0.5rem;
-    
+
     /* Legacy CSS variables for backward compatibility */
-  color-scheme: light;
-  --page-bg: #f3f4f6;
-  --surface: #ffffff;
-  --surface-strong: #ffffff;
-  --text-primary: #020617;
-  --text-secondary: #4b5563;
-  --border-color: #e5e7eb;
-  --accent: #aa80ff;
-  --accent-soft: #aa80ff;
-}
+    color-scheme: light;
+    --page-bg: #f3f4f6;
+    --surface: #ffffff;
+    --surface-strong: #ffffff;
+    --text-primary: #020617;
+    --text-secondary: #4b5563;
+    --border-color: #e5e7eb;
+    /* IMPORTANT: do NOT overwrite --accent (Tailwind expects HSL triplets).
+       Keep legacy hex versions under different names. */
+    --legacy-accent: #aa80ff;
+    --legacy-accent-soft: #aa80ff;
+  }
+
   .dark {
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
@@ -66,46 +71,50 @@
     --border: 222 47% 14%;
     --input: 222 47% 14%;
     --ring: 235 70% 70%;
-    --mono: 265 75% 70%;
+    /* Mono = widget brand blue (use for widget/chart fills) */
+    --mono: 235 70% 70%;
     --mono-foreground: 222 47% 11%;
     --sidebar: 222 47% 9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-active: 235 70% 20%;
-    --chart-1: 229 84% 65%;
-    --chart-2: 173 58% 50%;
-    --chart-3: 197 37% 35%;
-    --chart-4: 43 74% 65%;
-    --chart-5: 27 87% 65%;
-    
+    /* Charts: blue-only scale */
+    --chart-1: var(--primary);
+    --chart-2: 235 70% 78%;
+    --chart-3: 235 70% 88%;
+    --chart-4: 235 70% 62%;
+    --chart-5: 235 70% 52%;
+
     /* Legacy CSS variables for backward compatibility */
-  color-scheme: dark;
-  --page-bg: #020617;
-  --surface: #0b1120;
-  --surface-strong: #020617;
-  --text-primary: #e5e7eb;
-  --text-secondary: #9ca3af;
-  --border-color: #1f2933;
-  --accent: #aa80ff;
-  --accent-soft: #aa80ff;
-}
+    color-scheme: dark;
+    --page-bg: #020617;
+    --surface: #0b1120;
+    --surface-strong: #020617;
+    --text-primary: #e5e7eb;
+    --text-secondary: #9ca3af;
+    --border-color: #1f2933;
+    --legacy-accent: #aa80ff;
+    --legacy-accent-soft: #aa80ff;
+  }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
-body {
-    @apply bg-background text-foreground;
-  margin: 0;
-  font-family: var(--font-geist-sans, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    margin: 0;
+    font-family: var(--font-geist-sans, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 @layer utilities {
@@ -193,12 +202,12 @@ html.dark .logo-asset--dark {
 }
 
 .sidebar-link:hover {
-  background: rgba(170, 128, 255, 0.08);
+  background: hsl(var(--primary) / 0.08);
   color: var(--text-primary);
 }
 
 .sidebar-link.is-active {
-  background: rgba(170, 128, 255, 0.15);
+  background: hsl(var(--primary) / 0.15);
   color: var(--text-primary);
   font-weight: 600;
 }
@@ -265,7 +274,8 @@ html.dark .logo-asset--dark {
 }
 
 .btn-primary {
-  background: var(--accent);
+  /* legacy button uses a real color value, not HSL triplet */
+  background: hsl(var(--primary));
   color: #fff;
 }
 
@@ -281,7 +291,7 @@ html.dark .logo-asset--dark {
 }
 
 .btn-secondary:hover {
-  border-color: var(--accent);
+  border-color: hsl(var(--primary));
 }
 
 .btn-ghost {
@@ -291,7 +301,7 @@ html.dark .logo-asset--dark {
 }
 
 .btn-ghost:hover {
-  border-color: var(--accent);
+  border-color: hsl(var(--primary));
 }
 
 .card {
@@ -459,7 +469,7 @@ textarea {
 }
 
 .prose blockquote {
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid hsl(var(--primary));
   padding-left: 12px;
   color: var(--text-secondary);
   margin: 1em 0;

@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { WidgetCard, WidgetRow } from "@/components/widgets";
+import { chartPrimaryScale, WidgetCard, WidgetRow } from "@/components/widgets";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -127,6 +127,13 @@ const DOC_TYPE_MIX = [
   { label: "Whitepapers", value: 14 },
 ];
 
+const CONVERSION_BAR_CLASSES = [
+  chartPrimaryScale["50"].bg,
+  chartPrimaryScale["40"].bg,
+  chartPrimaryScale["30"].bg,
+  chartPrimaryScale["20"].bg,
+];
+
 function getKindLabel(kind: InsightDocKind): string {
   switch (kind) {
     case "contract":
@@ -225,7 +232,7 @@ export default function InsightsPage() {
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center">
                       <div
-                        className="w-full bg-primary/30 rounded-t"
+                        className={`w-full ${chartPrimaryScale["50"].bg} rounded-t`}
                         style={{ height: `${height}px` }}
                       />
                     </div>
@@ -244,14 +251,14 @@ export default function InsightsPage() {
                     <div key={item.label} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-primary/60" style={{ opacity }} />
+                          <div className={`h-2 w-2 rounded-full ${chartPrimaryScale["50"].bg}`} style={{ opacity }} />
                           <span className="text-muted-foreground">{item.label}</span>
                         </div>
                         <span className="font-medium">{item.value}%</span>
                       </div>
                       <div className="h-2 w-full rounded-full bg-muted">
                         <div
-                          className="h-2 rounded-full bg-primary/60"
+                          className={`h-2 rounded-full ${chartPrimaryScale["50"].bg}`}
                           style={{ width: `${item.value}%`, opacity }}
                         />
                       </div>
@@ -270,28 +277,28 @@ export default function InsightsPage() {
                     <span className="text-muted-foreground">Viewed</span>
                     <span className="font-medium">{sharedLast30 * 12}</span>
                   </div>
-                  <div className="h-2 bg-primary/40 rounded-full" style={{ width: "100%" }} />
+                  <div className={`h-2 ${CONVERSION_BAR_CLASSES[0]} rounded-full`} style={{ width: "100%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Follow-up</span>
                     <span className="font-medium">{Math.floor(sharedLast30 * 8)}</span>
                   </div>
-                  <div className="h-2 bg-primary/40 rounded-full" style={{ width: "67%" }} />
+                  <div className={`h-2 ${CONVERSION_BAR_CLASSES[1]} rounded-full`} style={{ width: "67%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Review</span>
                     <span className="font-medium">{Math.floor(sharedLast30 * 5)}</span>
                   </div>
-                  <div className="h-2 bg-primary/40 rounded-full" style={{ width: "42%" }} />
+                  <div className={`h-2 ${CONVERSION_BAR_CLASSES[2]} rounded-full`} style={{ width: "42%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Signed</span>
                     <span className="font-medium">{signedLast30}</span>
                   </div>
-                  <div className="h-2 bg-primary/40 rounded-full" style={{ width: "25%" }} />
+                  <div className={`h-2 ${CONVERSION_BAR_CLASSES[3]} rounded-full`} style={{ width: "25%" }} />
                 </div>
               </div>
             </WidgetCard>
@@ -370,28 +377,28 @@ export default function InsightsPage() {
                     <span className="text-muted-foreground">Share → First View</span>
                     <span className="font-medium">2.3d</span>
                   </div>
-                  <div className="h-6 bg-primary/40 rounded" style={{ width: "25%" }} />
+                  <div className={`h-6 ${chartPrimaryScale["50"].bg} rounded`} style={{ width: "25%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">View → Follow-up</span>
                     <span className="font-medium">4.7d</span>
                   </div>
-                  <div className="h-6 bg-primary/40 rounded" style={{ width: "47%" }} />
+                  <div className={`h-6 ${chartPrimaryScale["50"].bg} rounded`} style={{ width: "47%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Follow-up → Review</span>
                     <span className="font-medium">6.2d</span>
                   </div>
-                  <div className="h-6 bg-primary/40 rounded" style={{ width: "62%" }} />
+                  <div className={`h-6 ${chartPrimaryScale["50"].bg} rounded`} style={{ width: "62%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Review → Signed</span>
                     <span className="font-medium">8.9d</span>
                   </div>
-                  <div className="h-6 bg-primary/40 rounded" style={{ width: "89%" }} />
+                  <div className={`h-6 ${chartPrimaryScale["50"].bg} rounded`} style={{ width: "89%" }} />
                 </div>
               </div>
             </WidgetCard>

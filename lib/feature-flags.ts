@@ -18,7 +18,8 @@ type FeatureFlagKey =
   | "FEATURE_SHARE_ACTIONS"
   | "FEATURE_CONNECTORS_EXTRA"
   | "FEATURE_VAULT_EXPERIMENTAL_ACTIONS"
-  | "FEATURE_SIGNATURE_ACTIONS";
+  | "FEATURE_SIGNATURE_ACTIONS"
+  | "FEATURE_PINNED_COMMENTS";
 
 const FLAG_DEFAULTS: Record<FeatureFlagKey, boolean> = {
   FEATURE_PLAYBOOKS_ENGINE: false,
@@ -26,6 +27,7 @@ const FLAG_DEFAULTS: Record<FeatureFlagKey, boolean> = {
   FEATURE_CONNECTORS_EXTRA: false,
   FEATURE_VAULT_EXPERIMENTAL_ACTIONS: true, // turn experimental vault actions ON by default
   FEATURE_SIGNATURE_ACTIONS: false,
+  FEATURE_PINNED_COMMENTS: false,
 };
 
 function parseBoolean(value: string | undefined): boolean | undefined {

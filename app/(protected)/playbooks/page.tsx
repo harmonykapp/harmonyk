@@ -7,7 +7,7 @@ const PLAYBOOK_ACTIVITY_ROW_CARD_HEIGHT = "lg:h-[420px]";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WidgetCard, WidgetRow } from "@/components/widgets";
+import { chartPrimaryScale, WidgetCard, WidgetRow } from "@/components/widgets";
 import { useToast } from "@/hooks/use-toast";
 import { handleApiError } from "@/lib/handle-api-error";
 import { trackEvent } from "@/lib/telemetry";
@@ -453,7 +453,7 @@ export default function PlaybooksPage() {
                         </div>
                         <div className="h-2 w-full rounded-full bg-muted">
                           <div
-                            className="h-2 rounded-full bg-primary/60"
+                            className={`h-2 rounded-full ${chartPrimaryScale["50"].bg}`}
                             style={{ width: `${item.value}%` }}
                           />
                         </div>

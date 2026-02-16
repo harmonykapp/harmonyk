@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import * as React from "react";
 import { WidgetCard } from "./WidgetCard";
+import { chartPrimaryScale } from "./chartColors";
 
 export type WidgetTone = "accent" | "neutral" | "blue" | "purple" | "emerald" | "amber" | "indigo";
 
@@ -20,13 +21,13 @@ function inferToneFromTitle(_title: string): WidgetTone {
 }
 
 const toneToTextClass: Record<WidgetTone, string> = {
-  accent: "text-primary",
-  neutral: "text-primary",
-  blue: "text-primary",
-  purple: "text-primary",
-  emerald: "text-primary",
-  amber: "text-primary",
-  indigo: "text-primary",
+  accent: chartPrimaryScale["50"].text,
+  neutral: chartPrimaryScale["50"].text,
+  blue: chartPrimaryScale["50"].text,
+  purple: chartPrimaryScale["50"].text,
+  emerald: chartPrimaryScale["50"].text,
+  amber: chartPrimaryScale["50"].text,
+  indigo: chartPrimaryScale["50"].text,
 };
 
 export function SparklineCard({

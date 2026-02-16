@@ -889,9 +889,6 @@ export default function WorkbenchPage() {
           <Button asChild variant="outline" size="sm">
             <Link href="#insightsStrip">Open Review Queue</Link>
           </Button>
-          <Button variant="outline" size="sm" disabled title="Use the Ask Maestro button in the top bar.">
-            Ask Maestro
-          </Button>
         </div>
 
         {/* Integration Attention Strip */}
@@ -934,7 +931,7 @@ export default function WorkbenchPage() {
                         {mockFocusToday.map((segment, idx) => {
                           const total = mockFocusToday.reduce((acc, s) => acc + s.value, 0);
                           const pct = (segment.value / total) * 100;
-                          const opacity = Math.min(0.8, 0.25 + idx * 0.18);
+                          const opacity = Math.max(0.4, 0.95 - idx * 0.2);
                           return (
                             <div
                               key={segment.id}
@@ -1034,7 +1031,7 @@ export default function WorkbenchPage() {
                         {mockStageBreakdown.map((segment, idx) => {
                           const total = mockStageBreakdown.reduce((acc, s) => acc + s.value, 0);
                           const pct = (segment.value / total) * 100;
-                          const opacity = Math.min(0.8, 0.22 + idx * 0.14);
+                          const opacity = Math.max(0.4, 0.95 - idx * 0.2);
                           return (
                             <div
                               key={segment.id}

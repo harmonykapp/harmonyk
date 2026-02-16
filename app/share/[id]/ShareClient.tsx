@@ -2,8 +2,33 @@
 
 import { MonoLite } from "@/components/mono/mono-lite";
 import useScrollEvents from "@/components/share/useScrollEvents";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+
+// PGW10 Day 1 (baseline types only):
+// Share currently renders HTML returned by /api/shares/render (no PDF viewer yet).
+// These minimal types define the future PDF anchor model for pinned comments (Days 2–5).
+// Anchors are PDF-artifact based (no doc-type branching).
+type PdfAnchor = {
+  page: number;
+  // Normalized coordinates in [0..1] relative to the rendered PDF page box.
+  x: number;
+  y: number;
+  // Optional normalized region anchor (selection rectangle) in [0..1].
+  w?: number;
+  h?: number;
+};
+
+type PinnedCommentDraft = {
+  id: string;
+  anchor: PdfAnchor;
+  text: string;
+  // Local-only timestamp placeholder for Day 1; persistence comes later.
+  createdAt: string;
+};
 
 type ShareResponse = {
   title: string;
@@ -20,6 +45,11 @@ type State =
 
 type Props = {
   shareId: string;
+  // PGW10 Day 1: plumbing placeholder (unused for now).
+  // Day 2+ PDF viewer can call this when a user clicks a PDF canvas to propose an anchor.
+  onPdfCanvasClick?: (anchor: PdfAnchor) => void;
+  // PGW10 Day 1: optional draft placeholder (unused for now).
+  pinnedCommentDraft?: PinnedCommentDraft | null;
 };
 
 export default function ShareClient({ shareId }: Props) {
@@ -34,10 +64,14 @@ export default function ShareClient({ shareId }: Props) {
     setState({ status: "loading" });
     setPasscodeError(null);
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+
     try {
       const res = await fetch(`/api/shares/render?id=${encodeURIComponent(shareId)}`, {
         credentials: "include",
         cache: "no-store",
+        signal: controller.signal,
       });
 
       if (res.status === 401) {
@@ -45,13 +79,14 @@ export default function ShareClient({ shareId }: Props) {
         return;
       }
 
+      if (res.status === 403) {
+        setState({ status: "error", error: "blocked" });
+        return;
+      }
+
       if (!res.ok) {
-        if (res.status === 404) {
-          setState({ status: "error", error: "invalid" });
-          return;
-        }
-        const payload = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(payload.error || `Render failed (${res.status})`);
+        setState({ status: "error", error: "invalid" });
+        return;
       }
 
       const data = (await res.json()) as ShareResponse;
@@ -61,10 +96,13 @@ export default function ShareClient({ shareId }: Props) {
       }
       setState({ status: "ready", title: data.title, html: data.html });
     } catch (error) {
-      setState({
-        status: "error",
-        error: error instanceof Error ? error.message : "Unable to load share.",
-      });
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setState({ status: "error", error: "invalid" });
+        return;
+      }
+      setState({ status: "error", error: "invalid" });
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   }, [shareId]);
 
@@ -110,59 +148,72 @@ export default function ShareClient({ shareId }: Props) {
 
   const content = useMemo(() => {
     if (state.status === "loading") {
-      return <p className="text-sm text-neutral-500">Loading share…</p>;
+      return (
+        <div className="space-y-4">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-2/3" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </div>
+      );
     }
 
     if (state.status === "error") {
-      if (state.error === "invalid") {
-        return (
-          <div className="rounded-xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h1 className="mb-2 text-2xl font-semibold">This share link is invalid or expired.</h1>
-            <p className="mb-6 text-sm text-slate-600 dark:text-slate-400">
-              The document may have been deleted or the link has expired.
-            </p>
-            <Link
-              href="/vault"
-              className="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-white dark:bg-slate-100 dark:text-slate-900"
-            >
-              Back to Vault
-            </Link>
-          </div>
-        );
-      }
+      const title =
+        state.error === "blocked"
+          ? "This share link is restricted."
+          : "This share link is invalid or expired.";
+      const description =
+        state.error === "blocked"
+          ? "You don't have permission to view this document."
+          : "The document may have been deleted or the link has expired.";
       return (
-        <div className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {state.error}
-        </div>
+        <EmptyState
+          title={title}
+          description={description}
+          action={
+            <Button asChild>
+              <Link href="/share">Back to Share Hub</Link>
+            </Button>
+          }
+        />
       );
     }
 
     if (state.status === "passcode") {
       return (
-        <form onSubmit={handleSubmitPasscode} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium" htmlFor="share-passcode">
-              Passcode required
-            </label>
-            <input
-              id="share-passcode"
-              type="password"
-              value={passcode}
-              onChange={(event) => setPasscode(event.target.value)}
-              className="mt-1 w-full rounded border px-3 py-2"
-              placeholder="Enter passcode"
-              disabled={isSubmittingPasscode}
-            />
+        <div className="max-w-md space-y-4 rounded-xl border border-border/60 bg-background p-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">Passcode required</h2>
+            <p className="text-sm text-muted-foreground">
+              Enter the passcode shared with you to view this document.
+            </p>
           </div>
-          {passcodeError ? <p className="text-sm text-red-600">{passcodeError}</p> : null}
-          <button
-            type="submit"
-            disabled={isSubmittingPasscode}
-            className="inline-flex items-center justify-center rounded bg-black px-4 py-2 text-white disabled:opacity-60"
-          >
-            {isSubmittingPasscode ? "Unlocking…" : "Unlock"}
-          </button>
-        </form>
+          <form onSubmit={handleSubmitPasscode} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium" htmlFor="share-passcode">
+                Passcode
+              </label>
+              <input
+                id="share-passcode"
+                type="password"
+                value={passcode}
+                onChange={(event) => setPasscode(event.target.value)}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="Enter passcode"
+                disabled={isSubmittingPasscode}
+              />
+            </div>
+            {passcodeError ? <p className="text-sm text-red-600">{passcodeError}</p> : null}
+            <Button type="submit" disabled={isSubmittingPasscode}>
+              {isSubmittingPasscode ? "Unlocking…" : "Unlock"}
+            </Button>
+          </form>
+        </div>
       );
     }
 

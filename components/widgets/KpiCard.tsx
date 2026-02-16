@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { chartPrimaryScale } from "./chartColors";
 import type * as React from "react";
 
 export type WidgetTone =
@@ -25,11 +26,11 @@ export type KpiCardProps = {
 
 const toneToTextClass: Record<WidgetTone, string> = {
   accent: "text-primary",
-  blue: "text-blue-700",
-  purple: "text-violet-700",
+  blue: chartPrimaryScale["50"].text,
+  purple: chartPrimaryScale["40"].text,
   emerald: "text-emerald-700",
   amber: "text-amber-700",
-  indigo: "text-indigo-700",
+  indigo: chartPrimaryScale["30"].text,
   red: "text-red-700",
   neutral: "text-foreground",
 };

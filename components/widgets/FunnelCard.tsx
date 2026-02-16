@@ -1,7 +1,8 @@
 "use client";
 
-import { WidgetCard } from "./WidgetCard";
 import { cn } from "@/lib/utils";
+import { WidgetCard } from "./WidgetCard";
+import { chartPrimaryScale } from "./chartColors";
 
 export type FunnelStage = {
   label: string;
@@ -23,17 +24,22 @@ function inferToneFromTitle(_title: string): FunnelTone {
   return "accent";
 }
 
-const monoBarClass =
-  "bg-primary/25 hover:bg-primary/35 dark:bg-primary/20 dark:hover:bg-primary/28";
+const funnelBarScale = [
+  chartPrimaryScale["50"].bg,
+  chartPrimaryScale["40"].bg,
+  chartPrimaryScale["30"].bg,
+  chartPrimaryScale["20"].bg,
+  chartPrimaryScale["15"].bg,
+];
 
-const toneToBarClass: Record<FunnelTone, string> = {
-  accent: monoBarClass,
-  neutral: monoBarClass,
-  blue: monoBarClass,
-  purple: monoBarClass,
-  emerald: monoBarClass,
-  amber: monoBarClass,
-  indigo: monoBarClass,
+const toneToBarScale: Record<FunnelTone, string[]> = {
+  accent: funnelBarScale,
+  neutral: funnelBarScale,
+  blue: funnelBarScale,
+  purple: funnelBarScale,
+  emerald: funnelBarScale,
+  amber: funnelBarScale,
+  indigo: funnelBarScale,
 };
 
 export function FunnelCard({
@@ -46,6 +52,7 @@ export function FunnelCard({
 }: FunnelCardProps) {
   const maxCount = Math.max(...stages.map((s) => s.count), 1);
   const baseTone = tone ?? inferToneFromTitle(title);
+  const barScale = toneToBarScale[baseTone] ?? toneToBarScale.neutral;
 
   return (
     <div
@@ -62,7 +69,7 @@ export function FunnelCard({
           {stages.slice(0, 5).map((stage, idx) => {
             const pct = maxCount > 0 ? (stage.count / maxCount) * 100 : 0;
             const heightPct = Math.max(18, pct);
-            const barClass = toneToBarClass[baseTone] ?? toneToBarClass.neutral;
+            const barClass = barScale[idx] ?? barScale[barScale.length - 1];
 
             return (
               <div key={idx} className="flex flex-col items-center gap-1.5 h-full">

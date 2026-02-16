@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { CollapsibleHeaderButton } from "@/components/ui/collapsible-header-button";
 import {
+  chartPrimaryScale,
   FunnelCard,
   KpiCard,
   LinkLeaderboardCard,
@@ -113,9 +114,6 @@ export default function DashboardPage() {
           <p className="text-base font-semibold text-foreground">
             Your next best actions across docs, sharing, and signing.
           </p>
-          <Button size="sm" disabled title="Use the Ask Maestro button in the top bar.">
-            Ask Maestro
-          </Button>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -130,9 +128,6 @@ export default function DashboardPage() {
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link href="/workbench#insightsStrip">Open Review Queue</Link>
-          </Button>
-          <Button variant="outline" size="sm" disabled title="Use the Ask Maestro button in the top bar.">
-            Ask Maestro
           </Button>
         </div>
 
@@ -288,7 +283,7 @@ export default function DashboardPage() {
                             <div className="mt-2">
                               <div className="h-2 w-full rounded-full bg-muted">
                                 <div
-                                  className="h-2 rounded-full bg-primary/30 dark:bg-primary/20"
+                                  className={`h-2 rounded-full ${chartPrimaryScale["50"].bg}`}
                                   style={{
                                     width: `${Math.max(0, Math.min(100, item.valuePct))}%`,
                                   }}
@@ -352,7 +347,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-muted">
                       <div
-                        className="h-1.5 rounded-full bg-primary/70"
+                        className={`h-1.5 rounded-full ${chartPrimaryScale["50"].bg}`}
                         style={{
                           width: `${Math.round(
                             (mockSignatureLoad.waitingOnMe /

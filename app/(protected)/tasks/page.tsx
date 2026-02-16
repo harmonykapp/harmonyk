@@ -409,9 +409,6 @@ export default function TasksPage() {
         <Button asChild variant="outline" size="sm">
           <Link href="/workbench#insightsStrip">Open Review Queue</Link>
         </Button>
-        <Button variant="outline" size="sm" disabled title="Use the Ask Maestro button in the top bar.">
-          Ask Maestro
-        </Button>
       </div>
 
       <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">

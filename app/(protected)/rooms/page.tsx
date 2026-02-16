@@ -258,9 +258,6 @@ export default function RoomsPage() {
               <Button asChild variant="outline" size="sm">
                 <Link href="/workbench#insightsStrip">Open Review Queue</Link>
               </Button>
-              <Button variant="outline" size="sm" disabled title="Use the Ask Maestro button in the top bar.">
-                Ask Maestro
-              </Button>
               <Button variant="outline" size="sm" onClick={openCreate}>
                 Create Room
               </Button>
@@ -397,7 +394,7 @@ export default function RoomsPage() {
                                 <div className="shrink-0 w-20">
                                   <div className="h-2 w-full rounded bg-muted">
                                     <div
-                                      className="h-2 rounded bg-primary"
+                                      className="h-2 rounded bg-mono"
                                       style={{ width: `${Math.round(pct * 100)}%` }}
                                     />
                                   </div>
@@ -428,7 +425,7 @@ export default function RoomsPage() {
                             <div key={day.iso} className="flex w-full flex-col items-center gap-1">
                               <div className="w-full rounded bg-muted" style={{ height: 48 }}>
                                 <div
-                                  className="w-full rounded bg-primary"
+                                  className="w-full rounded bg-mono"
                                   style={{ height: h, marginTop: 48 - h }}
                                   aria-label={`${day.label}: ${day.count} events`}
                                 />

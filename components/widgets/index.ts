@@ -1,5 +1,6 @@
 export * from "./EmptyState";
 export * from "./FilterChipsRow";
+export * from "./chartColors";
 export { FunnelCard } from "./FunnelCard";
 export type { FunnelCardProps, FunnelStage, FunnelTone } from "./FunnelCard";
 export { KpiCard } from "./KpiCard";

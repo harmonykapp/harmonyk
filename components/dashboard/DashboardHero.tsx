@@ -75,7 +75,7 @@ export function DashboardHero({ narration, progressState }: DashboardHeroProps) 
                 >
                   {completedCount}/{totalCount}
                 </span>
-                <div className="w-16 h-1.5 rounded-full bg-primary/20 overflow-hidden">
+                <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
                     style={{ width: `${progressPercentage}%` }}
                     className="h-full bg-primary transition-all duration-500"

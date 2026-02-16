@@ -8,7 +8,7 @@ const BREAKDOWNS_ROW_CARD_HEIGHT = "lg:h-[420px]";
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from "@/components/ui/button";
-import { WidgetCard, WidgetRow } from "@/components/widgets";
+import { chartPrimaryScale, WidgetCard, WidgetRow } from "@/components/widgets";
 import { Eye, FileSignature, LayoutDashboard, Link2, Users } from 'lucide-react';
 import Link from "next/link";
 
@@ -117,10 +117,10 @@ export default function SharePage() {
                         variant="outline"
                         className={
                           item.priority === "high"
-                            ? "text-[10px] bg-rose-50 border-rose-400/40 text-rose-700 dark:bg-rose-950/20"
+                            ? "text-[10px] bg-primary/15 border-primary/40 text-primary dark:bg-primary/20"
                             : item.priority === "medium"
-                              ? "text-[10px] bg-amber-50 border-amber-400/40 text-amber-700 dark:bg-amber-950/20"
-                              : "text-[10px]"
+                              ? "text-[10px] bg-primary/10 border-primary/30 text-primary/80 dark:bg-primary/15"
+                              : "text-[10px] text-primary/70"
                         }
                       >
                         {item.dueDate}
@@ -208,7 +208,7 @@ export default function SharePage() {
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center">
                       <div
-                        className="w-full bg-emerald-400/40 rounded-t"
+                        className={`w-full ${chartPrimaryScale["50"].bg} rounded-t`}
                         style={{ height: `${height}px` }}
                       />
                     </div>
@@ -276,21 +276,21 @@ export default function SharePage() {
                   <div className="grid grid-cols-1 gap-1.5 text-[9px] text-muted-foreground">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 whitespace-nowrap">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400/40" />
+                        <div className={`w-2 h-2 rounded-full ${chartPrimaryScale["50"].bg}`} />
                         <span>Active</span>
                       </div>
                       <span className="font-medium ml-2">64%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 whitespace-nowrap">
-                        <div className="w-2 h-2 rounded-full bg-amber-400/40" />
+                        <div className={`w-2 h-2 rounded-full ${chartPrimaryScale["30"].bg}`} />
                         <span>Expired</span>
                       </div>
                       <span className="font-medium ml-2">20%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 whitespace-nowrap">
-                        <div className="w-2 h-2 rounded-full bg-rose-400/40" />
+                        <div className={`w-2 h-2 rounded-full ${chartPrimaryScale["15"].bg}`} />
                         <span>Revoked</span>
                       </div>
                       <span className="font-medium ml-2">16%</span>
@@ -307,7 +307,7 @@ export default function SharePage() {
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="20"
-                        className="text-emerald-400/40"
+                        className={chartPrimaryScale["50"].text}
                         strokeDasharray="160 251"
                         strokeDashoffset="0"
                       />
@@ -318,7 +318,7 @@ export default function SharePage() {
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="20"
-                        className="text-amber-400/40"
+                        className={chartPrimaryScale["30"].text}
                         strokeDasharray="50 251"
                         strokeDashoffset="-160"
                       />
@@ -329,7 +329,7 @@ export default function SharePage() {
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="20"
-                        className="text-rose-400/40"
+                        className={chartPrimaryScale["15"].text}
                         strokeDasharray="41 251"
                         strokeDashoffset="-210"
                       />
@@ -348,28 +348,28 @@ export default function SharePage() {
                     <span className="text-muted-foreground">Opened</span>
                     <span className="font-medium">156</span>
                   </div>
-                  <div className="h-6 bg-emerald-400/40 rounded" style={{ width: "100%" }} />
+                  <div className={`h-6 ${chartPrimaryScale["50"].bg} rounded`} style={{ width: "100%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Viewed</span>
                     <span className="font-medium">124</span>
                   </div>
-                  <div className="h-6 bg-blue-400/40 rounded" style={{ width: "79%" }} />
+                  <div className={`h-6 ${chartPrimaryScale["40"].bg} rounded`} style={{ width: "79%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Replied</span>
                     <span className="font-medium">68</span>
                   </div>
-                  <div className="h-6 bg-amber-400/40 rounded" style={{ width: "44%" }} />
+                  <div className={`h-6 ${chartPrimaryScale["30"].bg} rounded`} style={{ width: "44%" }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Signed</span>
                     <span className="font-medium">42</span>
                   </div>
-                  <div className="h-6 bg-slate-400/30 rounded" style={{ width: "27%" }} />
+                  <div className={`h-6 ${chartPrimaryScale["20"].bg} rounded`} style={{ width: "27%" }} />
                 </div>
               </div>
             </WidgetCard>

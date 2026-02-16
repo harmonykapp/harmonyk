@@ -3,19 +3,13 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { Copy, Eye, FileSignature, LayoutDashboard, Link2, Lock, Trash2, Users } from 'lucide-react';
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type SharePermission = "view" | "comment" | "edit";
 
@@ -169,12 +163,28 @@ function getProtectionLabel(protection: ShareProtection): string {
   return parts.length > 0 ? parts.join(", ") : "None";
 }
 
+function getStatusLabel(protection: ShareProtection): { label: string; variant: "secondary" | "outline" } {
+  if (!protection.expiresAt) {
+    return { label: "Active", variant: "secondary" };
+  }
+  const expiresAt = new Date(protection.expiresAt);
+  if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() < Date.now()) {
+    return { label: "Expired", variant: "outline" };
+  }
+  return { label: "Active", variant: "secondary" };
+}
+
 export default function ShareLinksPage() {
   const [shareLinks, setShareLinks] = useState<ShareLinkSummary[]>(() =>
     isDemoEnvironment ? DEMO_SHARE_LINKS : []
   );
+  const [isLoading, setIsLoading] = useState(true);
   const shareActionsEnabled = isFeatureEnabled("FEATURE_SHARE_ACTIONS");
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
 
   const buildShareUrl = (shareId: string): string | null => {
     if (typeof window === "undefined") return null;
@@ -215,9 +225,10 @@ export default function ShareLinksPage() {
 
     const url = buildShareUrl(shareId);
     if (!url) {
+      // eslint-disable-next-line no-console
+      console.error("[share-links] Share URL unavailable");
       toast({
-        title: "Copy failed",
-        description: "We couldn't build a share URL in this environment.",
+        title: "Couldn't copy link",
         variant: "destructive",
       });
       return;
@@ -238,16 +249,12 @@ export default function ShareLinksPage() {
         document.body.removeChild(textarea);
       }
 
-      toast({
-        title: "Link copied",
-        description: "Share link copied to your clipboard.",
-      });
+      toast({ title: "Link copied" });
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("[share-links] Failed to copy link", error);
       toast({
-        title: "Copy failed",
-        description: "We couldn't copy that link. Please try again.",
+        title: "Couldn't copy link",
         variant: "destructive",
       });
     }
@@ -320,114 +327,130 @@ export default function ShareLinksPage() {
           )}
         </CardHeader>
         <CardContent>
-          {shareLinks.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Link2 className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No share links yet</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                {isDemoEnvironment
-                  ? "Create a secure link to share documents and track engagement."
-                  : "Use a document share or signature flow to get started."}
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <Button asChild>
-                  <Link href="/share/links">
-                    <Link2 className="h-4 w-4 mr-2" />
-                    Create Share Link
-                  </Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href="/signatures">
-                    <FileSignature className="h-4 w-4 mr-2" />
-                    Request Signature
-                  </Link>
-                </Button>
-              </div>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[0, 1, 2].map((item) => (
+                <div key={item} className="rounded-lg border border-border/60 bg-background p-4">
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-2/3" />
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Skeleton className="h-9 w-28" />
+                      <Skeleton className="h-9 w-28" />
+                      <Skeleton className="h-9 w-24" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
+          ) : shareLinks.length === 0 ? (
+            <EmptyState
+              title="No share links yet"
+              description={
+                isDemoEnvironment
+                  ? "Create a secure link to share documents and track engagement."
+                  : "Use a document share or signature flow to get started."
+              }
+              action={
+                <>
+                  <Button asChild>
+                    <Link href="/share/links">
+                      <Link2 className="h-4 w-4 mr-2" />
+                      Create Share Link
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/signatures">
+                      <FileSignature className="h-4 w-4 mr-2" />
+                      Request Signature
+                    </Link>
+                  </Button>
+                </>
+              }
+            />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Document</TableHead>
-                  <TableHead>Permission</TableHead>
-                  <TableHead>Protection</TableHead>
-                  <TableHead>Views</TableHead>
-                  <TableHead>Last Viewed</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {shareLinks.map((link) => (
-                  <TableRow key={link.id}>
-                    <TableCell className="font-medium max-w-xs">
-                      <div className="truncate">{link.docTitle}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{getPermissionLabel(link.permission)}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {getProtectionLabel(link.protection) !== "None" ? (
-                        <Badge variant="secondary" className="gap-1">
-                          <Lock className="h-3 w-3" />
-                          {getProtectionLabel(link.protection)}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">None</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3 text-muted-foreground" />
-                        {link.stats.views}
+            <div className="space-y-3">
+              {shareLinks.map((link) => {
+                const status = getStatusLabel(link.protection);
+                const protectionLabel = getProtectionLabel(link.protection);
+                return (
+                  <div
+                    key={link.id}
+                    className="rounded-lg border border-border/60 bg-background p-4"
+                  >
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="min-w-0 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold truncate">{link.docTitle}</div>
+                          </div>
+                          <Badge variant={status.variant} className="text-[10px]">
+                            {status.label}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {getPermissionLabel(link.permission)}
+                          </Badge>
+                          {protectionLabel !== "None" ? (
+                            <Badge variant="secondary" className="gap-1 text-[10px]">
+                              <Lock className="h-3 w-3" />
+                              {protectionLabel}
+                            </Badge>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">Unprotected</span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          <span>
+                            Created {formatDate(new Date(link.createdAt))} · {link.createdBy}
+                          </span>
+                          <span>Last viewed {formatTimeAgo(link.stats.lastViewedAt)}</span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            {link.stats.views} views
+                          </span>
+                          <span>Expires {formatExpiresAt(link.protection.expiresAt)}</span>
+                        </div>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatTimeAgo(link.stats.lastViewedAt)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatExpiresAt(link.protection.expiresAt)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Open link"
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleOpenLink(link.id)}
                         >
-                          <Link2 className="h-4 w-4" />
+                          <Link2 className="h-4 w-4 mr-2" />
+                          Open
                         </Button>
                         <Button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Copy link"
+                          variant="outline"
+                          size="sm"
                           onClick={() => void handleCopyLink(link.id)}
                         >
-                          <Copy className="h-4 w-4" />
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy link
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Revoke"
+                          size="sm"
+                          className="text-red-600 hover:text-red-600"
                           onClick={() => handleRevokeLink(link.id)}
                         >
-                          <Trash2 className="h-4 w-4 text-red-600" />
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Revoke
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </CardContent>
       </Card>
