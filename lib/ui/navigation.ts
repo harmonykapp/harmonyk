@@ -37,11 +37,11 @@ export function getSidebarNavigation(): NavItem[] {
 
   return [
     { name: 'Dashboard', href: '/dashboard', icon: Gauge },
-    { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-    { name: 'Workbench', href: '/workbench', icon: Layers },
-    { name: 'Rooms', href: '/rooms', icon: LayoutGrid, enabled: roomsEnabled },
-    { name: 'Vault', href: '/vault', icon: Database },
     { name: 'Builder', href: '/builder', icon: Hammer },
+    { name: 'Vault', href: '/vault', icon: Database },
+    { name: 'Rooms', href: '/rooms', icon: LayoutGrid, enabled: roomsEnabled },
+    { name: 'Workbench', href: '/workbench', icon: Layers },
+    { name: 'Tasks', href: '/tasks', icon: CheckSquare },
     {
       name: 'Share Hub',
       href: '/share',

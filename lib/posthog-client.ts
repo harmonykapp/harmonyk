@@ -1,7 +1,13 @@
 let inited = false;
 let enabled = false;
+type PosthogInitOptions = {
+  api_host: string;
+  persistence: string;
+  disable_session_recording?: boolean;
+};
+
 type PosthogClient = {
-  init?: (key: string, options: { api_host: string; persistence: string }) => void;
+  init?: (key: string, options: PosthogInitOptions) => void;
   capture?: (event: string, properties?: Record<string, unknown>) => void;
   identify?: (distinctId: string, props?: Record<string, unknown>) => void;
   reset?: () => void;
@@ -48,6 +54,7 @@ export async function initPosthog() {
     posthogClient.init(key, {
       api_host: host,
       persistence: "localStorage",
+      disable_session_recording: true,
       // optional tweaks:
       // capture_pageview: true,
       // capture_pageleave: true,
@@ -56,11 +63,20 @@ export async function initPosthog() {
 
     enabled = true;
     inited = true;
+
+    // Expose only the initialized instance for devtools.
+    (window as unknown as { posthog?: PosthogClient }).posthog = posthogClient;
   } catch {
     // Fail closed: analytics disabled, app continues normally.
     enabled = false;
     inited = true; // prevent retry loops
   }
+}
+
+export function getPosthogClient(): PosthogClient | null {
+  if (typeof window === "undefined") return null;
+  if (!enabled) return null;
+  return posthogClient;
 }
 
 /** Convenience wrappers (safe no-ops on server) */

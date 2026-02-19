@@ -24,16 +24,16 @@ import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Workbench', href: '/workbench', icon: Layers },
   { name: 'Builder', href: '/builder', icon: Hammer },
   { name: 'Vault', href: '/vault', icon: Vault },
-  { name: 'Playbooks', href: '/playbooks', icon: Play },
+  { name: 'Workbench', href: '/workbench', icon: Layers },
+  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Share', href: '/share', icon: Share2 },
   { name: 'Signatures', href: '/signatures', icon: FileSignature },
-  { name: 'Integrations', href: '/integrations', icon: Plug },
+  { name: 'Playbooks', href: '/playbooks', icon: Play },
   { name: 'Insights', href: '/insights', icon: BarChart3 },
+  { name: 'Integrations', href: '/integrations', icon: Plug },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Activity', href: '/activity', icon: Activity },
   { name: 'Settings', href: '/settings', icon: Settings, hasSubmenu: true, submenu: [
     { name: 'Billing', href: '/billing' },
