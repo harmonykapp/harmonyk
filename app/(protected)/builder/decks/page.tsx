@@ -47,14 +47,16 @@ export default async function DecksBuilderPage() {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-      <BuilderClient
-        templates={templates}
-        clauses={clauses}
-        deckTemplates={deckTemplates}
-        initialTab="decks"
-        mode="decks"
-      />
+    <div className="h-full flex flex-col overflow-x-hidden">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8">
+        <BuilderClient
+          templates={templates}
+          clauses={clauses}
+          deckTemplates={deckTemplates}
+          initialTab="decks"
+          mode="decks"
+        />
+      </div>
     </div>
   );
 }

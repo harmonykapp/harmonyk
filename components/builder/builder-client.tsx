@@ -48,6 +48,7 @@ import {
   Sparkles,
   Trash2
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -150,11 +151,19 @@ type FinancialInboxItem = {
 };
 
 export type BuilderMode = "contracts" | "decks" | "whitepapers" | "accounts";
+type BuilderNavKey = BuilderMode;
 export type WhitepaperKind =
   | "business_whitepaper"
   | "technical_whitepaper"
   | "provisional_patent"
   | "nonprovisional_patent";
+
+const builderNavItems: Array<{ key: BuilderNavKey; label: string; href: string }> = [
+  { key: "contracts", label: "Contracts", href: "/builder/contracts" },
+  { key: "decks", label: "Decks", href: "/builder/decks" },
+  { key: "whitepapers", label: "Whitepapers", href: "/builder/whitepapers" },
+  { key: "accounts", label: "Accounts", href: "/builder/accounts" },
+];
 
 interface BuilderClientProps {
   templates: TemplateOption[];
@@ -244,6 +253,21 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
     effectiveMode === "contracts" || effectiveMode === "decks" || effectiveMode === "accounts" 
       ? effectiveMode 
       : "contracts"
+  );
+  const activeNav: BuilderNavKey = effectiveMode;
+  const renderBuilderNavRow = () => (
+    <div className="flex flex-wrap gap-2">
+      {builderNavItems.map((item) => (
+        <Button
+          key={item.key}
+          asChild
+          size="sm"
+          variant={activeNav === item.key ? "default" : "outline"}
+        >
+          <Link href={item.href}>{item.label}</Link>
+        </Button>
+      ))}
+    </div>
   );
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [selectedClauseIds, setSelectedClauseIds] = useState<string[]>([]);
@@ -1502,6 +1526,87 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
 
         {/* Right Panel - Builder Interface */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="border-b p-4">
+            {renderBuilderNavRow()}
+            {selectedTemplate && (
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedTemplateId("")}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                  <div>
+                    <Badge variant="outline">{selectedTemplate.name}</Badge>
+                    <h2 className="text-2xl font-semibold mt-2">New Document</h2>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => router.push("/builder/draft")}>
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    View Drafts
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAnalyze}
+                    disabled={analyzing || !generatedContent.trim()}
+                  >
+                    <Brain className="h-4 w-4 mr-2" />
+                    {analyzing ? "Analyzing..." : "Analyze"}
+                  </Button>
+                  {monoTrainingEnabled && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePreviewMonoContextDev}
+                        disabled={previewingMonoContext || !savedDocumentId}
+                      >
+                        <Brain className="h-4 w-4 mr-2" />
+                        {previewingMonoContext
+                          ? "Loading context…"
+                          : "Preview Maestro context (dev)"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTrainWithMono}
+                        disabled={trainingLoading || !savedDocumentId}
+                      >
+                        <Brain className="h-4 w-4 mr-2" />
+                        {trainingLoading ? "Queueing…" : "Train Maestro"}
+                      </Button>
+                    </>
+                  )}
+                  <Button variant="outline" size="sm" disabled={!generatedContent.trim()}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSaveToDrafts}
+                    disabled={saving || !generatedContent.trim()}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? "Saving..." : "Save Draft"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setSignModalOpen(true)}
+                    disabled={!generatedContent.trim() || !savedDocumentId}
+                  >
+                    <FileSignature className="h-4 w-4 mr-2" />
+                    Send for Signature
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
           {!selectedTemplate ? (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center max-w-md space-y-4">
@@ -1579,86 +1684,6 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
             </div>
           ) : (
             <>
-              {/* Header Bar */}
-              <div className="border-b p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedTemplateId("")}
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Back
-                    </Button>
-                    <div>
-                      <Badge variant="outline">{selectedTemplate.name}</Badge>
-                      <h2 className="text-2xl font-semibold mt-2">New Document</h2>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => router.push("/builder/draft")}>
-                      <FolderOpen className="h-4 w-4 mr-2" />
-                      View Drafts
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAnalyze}
-                      disabled={analyzing || !generatedContent.trim()}
-                    >
-                      <Brain className="h-4 w-4 mr-2" />
-                      {analyzing ? "Analyzing..." : "Analyze"}
-                    </Button>
-                    {monoTrainingEnabled && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handlePreviewMonoContextDev}
-                          disabled={previewingMonoContext || !savedDocumentId}
-                        >
-                          <Brain className="h-4 w-4 mr-2" />
-                          {previewingMonoContext
-                            ? "Loading context…"
-                            : "Preview Maestro context (dev)"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleTrainWithMono}
-                          disabled={trainingLoading || !savedDocumentId}
-                        >
-                          <Brain className="h-4 w-4 mr-2" />
-                          {trainingLoading ? "Queueing…" : "Train Maestro"}
-                        </Button>
-                      </>
-                    )}
-                    <Button variant="outline" size="sm" disabled={!generatedContent.trim()}>
-                      <Eye className="h-4 w-4 mr-2" />
-                      Preview
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSaveToDrafts}
-                      disabled={saving || !generatedContent.trim()}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {saving ? "Saving..." : "Save Draft"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => setSignModalOpen(true)}
-                      disabled={!generatedContent.trim() || !savedDocumentId}
-                    >
-                      <FileSignature className="h-4 w-4 mr-2" />
-                      Send for Signature
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
               {/* Main Content */}
               <div className="flex-1 overflow-auto p-6">
                 <div className="max-w-4xl mx-auto space-y-6">
@@ -2505,6 +2530,9 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
 
         {/* Right Panel - Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="border-b p-4">
+            {renderBuilderNavRow()}
+          </div>
           {!selectedDeckTemplate ? (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center max-w-md space-y-4">
@@ -3138,7 +3166,8 @@ export function BuilderClient({ templates, clauses, deckTemplates = [], initialD
 
         {/* Right Panel - Inbox / Packs */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="border-b p-6">
+          <div className="border-b p-4 space-y-4">
+            {renderBuilderNavRow()}
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-semibold">

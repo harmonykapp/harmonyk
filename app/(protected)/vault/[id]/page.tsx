@@ -1,12 +1,12 @@
 "use client";
 
+import { CommentsPanel } from "@/components/review/CommentsPanel";
+import { PdfPinLayer } from "@/components/review/PdfPinLayer";
 import {
   PinnedOverlay,
   type PdfAnchor,
   type PinnedOverlayPin,
 } from "@/components/review/PinnedOverlay";
-import { CommentsPanel } from "@/components/review/CommentsPanel";
-import { PdfPinLayer } from "@/components/review/PdfPinLayer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -261,6 +261,7 @@ export default function VaultDocPage({ params }: PageProps) {
   const [pdfPinnedComments, setPdfPinnedComments] = useState<PinnedComment[]>([]);
   const [pendingPdfAnchor, setPendingPdfAnchor] = useState<PinAnchor | null>(null);
   const threadRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const pdfComposerRef = useRef<HTMLInputElement | null>(null);
   const hydrationDocIdRef = useRef<string | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pinnedCommentsEnabled = isFeatureEnabled("FEATURE_PINNED_COMMENTS");
@@ -480,7 +481,9 @@ export default function VaultDocPage({ params }: PageProps) {
   }, [latest?.content]);
 
   const isDeck = doc?.kind === "deck";
-  const canReviewPins = Boolean(previewContent) && !isDeck;
+  const isMarkdownPreview = Boolean(previewContent) && !isDeck;
+  const isPdfPreview = pinnedCommentsEnabled && !previewContent && !isDeck;
+  const canReviewPins = isMarkdownPreview || isPdfPreview;
   const openCount = useMemo(() => pins.filter((pin) => pin.status !== "resolved").length, [pins]);
   const resolvedCount = useMemo(() => pins.filter((pin) => pin.status === "resolved").length, [pins]);
   const visiblePins = useMemo(() => {
@@ -495,23 +498,40 @@ export default function VaultDocPage({ params }: PageProps) {
     [pins]
   );
 
+  const normalizePdfAnchor = (anchor: PinAnchor): PinAnchor => {
+    if (typeof anchor.x === "number" && typeof anchor.y === "number") {
+      return anchor;
+    }
+    if (anchor.rect && typeof anchor.rect.x === "number" && typeof anchor.rect.y === "number") {
+      return { ...anchor, x: anchor.rect.x, y: anchor.rect.y };
+    }
+    return anchor;
+  };
+
   const addPdfPinnedComment = (text: string) => {
+    const id = createPinId();
+    const anchor = pendingPdfAnchor ? normalizePdfAnchor(pendingPdfAnchor) : { page: 1 };
     setPdfPinnedComments((prev) => [
       ...prev,
       {
-        id: createPinId(),
+        id,
         text,
         status: "open",
         createdAt: new Date().toISOString(),
         author: "You",
-        anchor: pendingPdfAnchor ?? { page: 1 },
+        anchor,
       },
     ]);
+    setSelectedPinId(id);
     setPendingPdfAnchor(null);
   };
 
   const handlePdfPinAdd = (anchor: PinAnchor) => {
-    setPendingPdfAnchor(anchor);
+    setPendingPdfAnchor(normalizePdfAnchor(anchor));
+  };
+
+  const handleSelectPdfPin = (pinId: string) => {
+    setSelectedPinId(pinId);
   };
 
   useEffect(() => {
@@ -521,28 +541,48 @@ export default function VaultDocPage({ params }: PageProps) {
   }, [canReviewPins, isAddCommentMode]);
 
   useEffect(() => {
-    if (!selectedPinId) return;
+    if (!isMarkdownPreview || !selectedPinId) return;
     const node = threadRefs.current[selectedPinId];
     if (node) {
       node.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-  }, [selectedPinId]);
+  }, [isMarkdownPreview, selectedPinId]);
 
   useEffect(() => {
-    if (!selectedPinId) return;
+    if (!isMarkdownPreview || !selectedPinId) return;
     const exists = pins.some((pin) => pin.id === selectedPinId);
     if (!exists) {
       setSelectedPinId(pins[pins.length - 1]?.id ?? null);
     }
-  }, [pins, selectedPinId]);
+  }, [isMarkdownPreview, pins, selectedPinId]);
 
   useEffect(() => {
-    if (!selectedPinId) return;
+    if (!isMarkdownPreview || !selectedPinId) return;
     const isVisible = visiblePins.some((pin) => pin.id === selectedPinId);
     if (!isVisible) {
       setSelectedPinId(visiblePins[0]?.id ?? null);
     }
-  }, [selectedPinId, visiblePins]);
+  }, [isMarkdownPreview, selectedPinId, visiblePins]);
+
+  // ESC exits add-comment mode (markdown pinning UX).
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setIsAddCommentMode(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!pendingPdfAnchor) return;
+    const node = pdfComposerRef.current;
+    if (!node) return;
+    node.focus();
+    node.scrollIntoView({ block: "nearest" });
+  }, [pendingPdfAnchor]);
 
   useEffect(() => {
     if (!doc?.id) return;
@@ -611,6 +651,9 @@ export default function VaultDocPage({ params }: PageProps) {
   function handleAddPin(anchor: PdfAnchor) {
     if (!canReviewPins) return;
     const pinId = createPinId();
+    // UX: once a pin is placed, exit add-mode so clicks don’t keep dropping pins.
+    setIsAddCommentMode(false);
+    setThreadFilter("open");
     setPins((prev) => [
       ...prev,
       {
@@ -784,7 +827,7 @@ export default function VaultDocPage({ params }: PageProps) {
                 disabled={!canReviewPins}
                 onClick={() => setIsAddCommentMode((prev) => !prev)}
               >
-                {isAddCommentMode ? "Adding comments" : "Add comment"}
+                {isAddCommentMode ? "Adding comments (Esc)" : "Add comment"}
               </Button>
               <Button size="sm" variant="outline" disabled={pins.length === 0} onClick={handleUndoPin}>
                 Undo
@@ -804,7 +847,13 @@ export default function VaultDocPage({ params }: PageProps) {
               ) : !previewContent ? (
                 pinnedCommentsEnabled ? (
                   <div className="rounded-md border bg-muted/30 p-3">
-                    <PdfPinLayer enableAdd onAddPin={handlePdfPinAdd} />
+                    <PdfPinLayer
+                      enableAdd={isAddCommentMode}
+                      onAddPin={handlePdfPinAdd}
+                      pins={pdfPinnedComments}
+                      selectedId={selectedPinId}
+                      onSelect={handleSelectPdfPin}
+                    />
                     <div className="mt-2 text-xs text-muted-foreground">
                       Click to drop a pin (UI-only). Selection anchoring lands on D3.
                     </div>
@@ -829,200 +878,206 @@ export default function VaultDocPage({ params }: PageProps) {
               )}
             </div>
             {pinnedCommentsEnabled && !previewContent && !isDeck ? (
-              <CommentsPanel items={pdfPinnedComments} onAdd={addPdfPinnedComment} />
+              <CommentsPanel
+                items={pdfPinnedComments}
+                onAdd={addPdfPinnedComment}
+                selectedId={selectedPinId}
+                onSelect={handleSelectPdfPin}
+                composerRef={pdfComposerRef}
+              />
             ) : (
               <div className="flex flex-col gap-3 rounded-md border bg-background p-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Comments</div>
-                <Badge variant="secondary" className="text-xs">
-                  {pins.length}
-                </Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {storageAvailable
-                  ? "Saved locally on this device"
-                  : "Not saved (private browsing or storage blocked)"}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {[
-                  { value: "open", label: "Open", count: openCount },
-                  { value: "resolved", label: "Resolved", count: resolvedCount },
-                  { value: "all", label: "All", count: pins.length },
-                ].map((filter) => (
-                  <Button
-                    key={filter.value}
-                    size="sm"
-                    variant={threadFilter === filter.value ? "default" : "outline"}
-                    className="h-7 px-2 text-xs"
-                    onClick={() => setThreadFilter(filter.value as "open" | "resolved" | "all")}
-                  >
-                    <span>{filter.label}</span>
-                    <Badge variant="secondary" className="ml-2 text-[10px]">
-                      {filter.count}
-                    </Badge>
-                  </Button>
-                ))}
-              </div>
-              {pins.length === 0 ? (
-                <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-                  No comments yet. Turn on Add comment and click to pin.
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium">Comments</div>
+                  <Badge variant="secondary" className="text-xs">
+                    {pins.length}
+                  </Badge>
                 </div>
-              ) : visiblePins.length === 0 ? (
-                <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-                  No comments match this filter.
+                <div className="text-xs text-muted-foreground">
+                  {storageAvailable
+                    ? "Saved locally on this device"
+                    : "Not saved (private browsing or storage blocked)"}
                 </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {visiblePins.map((pin, index) => {
-                    const isSelected = pin.id === selectedPinId;
-                    const isResolved = pin.status === "resolved";
-                    const timestamp = formatTimestamp(pin.createdAt);
-                    const rootText = pin.status === "draft" ? pin.draftText : pin.root.text;
-                    return (
-                      <div
-                        key={pin.id}
-                        ref={(node) => {
-                          threadRefs.current[pin.id] = node;
-                        }}
-                        onClick={() => handleSelectPin(pin.id)}
-                        className={[
-                          "rounded-md border p-3 transition",
-                          isSelected ? "border-primary/40 bg-primary/5" : "border-muted",
-                          isResolved && !isSelected ? "opacity-60" : "",
-                        ].join(" ")}
-                      >
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <span>{`Comment #${index + 1}`}</span>
-                            {isResolved ? (
-                              <Badge variant="secondary" className="text-[10px]">
-                                Resolved
-                              </Badge>
-                            ) : null}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span>{timestamp}</span>
-                            {pin.status !== "draft" ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 px-2 text-xs"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setThreadStatus(pin.id, isResolved ? "open" : "resolved");
-                                }}
-                              >
-                                {isResolved ? "Reopen" : "Resolve"}
-                              </Button>
-                            ) : null}
-                          </div>
-                        </div>
-                        {pin.status === "draft" ? (
-                          <div className="mt-2 space-y-2">
-                            <div className="text-sm font-medium">Draft comment</div>
-                            <textarea
-                              className="min-h-[72px] w-full rounded-md border bg-background p-2 text-sm"
-                              placeholder="Add a comment…"
-                              value={pin.draftText}
-                              onChange={(event) =>
-                                updatePin(pin.id, (current) =>
-                                  current.status === "draft"
-                                    ? { ...current, draftText: event.target.value }
-                                    : current
-                                )
-                              }
-                            />
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { value: "open", label: "Open", count: openCount },
+                    { value: "resolved", label: "Resolved", count: resolvedCount },
+                    { value: "all", label: "All", count: pins.length },
+                  ].map((filter) => (
+                    <Button
+                      key={filter.value}
+                      size="sm"
+                      variant={threadFilter === filter.value ? "default" : "outline"}
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setThreadFilter(filter.value as "open" | "resolved" | "all")}
+                    >
+                      <span>{filter.label}</span>
+                      <Badge variant="secondary" className="ml-2 text-[10px]">
+                        {filter.count}
+                      </Badge>
+                    </Button>
+                  ))}
+                </div>
+                {pins.length === 0 ? (
+                  <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                    No comments yet. Turn on Add comment and click to pin.
+                  </div>
+                ) : visiblePins.length === 0 ? (
+                  <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                    No comments match this filter.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {visiblePins.map((pin, index) => {
+                      const isSelected = pin.id === selectedPinId;
+                      const isResolved = pin.status === "resolved";
+                      const timestamp = formatTimestamp(pin.createdAt);
+                      const rootText = pin.status === "draft" ? pin.draftText : pin.root.text;
+                      return (
+                        <div
+                          key={pin.id}
+                          ref={(node) => {
+                            threadRefs.current[pin.id] = node;
+                          }}
+                          onClick={() => handleSelectPin(pin.id)}
+                          className={[
+                            "rounded-md border p-3 transition",
+                            isSelected ? "border-primary/40 bg-primary/5" : "border-muted",
+                            isResolved && !isSelected ? "opacity-60" : "",
+                          ].join(" ")}
+                        >
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  updatePin(pin.id, (current) => {
-                                    if (current.status !== "draft") return current;
-                                    const text = current.draftText.trim();
-                                    if (!text) return current;
-                                    return {
-                                      ...current,
-                                      status: "open",
-                                      root: {
-                                        id: createCommentId(),
-                                        text,
-                                        createdAt: new Date().toISOString(),
-                                      },
-                                      replies: current.replies ?? [],
-                                      replyDraft: "",
-                                    };
-                                  })
-                                }
-                                disabled={pin.draftText.trim().length === 0}
-                              >
-                                Save
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => removePin(pin.id)}>
-                                Cancel
-                              </Button>
+                              <span>{`Comment #${index + 1}`}</span>
+                              {isResolved ? (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  Resolved
+                                </Badge>
+                              ) : null}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span>{timestamp}</span>
+                              {pin.status !== "draft" ? (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setThreadStatus(pin.id, isResolved ? "open" : "resolved");
+                                  }}
+                                >
+                                  {isResolved ? "Reopen" : "Resolve"}
+                                </Button>
+                              ) : null}
                             </div>
                           </div>
-                        ) : (
-                          <div className="mt-2 space-y-2">
-                            <div className="text-sm">{rootText}</div>
-                            {pin.replies.length > 0 ? (
-                              <div className="space-y-2 border-l pl-3 text-sm text-muted-foreground">
-                                {pin.replies.map((reply) => (
-                                  <div key={reply.id}>
-                                    <div className="text-xs">{formatTimestamp(reply.createdAt)}</div>
-                                    <div>{reply.text}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : null}
-                            {isResolved ? (
-                              <div className="text-xs text-muted-foreground">
-                                This thread is resolved. Reopen to add a reply.
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <textarea
-                                  className="min-h-[60px] w-full rounded-md border bg-background p-2 text-sm"
-                                  placeholder="Write a reply…"
-                                  value={pin.replyDraft ?? ""}
-                                  onChange={(event) =>
-                                    updatePin(pin.id, (current) =>
-                                      current.status === "open"
-                                        ? { ...current, replyDraft: event.target.value }
-                                        : current
-                                    )
-                                  }
-                                />
+                          {pin.status === "draft" ? (
+                            <div className="mt-2 space-y-2">
+                              <div className="text-sm font-medium">Draft comment</div>
+                              <textarea
+                                className="min-h-[72px] w-full rounded-md border bg-background p-2 text-sm"
+                                placeholder="Add a comment…"
+                                value={pin.draftText}
+                                onChange={(event) =>
+                                  updatePin(pin.id, (current) =>
+                                    current.status === "draft"
+                                      ? { ...current, draftText: event.target.value }
+                                      : current
+                                  )
+                                }
+                              />
+                              <div className="flex items-center gap-2">
                                 <Button
                                   size="sm"
                                   onClick={() =>
                                     updatePin(pin.id, (current) => {
-                                      if (current.status !== "open") return current;
-                                      const text = (current.replyDraft ?? "").trim();
+                                      if (current.status !== "draft") return current;
+                                      const text = current.draftText.trim();
                                       if (!text) return current;
                                       return {
                                         ...current,
-                                        replies: [
-                                          ...current.replies,
-                                          { id: createCommentId(), text, createdAt: new Date().toISOString() },
-                                        ],
+                                        status: "open",
+                                        root: {
+                                          id: createCommentId(),
+                                          text,
+                                          createdAt: new Date().toISOString(),
+                                        },
+                                        replies: current.replies ?? [],
                                         replyDraft: "",
                                       };
                                     })
                                   }
-                                  disabled={(pin.replyDraft ?? "").trim().length === 0}
+                                  disabled={pin.draftText.trim().length === 0}
                                 >
-                                  Reply
+                                  Save
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => removePin(pin.id)}>
+                                  Cancel
                                 </Button>
                               </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                            </div>
+                          ) : (
+                            <div className="mt-2 space-y-2">
+                              <div className="text-sm">{rootText}</div>
+                              {pin.replies.length > 0 ? (
+                                <div className="space-y-2 border-l pl-3 text-sm text-muted-foreground">
+                                  {pin.replies.map((reply) => (
+                                    <div key={reply.id}>
+                                      <div className="text-xs">{formatTimestamp(reply.createdAt)}</div>
+                                      <div>{reply.text}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
+                              {isResolved ? (
+                                <div className="text-xs text-muted-foreground">
+                                  This thread is resolved. Reopen to add a reply.
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  <textarea
+                                    className="min-h-[60px] w-full rounded-md border bg-background p-2 text-sm"
+                                    placeholder="Write a reply…"
+                                    value={pin.replyDraft ?? ""}
+                                    onChange={(event) =>
+                                      updatePin(pin.id, (current) =>
+                                        current.status === "open"
+                                          ? { ...current, replyDraft: event.target.value }
+                                          : current
+                                      )
+                                    }
+                                  />
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      updatePin(pin.id, (current) => {
+                                        if (current.status !== "open") return current;
+                                        const text = (current.replyDraft ?? "").trim();
+                                        if (!text) return current;
+                                        return {
+                                          ...current,
+                                          replies: [
+                                            ...current.replies,
+                                            { id: createCommentId(), text, createdAt: new Date().toISOString() },
+                                          ],
+                                          replyDraft: "",
+                                        };
+                                      })
+                                    }
+                                    disabled={(pin.replyDraft ?? "").trim().length === 0}
+                                  >
+                                    Reply
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>

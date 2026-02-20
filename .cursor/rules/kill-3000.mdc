@@ -1,0 +1,13 @@
+---
+description: Kill port 3000 shortcut
+---
+# Kill port 3000
+
+When the user says "kill 3000", run a PowerShell command to find the first PID
+listening on port 3000 and terminate it.
+
+Use this command:
+
+```
+$portPid = (netstat -ano | findstr ":3000" | Select-Object -First 1).ToString().Split()[-1]; if ($portPid) { taskkill /PID $portPid /F }
+```

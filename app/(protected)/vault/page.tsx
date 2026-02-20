@@ -1351,75 +1351,7 @@ function VaultPageInner() {
     }
     await logEvent(r.id, "view");
     phCapture("vault_view_doc", { docId: r.id });
-
-    // For decks, use the export route which renders HTML properly
-    if (r.kind === "deck") {
-      const exportUrl = `/api/decks/${r.id}/export`;
-      window.open(exportUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    // For other documents, render markdown as HTML
-    // Strip metadata comments if present
-    let content = r.latestVersion.content;
-    const metadataMatch = content.match(/<!-- MONO_[A-Z_]+:({.*?}) -->\s*\n*/s);
-    if (metadataMatch) {
-      content = content.replace(metadataMatch[0], "");
-    }
-
-    // Simple markdown to HTML conversion (basic rendering)
-    // Convert headers, lists, code blocks, etc.
-    let html = content
-      .replace(/^# (.*$)/gim, "<h1>$1</h1>")
-      .replace(/^## (.*$)/gim, "<h2>$1</h2>")
-      .replace(/^### (.*$)/gim, "<h3>$1</h3>")
-      .replace(/^\* (.*$)/gim, "<li>$1</li>")
-      .replace(/^- (.*$)/gim, "<li>$1</li>")
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/`(.*?)`/g, "<code>$1</code>")
-      .replace(/\n\n/g, "</p><p>")
-      .replace(/\n/g, "<br>");
-
-    // Wrap lists
-    html = html.replace(/(<li>.*?<\/li>)/g, "<ul>$1</ul>");
-    html = "<p>" + html + "</p>";
-
-    // Create full HTML document
-    const fullHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${r.title || "Document"}</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      line-height: 1.6;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 2rem;
-      color: #333;
-    }
-    h1 { font-size: 2rem; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 2px solid #ddd; padding-bottom: 0.5rem; }
-    h2 { font-size: 1.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #555; }
-    h3 { font-size: 1.25rem; margin-top: 1.25rem; margin-bottom: 0.5rem; }
-    p { margin: 1rem 0; }
-    ul, ol { margin: 1rem 0; padding-left: 2rem; }
-    code { background: #f5f5f5; padding: 0.2rem 0.4rem; border-radius: 3px; font-family: "Courier New", monospace; font-size: 0.9em; }
-    pre { background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto; }
-  </style>
-</head>
-<body>
-  <h1>${r.title || "Document"}</h1>
-  ${html}
-</body>
-</html>`;
-
-    const blob = new Blob([fullHtml], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank", "noopener,noreferrer");
-    setTimeout(() => URL.revokeObjectURL(url), 100);
+    router.push(`/vault/${encodeURIComponent(r.id)}`);
   }
 
   async function onDownload(r: Row) {
@@ -3106,6 +3038,11 @@ function VaultPageInner() {
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         View
+                      </Button>
+                      <Button asChild className="w-full justify-start" variant="outline">
+                        <Link href={`/vault/${encodeURIComponent(selectedDocument.id)}`}>
+                          Review / Comments
+                        </Link>
                       </Button>
                       <Button
                         className="w-full justify-start"

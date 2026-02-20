@@ -8,6 +8,8 @@ export type NormalizedRect = {
 
 export type PinAnchor = {
   page: number; // 1-based page index
+  x?: number;
+  y?: number;
   rect?: NormalizedRect; // optional selection box; single point pins have no rect
 };
 
